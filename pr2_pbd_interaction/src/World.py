@@ -105,26 +105,27 @@ class OculusReferenceObject:
                 self.is_control_visible = True
         self.int_marker = self._create_int_marker()
 
-    def _add_6dof_marker(self, int_marker, is_fixed):
+    def _add_6dof_marker(self, int_marker, is_fixed, with_rotation=True):
         '''Adds a 6 DoF control marker to the interactive marker'''
-        control = self._make_6dof_control('rotate_x',
-                        Quaternion(1, 0, 0, 1), False, is_fixed)
-        int_marker.controls.append(control)
         control = self._make_6dof_control('move_x',
                         Quaternion(1, 0, 0, 1), True, is_fixed)
-        int_marker.controls.append(control)
-        control = self._make_6dof_control('rotate_z',
-                        Quaternion(0, 1, 0, 1), False, is_fixed)
         int_marker.controls.append(control)
         control = self._make_6dof_control('move_z',
                         Quaternion(0, 1, 0, 1), True, is_fixed)
         int_marker.controls.append(control)
-        control = self._make_6dof_control('rotate_y',
-                        Quaternion(0, 0, 1, 1), False, is_fixed)
-        int_marker.controls.append(control)
         control = self._make_6dof_control('move_y',
                         Quaternion(0, 0, 1, 1), True, is_fixed)
         int_marker.controls.append(control)
+        if with_rotation:
+            control = self._make_6dof_control('rotate_x',
+                            Quaternion(1, 0, 0, 1), False, is_fixed)
+            int_marker.controls.append(control)
+            control = self._make_6dof_control('rotate_z',
+                            Quaternion(0, 1, 0, 1), False, is_fixed)
+            int_marker.controls.append(control)
+            control = self._make_6dof_control('rotate_y',
+                            Quaternion(0, 0, 1, 1), False, is_fixed)
+            int_marker.controls.append(control)
 
     def _make_6dof_control(self, name, orientation, is_move, is_fixed):
         '''Creates one component of the 6dof controller'''
@@ -153,21 +154,17 @@ class OculusReferenceObject:
         button_control.interaction_mode = InteractiveMarkerControl.BUTTON
         button_control.always_visible = True
         id = abs(hash(int_marker.name)) % (10 ** 8)
+        # The marker is a sphere because orientation doesn't matter: Oculus calibrates orientation separately
         object_marker = Marker(type=Marker.SPHERE, id=id,
             lifetime=rospy.Duration(2),
             scale=Vector3(0.04, 0.04, 0.04),
             header=Header(frame_id='base_link'),
             color=ColorRGBA(0.2, 0.0, 0.5, 0.8),
             pose=int_marker.pose)
-        #object_marker = Marker(type=Marker.ARROW, id=id,
-        #        lifetime=rospy.Duration(2),
-        #        scale=Vector3(0.2, 0.03, 0.03),
-        #        header=Header(frame_id='base_link'),
-        #        color=ColorRGBA(0.2, 0.0, 0.5, 0.8),
-        #        pose=int_marker.pose)
         button_control.markers.append(object_marker)
         int_marker.controls.append(button_control)
-        self._add_6dof_marker(int_marker, True)
+        # The rotation controls are not needed
+        self._add_6dof_marker(int_marker, is_fixed=True, with_rotation=False)
         self._im_server.insert(int_marker, self.marker_feedback_cb)
         self._im_server.applyChanges()
         return int_marker
@@ -181,18 +178,6 @@ class World:
     def __init__(self):
         self.link_names = [self._get_arm_parts('l', 'link'), self._get_arm_parts('r', 'link')]
         self.joint_names = [self._get_arm_parts('l', 'joint'), self._get_arm_parts('r', 'joint')]
-        #self.link_names = [['l_upper_arm_roll_link',
-        #       'l_elbow_flex_link',
-        #       'l_wrist_flex_link'],
-        #        ['r_upper_arm_roll_link',
-        #       'r_elbow_flex_link',
-        #       'r_wrist_flex_link']]
-        #self.joint_names = [['l_upper_arm_roll_joint',
-        #       'l_elbow_flex_joint',
-        #       'l_wrist_flex_joint'],
-        #        ['r_upper_arm_roll_joint',
-        #       'r_elbow_flex_joint',
-        #       'r_wrist_flex_joint']]
         self.all_joint_names = []
         self.all_joint_poses = []
         self.joint_poses = []
@@ -225,8 +210,6 @@ class World:
         # The following is to get the table information
         rospy.Subscriber('tabletop_segmentation_markers',
                          Marker, self.receieve_table_marker)
-        #self.oculus_reference_marker = None
-        #self._add_oculus_reference_marker(self._im_server)
         self.oculus_reference_object = OculusReferenceObject(self._im_server)
         self.relative_frame_threshold = 0.4
 
@@ -247,9 +230,6 @@ class World:
                                 '_arm_kinematics_simple/get_fk_solver_info')
             fk_srv_name = 'pr2_' + arm_names[arm_index] + '_arm_kinematics_simple/get_fk'
             rospy.wait_for_service(fk_info_srv_name)
-            fk_info_srv = rospy.ServiceProxy(fk_info_srv_name,
-                                             GetKinematicSolverInfo)
-
             rospy.loginfo('FK info service has responded for '
                           + arm_names[arm_index] + ' arm.')
             rospy.wait_for_service(fk_srv_name)
@@ -446,58 +426,6 @@ class World:
                 break
         return marker
 
-    @staticmethod
-    def get_points_for_box(center, dimensions, orientation=None):
-        cx = center.x
-        cy = center.y
-        cz = center.z
-        xdim = dimensions.x
-        ydim = dimensions.y
-        zdim = dimensions.z
-        p1 = Vector3(cx + xdim/2., cy + ydim/2., cz - zdim/2.)
-        p2 = Vector3(cx - xdim/2., cy + ydim/2., cz - zdim/2.)
-        p3 = Vector3(cx - xdim/2., cy + ydim/2., cz + zdim/2.)
-        p4 = Vector3(cx + xdim/2., cy + ydim/2., cz + zdim/2.)
-        p5 = Vector3(cx + xdim/2., cy - ydim/2., cz - zdim/2.)
-        p6 = Vector3(cx - xdim/2., cy - ydim/2., cz - zdim/2.)
-        p7 = Vector3(cx - xdim/2., cy - ydim/2., cz + zdim/2.)
-        p8 = Vector3(cx + xdim/2., cy - ydim/2., cz + zdim/2.)
-        points = (p1, p2, p3, p4, p5, p6, p7, p8)
-        rospy.loginfo(center)
-        if orientation is not None:
-            rotation_matrix = quaternion_matrix([orientation.x, orientation.y, orientation.z, orientation.w])
-            rotated_points = []
-            for p in points:
-                rospy.loginfo(p)
-                rotated_point = Vector3(* dot(rotation_matrix[0:3, 0:3], array([p.x, p.y, p.z])))
-                rospy.loginfo(rotated_point)
-                rotated_points.append(rotated_point)
-            return rotated_points
-        return points
-
-    @staticmethod
-    def is_front_of_plane(p, p1, p2, p3):
-        a1 = p.x - p1.x
-        a2 = p2.x - p1.x
-        a3 = p3.x - p1.x
-        b1 = p.y - p1.y
-        b2 = p2.y - p1.y
-        b3 = p3.y - p1.y
-        c1 = p.z - p1.z
-        c2 = p2.z - p1.z
-        c3 = p3.z - p1.z
-        return a1*b2*c3 - a1*b3*c2 + b1*c2*a3 - b1*c3*a2 + c1*a2*b3 - c1*a3*b2 >= 0
-
-    @staticmethod
-    # left: p1, p2, p3, p4; top: p3, p4, p7, p8; front: p2, p3, p6, p7
-    def is_inside_box(p, box_points):
-        return World.is_front_of_plane(p, box_points[0], box_points[3], box_points[2]) \
-                   and World.is_front_of_plane(p, box_points[4], box_points[6], box_points[7]) \
-                   and World.is_front_of_plane(p, box_points[2], box_points[3], box_points[6]) \
-                   and World.is_front_of_plane(p, box_points[0], box_points[1], box_points[4]) \
-                   and World.is_front_of_plane(p, box_points[1], box_points[2], box_points[5]) \
-            and World.is_front_of_plane(p, box_points[7], box_points[3], box_points[0])
-
     def _add_new_object(self, pose, dimensions, is_recognized, mesh=None):
         '''Function to add new objects'''
         dist_threshold = 0.02
@@ -543,15 +471,6 @@ class World:
                     rospy.loginfo('Previously detected object at the same' +
                                   'location, will not add this object.')
                     return False
-            #object_bbox_points = World.get_points_for_box(pose.position, dimensions)
-            #self.marker_publisher.publish(Marker(type=Marker.SPHERE_LIST, id=len(World.objects) - 1+1000,
-            #        lifetime=rospy.Duration(5),
-            #        scale=Vector3(0.01, 0.01, 0.01),
-            #        points=object_bbox_points,
-            #        header=Header(frame_id='base_link'),
-            #        color=ColorRGBA(1, 1, 1, 0.5),
-            #        pose=pose))
-            #points_inside = 0
             arm_dist_threshold = 0.03
             for arm_index in [0, 1]:
                 for joint_idx in range(1, len(self.joint_poses[arm_index])):
@@ -567,22 +486,6 @@ class World:
                     if (distance_to_joint_line < arm_dist_threshold):
                         rospy.loginfo('Detected arm at the same location, will not add this object.')
                         return False
-                    #middle_pose = Pose(Point((joint_pose.position.x + next_joint_pose.position.x)/2.,
-                    #                         (joint_pose.position.y + next_joint_pose.position.y)/2.,
-                    #                         (joint_pose.position.z + next_joint_pose.position.z)/2.),
-                    #                   joint_pose.orientation)
-                    #if (World.pose_distance(joint_pose, pose) < arm_dist_threshold
-                    #    or World.pose_distance(middle_pose, pose) < arm_dist_threshold):
-                    #    rospy.loginfo('Detected arm at the same location, will not add this object.')
-                    #    return False
-            #        #rospy.loginfo(joint_position)
-            #        #rospy.loginfo(object_bbox_points[0])
-            #        #rospy.loginfo(object_bbox_points[1])
-            #        if World.is_inside_box(joint_position, object_bbox_points):
-            #            points_inside += 1
-            #if points_inside > 1:
-            #    rospy.loginfo('Detected arm at the same location, will not add this object.')
-
             n_objects = len(World.objects)
             World.objects.append(WorldObject(pose, n_objects,
                                             dimensions, is_recognized))
@@ -996,8 +899,6 @@ class World:
                     World.objects[i].get_name(), 'base_link')
                 if (World.objects[i].is_removed):
                     to_remove = i
-                #else:
-                #    self.marker_publisher.publish(self._get_object_reachability_marker(World.objects[i]))
             if to_remove != None:
                 self._remove_object(to_remove)
                 is_world_changed = True
