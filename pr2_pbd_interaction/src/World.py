@@ -28,10 +28,6 @@ from interactive_markers.menu_handler import MenuHandler
 from actionlib_msgs.msg import GoalStatus
 import actionlib
 from math import pi, sin, cos
-from sensor_msgs.msg import JointState
-from kinematics_msgs.srv import GetKinematicSolverInfo, GetPositionFK
-from kinematics_msgs.srv import GetPositionFKRequest
-from tf.transformations import quaternion_matrix
 
 # Local stuff
 from pr2_pbd_interaction.msg import Object, ArmState
@@ -176,19 +172,6 @@ class World:
     objects = []
 
     def __init__(self):
-        self.link_names = [self._get_arm_parts('l', 'link'), self._get_arm_parts('r', 'link')]
-        self.joint_names = [self._get_arm_parts('l', 'joint'), self._get_arm_parts('r', 'joint')]
-        self.all_joint_names = []
-        self.all_joint_poses = []
-        self.joint_poses = []
-        rospy.Subscriber('joint_states', JointState, self.joint_states_cb)
-
-        self.fk_srv = [None, None]
-        self.fk_request = [None, None]
-        self._setup_fk()
-
-        self.marker_publisher = rospy.Publisher('visualization_marker', Marker)
-
         if World.tf_listener == None:
             World.tf_listener = TransformListener()
         self._lock = threading.Lock()
@@ -212,74 +195,6 @@ class World:
                          Marker, self.receieve_table_marker)
         self.oculus_reference_object = OculusReferenceObject(self._im_server)
         self.relative_frame_threshold = 0.4
-
-    def _get_arm_parts(self, arm_name, part_name):
-        return [arm_name + '_shoulder_pan_' + part_name,
-                       arm_name + '_shoulder_lift_' + part_name,
-                       arm_name + '_upper_arm_roll_' + part_name,
-                       arm_name + '_elbow_flex_' + part_name,
-                       arm_name + '_forearm_roll_' + part_name,
-                       arm_name + '_wrist_flex_' + part_name,
-                       arm_name + '_wrist_roll_' + part_name]
-
-    def _setup_fk(self):
-        '''Sets up services for forward kinematics'''
-        arm_names = ['left', 'right']
-        for arm_index in [0, 1]:
-            fk_info_srv_name = ('pr2_' + arm_names[arm_index] +
-                                '_arm_kinematics_simple/get_fk_solver_info')
-            fk_srv_name = 'pr2_' + arm_names[arm_index] + '_arm_kinematics_simple/get_fk'
-            rospy.wait_for_service(fk_info_srv_name)
-            rospy.loginfo('FK info service has responded for '
-                          + arm_names[arm_index] + ' arm.')
-            rospy.wait_for_service(fk_srv_name)
-            self.fk_srv[arm_index] = rospy.ServiceProxy(fk_srv_name,
-                                             GetPositionFK, persistent=True)
-            rospy.loginfo('FK service has responded for ' + arm_names[arm_index] + ' arm.')
-
-            # Set up common parts of an fk request
-            self.fk_request[arm_index] = GetPositionFKRequest()
-            self.fk_request[arm_index].header.frame_id = 'base_link'
-            self.fk_request[arm_index].fk_link_names = self.link_names[arm_index]
-            self.fk_request[arm_index].robot_state.joint_state.name = self.joint_names[arm_index]
-
-    def joint_states_cb(self, msg):
-        '''Callback function that saves the joint positions when a
-        joint_states message is received'''
-        self._lock.acquire()
-        self.all_joint_names = msg.name
-        self.all_joint_poses = msg.position
-        self._lock.release()
-
-    def _get_joint_states(self):
-        '''Returns position for all arm joints'''
-        if self.all_joint_names == []:
-            rospy.logerr("No robot_state messages received!\n")
-            return []
-        positions = [[], []]
-        for arm_index in [0, 1]:
-            for joint_name in self.joint_names[arm_index]:
-                if joint_name in self.all_joint_names:
-                    index = self.all_joint_names.index(joint_name)
-                    position = self.all_joint_poses[index]
-                    positions[arm_index].append(position)
-                else:
-                    rospy.logerr("Joint %s not found!", joint_name)
-        return positions
-
-    def _get_joint_poses(self):
-        states = self._get_joint_states()
-        poses = [None, None]
-        for arm_index in [0, 1]:
-            try:
-                rospy.loginfo('Sending FK request.')
-                self.fk_request[arm_index].robot_state.joint_state.position = states[arm_index]
-                response = self.fk_srv[arm_index](self.fk_request[arm_index])
-                if(response.error_code.val == response.error_code.SUCCESS):
-                    poses[arm_index] = response.pose_stamped
-            except rospy.ServiceException:
-                rospy.logerr('Exception while getting the FK position.')
-        return poses
 
     def _reset_objects(self):
         '''Function that removes all objects'''
@@ -318,7 +233,6 @@ class World:
     def receieve_object_info(self, object_list):
         '''Callback function to receive object info'''
         self._lock.acquire()
-        self.joint_poses = self._get_joint_poses()
         rospy.loginfo('Received recognized object list.')
         if (len(object_list.graspable_objects) > 0):
             for i in range(len(object_list.graspable_objects)):
@@ -471,21 +385,6 @@ class World:
                     rospy.loginfo('Previously detected object at the same' +
                                   'location, will not add this object.')
                     return False
-            arm_dist_threshold = 0.03
-            for arm_index in [0, 1]:
-                for joint_idx in range(1, len(self.joint_poses[arm_index])):
-                    joint_position = self.joint_poses[arm_index][joint_idx-1].pose.position
-                    next_joint_position = self.joint_poses[arm_index][joint_idx].pose.position
-                    joint_joint_vector = array([next_joint_position.x - joint_position.x,
-                                                next_joint_position.y - joint_position.y,
-                                                next_joint_position.z - joint_position.z])
-                    object_joint_vector = array([pose.position.x - joint_position.x,
-                                                pose.position.y - joint_position.y,
-                                                pose.position.z - joint_position.z])
-                    distance_to_joint_line = norm(cross(joint_joint_vector, object_joint_vector))/norm(joint_joint_vector)
-                    if (distance_to_joint_line < arm_dist_threshold):
-                        rospy.loginfo('Detected arm at the same location, will not add this object.')
-                        return False
             n_objects = len(World.objects)
             World.objects.append(WorldObject(pose, n_objects,
                                             dimensions, is_recognized))

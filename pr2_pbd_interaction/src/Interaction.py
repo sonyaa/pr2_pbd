@@ -543,6 +543,7 @@ class Interaction:
         arms_status = self.arms.status
         # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
         self.arms.status = ExecutionStatus.EXECUTING
+        rospy.loginfo("Moving arms out of the way to record object poses.")
         # Move to predefined pose with arms out of the way.
         Arms.arms[0].move_to_joints([-1.305, -0.03, -1.55, -1.32, 19.47, -0.17, -5.03], 1)
         Arms.arms[1].move_to_joints([1.305, 0.03, 1.55, -1.32, -19.47, 0.17, 5.03], 1)
@@ -557,6 +558,7 @@ class Interaction:
             response = [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
         self.arms.status = arms_status
         # Return to remembered pose.
+        rospy.loginfo("Moving arms back after recording object poses.")
         self.arms.move_to_joints(armTarget.rArm, armTarget.lArm)
         return response
 
