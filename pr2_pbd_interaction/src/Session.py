@@ -295,7 +295,7 @@ class Session:
     def is_number_of_frames_correct(self):
         if self.n_actions() == 0:
             return True
-        return True #self.actions[self.current_action_index].n_frames() == self.actions[0].n_frames()
+        return self.actions[self.current_action_index].n_frames() == self.actions[1].n_frames()
 
     def get_generated_action(self, object_list):
         generated_action = ProgrammedAction(-1, None)
