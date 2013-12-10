@@ -68,7 +68,8 @@ class Interaction:
                                             self.record_object_pose, None),
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording, None),
-            Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None)
+            Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None),
+            Command.EXECUTE_GENERATED_ACTION: Response(self.execute_generated_action, None)
             }
 
         rospy.loginfo('Interaction initialized.')
@@ -565,6 +566,34 @@ class Interaction:
     def save_experiment_state(self):
         '''Saves session state'''
         self.session.save_current_action()
+
+
+    def execute_generated_action(self, dummy=None):
+        '''Samples a new action out of the pose distributions'''
+        if (self.session.n_actions() > 0):
+            if (self.session.n_frames() > 1):
+                if (self.session.is_number_of_frames_correct()):
+                    self.session.save_current_action()
+                    action = self.session.get_generated_action(self.world.get_frame_list())
+
+                    if (action.is_object_required()):
+                        object_pose_result = self.record_object_pose()
+                        if object_pose_result[0] == RobotSpeech.START_STATE_RECORDED:
+                            self.arms.start_execution(action)
+                        else:
+                            return [RobotSpeech.OBJECT_NOT_DETECTED,
+                                    GazeGoal.SHAKE]
+                    else:
+                        self.arms.start_execution(action)
+
+                    return [RobotSpeech.START_EXECUTION, None]
+                else:
+                    return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
+            else:
+                return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
+                        str(self.session.current_action_index), GazeGoal.SHAKE]
+        else:
+            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     @staticmethod
     def empty_response(responses):

@@ -99,6 +99,7 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
+        self.commands[Command.EXECUTE_GENERATED_ACTION] = 'Execute generated action'
         
         self.currentAction = -1
         self.currentStep = -1
@@ -145,6 +146,7 @@ class PbDGUI(Plugin):
         stepsButtonGrid = QtGui.QHBoxLayout()
         stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
         stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_ACTION))
+        stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_GENERATED_ACTION))
         stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
         stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
         stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))

@@ -61,6 +61,7 @@ class RobotSpeech:
     STOPPED_RECORDING_MOTION = 'Stopped recording motion.'
     MOTION_NOT_RECORDING = 'Not currently recording motion.'
     STOPPING_EXECUTION = 'Execution stopped.'
+    ERROR_WRONG_NUMBER_OF_POSES = 'Action does not have the same number of poses as the first action'
 
     def __init__(self):
         self.speech_publisher = rospy.Publisher('robotsound', SoundRequest)

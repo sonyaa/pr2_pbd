@@ -1,10 +1,11 @@
 '''Everything related to an experiment session'''
+from ActionStepDistribution import ActionStepDistribution
 
 from ProgrammedAction import ProgrammedAction
 import rospy
 import os
 import yaml
-from pr2_pbd_interaction.msg import ExperimentState
+from pr2_pbd_interaction.msg import ExperimentState, ActionStep, GripperAction, ArmTarget
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 
@@ -290,3 +291,19 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
             return 0
+
+    def is_number_of_frames_correct(self):
+        if self.n_actions() == 0:
+            return True
+        return True #self.actions[self.current_action_index].n_frames() == self.actions[0].n_frames()
+
+    def get_generated_action(self, object_list):
+        generated_action = ProgrammedAction(-1, None)
+        n_frames = self.n_frames()
+        for i in range(n_frames):
+            step_distribution = ActionStepDistribution()
+            for action in self.actions.values():
+                step_distribution.add_action_step(action.get_step(i))
+            new_step = step_distribution.get_sampled_action_step()
+            generated_action.add_action_step(new_step, object_list)
+        return generated_action
