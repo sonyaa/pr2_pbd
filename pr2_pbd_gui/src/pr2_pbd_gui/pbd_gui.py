@@ -143,13 +143,14 @@ class PbDGUI(Plugin):
         stepsBoxLayout.addLayout(self.stepsGrid)
         self.stepsBox.setLayout(stepsBoxLayout)
 
-        stepsButtonGrid = QtGui.QHBoxLayout()
-        stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
-        stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_ACTION))
-        stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_GENERATED_ACTION))
-        stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
-        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
-        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
+        self.stepsButtonGrid = QtGui.QHBoxLayout()
+        self.stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
+        self.stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_ACTION))
+        self.stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_GENERATED_ACTION))
+        self.stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
+        self.stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
+        self.stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
+        self._step_buttons_set_enabled(False)
 
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
@@ -189,7 +190,7 @@ class PbDGUI(Plugin):
         allWidgetsBox.addLayout(actionButtonGrid)
         
         allWidgetsBox.addWidget(self.stepsBox)
-        allWidgetsBox.addLayout(stepsButtonGrid)
+        allWidgetsBox.addLayout(self.stepsButtonGrid)
         
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         allWidgetsBox.addLayout(misc_grid)
@@ -224,7 +225,11 @@ class PbDGUI(Plugin):
 
         response = exp_state_srv()
         self.update_state(response.state)
-        
+
+    def _step_buttons_set_enabled(self, enable=True):
+        for i in range(self.stepsButtonGrid.count()):
+            self.stepsButtonGrid.itemAt(i).widget().setEnabled(enable)
+
     def _create_table_view(self, model, row_click_cb):
         proxy = QtGui.QSortFilterProxyModel(self)
         proxy.setSourceModel(model)
@@ -336,6 +341,8 @@ class PbDGUI(Plugin):
         return len(self.actionIcons.keys())
 
     def new_action(self):
+        if self.n_actions() == 0:
+            self._step_buttons_set_enabled(True)
         nColumns = 6
         actionIndex = self.n_actions()
         for key in self.actionIcons.keys():
