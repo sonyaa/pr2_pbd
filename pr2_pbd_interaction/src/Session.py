@@ -212,6 +212,7 @@ class Session:
 
     def add_step_to_action(self, step, object_list):
         '''Add a new step to the current action'''
+        self.action_distribution.add_action_step(step)
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].add_action_step(step,
                                                                 object_list)
