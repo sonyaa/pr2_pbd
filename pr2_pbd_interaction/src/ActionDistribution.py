@@ -1,4 +1,4 @@
-'''Class that holds distribution information for all actions'''
+"""Class that holds distribution information for all actions"""
 from ActionStepDistribution import ActionStepDistribution
 from ProgrammedAction import ProgrammedAction
 
@@ -21,6 +21,9 @@ class ActionDistribution:
         # If we're recording the first action, create the distribution. Otherwise, just add to it.
         if self._n_actions == 1:
             self._action_step_distributions.append(ActionStepDistribution(self._cur_n_frames))
+        elif self._cur_n_frames == self._n_frames:
+            # If this action has more frames than the first action, ignore the extra frames.
+            return
         self._action_step_distributions[self._cur_n_frames].add_action_step(action_step)
         self._cur_n_frames += 1
 

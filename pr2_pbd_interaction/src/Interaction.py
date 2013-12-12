@@ -582,18 +582,16 @@ class Interaction:
             if (self.session.n_frames() > 1):
                 if (self.session.is_number_of_frames_consistent()):
                     self.session.save_current_action()
-                    action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
-
-                    if (action.is_object_required()):
+                    self.session.get_current_action().reset_viz()
+                    # Will require an object if the first action required an object.
+                    if (self.session.actions[1].is_object_required()):
                         object_pose_result = self.record_object_pose()
-                        if object_pose_result[0] == RobotSpeech.START_STATE_RECORDED:
-                            self.arms.start_execution(action)
-                        else:
+                        if object_pose_result[0] != RobotSpeech.START_STATE_RECORDED:
                             return [RobotSpeech.OBJECT_NOT_DETECTED,
                                     GazeGoal.SHAKE]
-                    else:
-                        self.arms.start_execution(action)
-
+                    # Generate an action only after the objects were detected or if the object is not required.
+                    action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
+                    self.arms.start_execution(action)
                     return [RobotSpeech.START_EXECUTION, None]
                 else:
                     return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]

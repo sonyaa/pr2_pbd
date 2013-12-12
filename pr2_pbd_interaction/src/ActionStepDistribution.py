@@ -59,7 +59,6 @@ class ActionStepDistribution:
             self._ref_frames[1] = step.armTarget.lArm.refFrame
             self._ref_frame_objects[0] = step.armTarget.rArm.refFrameObject
             self._ref_frame_objects[1] = step.armTarget.lArm.refFrameObject
-            rospy.loginfo(step)
             self._gripper_states[0] = np.array(step.gripperAction.rGripper)
             self._gripper_states[1] = np.array(step.gripperAction.rGripper)
         self._ee_poses[0].append(self._get_array_from_pose(self._get_absolute_pose(step, 0)))
@@ -93,11 +92,9 @@ class ActionStepDistribution:
                                  self._get_pose_from_array(self._sample(self._ee_poses[arm_index])),
                                  self._sample(self._joint_poses[arm_index]),
                                  Object())
-            rospy.loginfo(arm_state)
             relative_arm_state = World.convert_ref_frame(arm_state,
                                                          self._ref_frames[arm_index],
                                                          self._ref_frame_objects[arm_index])
-            rospy.loginfo(relative_arm_state)
             arm_states.append(relative_arm_state)
         step.armTarget = ArmTarget(arm_states[0], arm_states[1], 0.2, 0.2)
         step.gripperAction = GripperAction(self._gripper_states[0], self._gripper_states[1])
