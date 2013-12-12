@@ -131,7 +131,7 @@ class Interaction:
 
     def save_action(self, dummy=None):
         '''Goes out of edit mode'''
-        if not self.session.is_number_of_frames_correct():
+        if not self.session.is_number_of_frames_consistent():
             return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
         self.session.save_current_action()
         Interaction._is_programming = False
@@ -140,7 +140,7 @@ class Interaction:
 
     def create_action(self, dummy=None):
         '''Creates a new empty action'''
-        if not self.session.is_number_of_frames_correct():
+        if not self.session.is_number_of_frames_consistent():
             return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
         self.world.clear_all_objects()
         self.session.new_action()
@@ -151,7 +151,7 @@ class Interaction:
     def next_action(self, dummy=None):
         '''Switches to next action'''
         if (self.session.n_actions() > 0):
-            if not self.session.is_number_of_frames_correct():
+            if not self.session.is_number_of_frames_consistent():
                 return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
             if self.session.next_action(self.world.get_frame_list()):
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
@@ -165,7 +165,7 @@ class Interaction:
     def previous_action(self, dummy=None):
         '''Switches to previous action'''
         if (self.session.n_actions() > 0):
-            if not self.session.is_number_of_frames_correct():
+            if not self.session.is_number_of_frames_consistent():
                 return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
             if self.session.previous_action(self.world.get_frame_list()):
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
@@ -580,9 +580,9 @@ class Interaction:
         '''Samples a new action out of the pose distributions'''
         if (self.session.n_actions() > 0):
             if (self.session.n_frames() > 1):
-                if (self.session.is_number_of_frames_correct()):
+                if (self.session.is_number_of_frames_consistent()):
                     self.session.save_current_action()
-                    action = self.session.get_generated_action(self.world.get_frame_list())
+                    action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
 
                     if (action.is_object_required()):
                         object_pose_result = self.record_object_pose()

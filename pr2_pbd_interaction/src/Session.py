@@ -1,4 +1,5 @@
 '''Everything related to an experiment session'''
+from ActionDistribution import ActionDistribution
 from ActionStepDistribution import ActionStepDistribution
 
 from ProgrammedAction import ProgrammedAction
@@ -32,6 +33,8 @@ class Session:
 
         self.actions = dict()
         self.current_action_index = 0
+
+        self.action_distribution = ActionDistribution()
 
         if (self._is_reload):
             self._load_session_state(object_list)
@@ -162,7 +165,9 @@ class Session:
 
     def new_action(self):
         '''Creates new action'''
+        self.action_distribution.new_action()
         if (self.n_actions() > 0):
+            self.save_current_action()
             self.get_current_action().reset_viz()
         self.current_action_index = self.n_actions() + 1
         self.actions.update({self.current_action_index:
@@ -207,6 +212,7 @@ class Session:
 
     def add_step_to_action(self, step, object_list):
         '''Add a new step to the current action'''
+        self.action_distribution.add_action_step(step)
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].add_action_step(step,
                                                                 object_list)
@@ -292,18 +298,7 @@ class Session:
             rospy.logwarn('No skills created yet.')
             return 0
 
-    def is_number_of_frames_correct(self):
+    def is_number_of_frames_consistent(self):
         if self.n_actions() == 0:
             return True
         return self.actions[self.current_action_index].n_frames() == self.actions[1].n_frames()
-
-    def get_generated_action(self, object_list):
-        generated_action = ProgrammedAction(-1, None)
-        n_frames = self.n_frames()
-        for i in range(n_frames):
-            step_distribution = ActionStepDistribution()
-            for action in self.actions.values():
-                step_distribution.add_action_step(action.get_step(i))
-            new_step = step_distribution.get_sampled_action_step()
-            generated_action.add_action_step(new_step, object_list)
-        return generated_action
