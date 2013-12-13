@@ -585,7 +585,25 @@ class Interaction:
                     if object_pose_result[0] != RobotSpeech.START_STATE_RECORDED:
                         return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
                 # Generate an action only after the objects were detected or if the object is not required.
+                rospy.loginfo("Generating an action from the pose distributions.")
                 action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
+                # Check is all poses are reachable. If not, try to execute one of the existing (original) actions.
+                if not Arms.is_action_reachable(action):
+                    rospy.loginfo("Generated action has unreachable poses. Will try to execute original demonstration.")
+                    for (index, action) in self.session.actions.items():
+                        if Arms.is_action_reachable(action):
+                            rospy.loginfo("Will execute action " + str(index))
+                            self.session.switch_to_action(index, self.world.get_frame_list())
+                            break
+                    # If no original action can be executed, try to generate an action for n_tries.
+                    if not Arms.is_action_reachable(action):
+                        n_tries = 10
+                        rospy.loginfo("No original demonstration was reachable, "
+                                      "will try to generate " + str(n_tries) + " more actions.")
+                        for i in range(n_tries):
+                            action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
+                            if Arms.is_action_reachable(action):
+                                break
                 self.arms.start_execution(action)
                 return [RobotSpeech.START_EXECUTION, None]
             else:

@@ -647,6 +647,7 @@ class World:
         Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
                Response.gaze_client.get_state() == GoalStatus.ACTIVE):
+            rospy.loginfo(Response.gaze_client.get_state())
             time.sleep(0.1)
 
         if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):

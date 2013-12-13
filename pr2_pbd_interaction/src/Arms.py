@@ -111,6 +111,28 @@ class Arms:
         return True
 
     @staticmethod
+    def is_action_reachable(action):
+        '''Checks if all steps in an action are reachable.'''
+        for i in range(action.n_frames()):
+            if (action.seq.seq[i].type == ActionStep.ARM_TARGET):
+                r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
+                                        action.seq.seq[i].armTarget.rArm)
+                l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
+                                        action.seq.seq[i].armTarget.lArm)
+                if (not has_solution_r) or (not has_solution_l):
+                    return False
+            if (action.seq.seq[i].type == ActionStep.ARM_TRAJECTORY):
+                n_frames = len(action.seq.seq[i].armTrajectory.timing)
+                for j in range(n_frames):
+                    r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
+                            action.seq.seq[i].armTrajectory.r_arm[j])
+                    l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
+                            action.seq.seq[i].armTrajectory.l_arm[j])
+                    if (not has_solution_r) or (not has_solution_l):
+                        return False
+        return True
+
+    @staticmethod
     def solve_ik_for_arm(arm_index, arm_state):
         '''Finds an  IK solution for a particular arm pose'''
         # We need to find IK only if the frame is relative to an object

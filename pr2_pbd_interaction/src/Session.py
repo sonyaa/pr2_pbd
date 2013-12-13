@@ -300,6 +300,7 @@ class Session:
         self.action_distribution = ActionDistribution()
         for i in range(1, self.n_actions()+1):
             self.action_distribution.add_action(self.actions[i])
+        self.action_distribution.update_viz()
 
 
     def is_number_of_frames_consistent(self):

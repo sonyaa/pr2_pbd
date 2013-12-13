@@ -36,6 +36,11 @@ class ActionDistribution:
             self._action_step_distributions[i].add_action_step(action.get_step(i))
         self._n_actions += 1
 
+    def update_viz(self):
+        for i in range(self._n_frames):
+            self._action_step_distributions[i].update_viz()
+
+
     def get_generated_action(self, object_list):
         generated_action = ProgrammedAction(-1, None)
         for i in range(self._n_frames):
