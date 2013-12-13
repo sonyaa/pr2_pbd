@@ -22,5 +22,6 @@ string SAVE_POSE = save-pose
 string START_RECORDING_MOTION = start-recording-motion
 string STOP_RECORDING_MOTION = stop-recording-motion
 string EXECUTE_GENERATED_ACTION = execute-generated-action
+string CALCULATE_POSE_DISTRIBUTION = calculate-pose-distribution
 string UNRECOGNIZED = unrecognized
 string command

@@ -69,7 +69,8 @@ class Interaction:
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording, None),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None),
-            Command.EXECUTE_GENERATED_ACTION: Response(self.execute_generated_action, None)
+            Command.EXECUTE_GENERATED_ACTION: Response(self.execute_generated_action, None),
+            Command.CALCULATE_POSE_DISTRIBUTION: Response(self.calculate_pose_distribution, None)
             }
 
         rospy.loginfo('Interaction initialized.')
@@ -131,8 +132,6 @@ class Interaction:
 
     def save_action(self, dummy=None):
         '''Goes out of edit mode'''
-        if not self.session.is_number_of_frames_consistent():
-            return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
         self.session.save_current_action()
         Interaction._is_programming = False
         return [RobotSpeech.ACTION_SAVED + ' ' +
@@ -140,8 +139,6 @@ class Interaction:
 
     def create_action(self, dummy=None):
         '''Creates a new empty action'''
-        if not self.session.is_number_of_frames_consistent():
-            return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
         self.world.clear_all_objects()
         self.session.new_action()
         Interaction._is_programming = True
@@ -151,8 +148,6 @@ class Interaction:
     def next_action(self, dummy=None):
         '''Switches to next action'''
         if (self.session.n_actions() > 0):
-            if not self.session.is_number_of_frames_consistent():
-                return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
             if self.session.next_action(self.world.get_frame_list()):
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         str(self.session.current_action_index), GazeGoal.NOD]
@@ -165,8 +160,6 @@ class Interaction:
     def previous_action(self, dummy=None):
         '''Switches to previous action'''
         if (self.session.n_actions() > 0):
-            if not self.session.is_number_of_frames_consistent():
-                return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
             if self.session.previous_action(self.world.get_frame_list()):
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         str(self.session.current_action_index), GazeGoal.NOD]
@@ -580,24 +573,34 @@ class Interaction:
         '''Samples a new action out of the pose distributions'''
         if (self.session.n_actions() > 0):
             if (self.session.n_frames() > 1):
-                if (self.session.is_number_of_frames_consistent()):
-                    self.session.save_current_action()
-                    self.session.get_current_action().reset_viz()
-                    # Will require an object if the first action required an object.
-                    if (self.session.actions[1].is_object_required()):
-                        object_pose_result = self.record_object_pose()
-                        if object_pose_result[0] != RobotSpeech.START_STATE_RECORDED:
-                            return [RobotSpeech.OBJECT_NOT_DETECTED,
-                                    GazeGoal.SHAKE]
-                    # Generate an action only after the objects were detected or if the object is not required.
-                    action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
-                    self.arms.start_execution(action)
-                    return [RobotSpeech.START_EXECUTION, None]
-                else:
-                    return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
+                # Update pose distibutions.
+                pose_distribution_result = self.calculate_pose_distribution()
+                if pose_distribution_result[0] != RobotSpeech.POSE_DISTRIBUTIONS_CALCULATED:
+                    return pose_distribution_result
+                self.session.save_current_action()
+                self.session.get_current_action().reset_viz()
+                # Will require an object if the first action required an object.
+                if (self.session.actions[1].is_object_required()):
+                    object_pose_result = self.record_object_pose()
+                    if object_pose_result[0] != RobotSpeech.START_STATE_RECORDED:
+                        return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+                # Generate an action only after the objects were detected or if the object is not required.
+                action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
+                self.arms.start_execution(action)
+                return [RobotSpeech.START_EXECUTION, None]
             else:
                 return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
                         str(self.session.current_action_index), GazeGoal.SHAKE]
+        else:
+            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
+
+    def calculate_pose_distribution(self, dummy=None):
+        if self.session.n_actions() > 0:
+            if self.session.is_number_of_frames_consistent():
+                self.session.calculate_action_distribution()
+                return [RobotSpeech.POSE_DISTRIBUTIONS_CALCULATED, GazeGoal.NOD]
+            else:
+                return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 

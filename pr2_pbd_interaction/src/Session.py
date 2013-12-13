@@ -165,7 +165,6 @@ class Session:
 
     def new_action(self):
         '''Creates new action'''
-        self.action_distribution.new_action()
         if (self.n_actions() > 0):
             self.save_current_action()
             self.get_current_action().reset_viz()
@@ -212,7 +211,6 @@ class Session:
 
     def add_step_to_action(self, step, object_list):
         '''Add a new step to the current action'''
-        self.action_distribution.add_action_step(step)
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].add_action_step(step,
                                                                 object_list)
@@ -298,7 +296,17 @@ class Session:
             rospy.logwarn('No skills created yet.')
             return 0
 
+    def calculate_action_distribution(self):
+        self.action_distribution = ActionDistribution()
+        for i in range(1, self.n_actions()+1):
+            self.action_distribution.add_action(self.actions[i])
+
+
     def is_number_of_frames_consistent(self):
         if self.n_actions() == 0:
             return True
-        return self.actions[self.current_action_index].n_frames() == self.actions[1].n_frames()
+        for action in self.actions.values():
+            if action.n_frames() != self.actions[1].n_frames():
+                return False
+        return True
+

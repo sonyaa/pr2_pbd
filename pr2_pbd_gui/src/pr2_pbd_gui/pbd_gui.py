@@ -100,6 +100,7 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
         self.commands[Command.EXECUTE_GENERATED_ACTION] = 'Execute generated action'
+        self.commands[Command.CALCULATE_POSE_DISTRIBUTION] = 'Calculate pose distributions'
         
         self.currentAction = -1
         self.currentStep = -1
@@ -146,11 +147,10 @@ class PbDGUI(Plugin):
         self.stepsButtonGrid = QtGui.QHBoxLayout()
         self.stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
         self.stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_ACTION))
-        self.stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_GENERATED_ACTION))
         self.stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
         self.stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
         self.stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
-        self._step_buttons_set_enabled(False)
+        self._set_enabled_widgets_in_layout(self.stepsButtonGrid, False)
 
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
@@ -171,10 +171,17 @@ class PbDGUI(Plugin):
         misc_grid3.addWidget(self.create_button(Command.CLOSE_LEFT_HAND))
         misc_grid3.addStretch(1)
         
-        misc_grid4 = QtGui.QHBoxLayout()
-        misc_grid4.addWidget(self.create_button(Command.PREV_ACTION))
-        misc_grid4.addWidget(self.create_button(Command.NEXT_ACTION))
-        misc_grid4.addStretch(1)
+        self.prev_next_buttons = QtGui.QHBoxLayout()
+        self.prev_next_buttons.addWidget(self.create_button(Command.PREV_ACTION))
+        self.prev_next_buttons.addWidget(self.create_button(Command.NEXT_ACTION))
+        self.prev_next_buttons.addStretch(1)
+        self._set_enabled_widgets_in_layout(self.prev_next_buttons, False)
+
+        self.action_distribution_buttons = QtGui.QHBoxLayout()
+        self.action_distribution_buttons.addWidget(self.create_button(Command.CALCULATE_POSE_DISTRIBUTION))
+        self.action_distribution_buttons.addWidget(self.create_button(Command.EXECUTE_GENERATED_ACTION))
+        self.prev_next_buttons.addStretch(1)
+        self._set_enabled_widgets_in_layout(self.action_distribution_buttons, False)
 
         speechGroupBox = QGroupBox('Robot Speech', self._widget)
         speechGroupBox.setObjectName('RobotSpeechGroup')
@@ -198,7 +205,9 @@ class PbDGUI(Plugin):
         allWidgetsBox.addLayout(misc_grid2)
         allWidgetsBox.addLayout(misc_grid3)
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
-        allWidgetsBox.addLayout(misc_grid4)
+        allWidgetsBox.addLayout(self.prev_next_buttons)
+        allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
+        allWidgetsBox.addLayout(self.action_distribution_buttons)
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         
         allWidgetsBox.addWidget(speechGroupBox)
@@ -226,9 +235,12 @@ class PbDGUI(Plugin):
         response = exp_state_srv()
         self.update_state(response.state)
 
-    def _step_buttons_set_enabled(self, enable=True):
-        for i in range(self.stepsButtonGrid.count()):
-            self.stepsButtonGrid.itemAt(i).widget().setEnabled(enable)
+    @staticmethod
+    def _set_enabled_widgets_in_layout(layout, enable=True):
+        for i in range(layout.count()):
+            widget = layout.itemAt(i).widget()
+            if widget is not None:
+                widget.setEnabled(enable)
 
     def _create_table_view(self, model, row_click_cb):
         proxy = QtGui.QSortFilterProxyModel(self)
@@ -342,7 +354,10 @@ class PbDGUI(Plugin):
 
     def new_action(self):
         if self.n_actions() == 0:
-            self._step_buttons_set_enabled(True)
+            # If we're creating the first action, enable all action-related buttons.
+            self._set_enabled_widgets_in_layout(self.stepsButtonGrid, True)
+            self._set_enabled_widgets_in_layout(self.prev_next_buttons, True)
+            self._set_enabled_widgets_in_layout(self.action_distribution_buttons, True)
         nColumns = 6
         actionIndex = self.n_actions()
         for key in self.actionIcons.keys():
