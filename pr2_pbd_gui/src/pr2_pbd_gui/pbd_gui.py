@@ -77,8 +77,6 @@ class PbDGUI(Plugin):
         self.setObjectName('PbDGUI')
         self._widget = QWidget()
 
-        self._marker_publisher = rospy.Publisher('visualization_marker', Marker)
-
         self.speech_cmd_publisher = rospy.Publisher('recognized_command', Command)
         self.gui_cmd_publisher = rospy.Publisher('gui_command', GuiCommand)
         
@@ -189,7 +187,6 @@ class PbDGUI(Plugin):
         self.action_distribution_buttons = QtGui.QHBoxLayout()
         self.action_distribution_buttons.addWidget(self.create_button(Command.CALCULATE_POSE_DISTRIBUTION))
         self.action_distribution_buttons.addWidget(self.create_button(Command.EXECUTE_GENERATED_ACTION))
-        #self.action_distribution_buttons.addWidget(self.create_draw_button())
         self.prev_next_buttons.addStretch(1)
         self._set_enabled_widgets_in_layout(self.action_distribution_buttons, False)
 
@@ -244,76 +241,6 @@ class PbDGUI(Plugin):
 
         response = exp_state_srv()
         self.update_state(response.state)
-
-    def create_draw_button(self):
-        btn = QtGui.QPushButton("Draw", self._widget)
-        btn.clicked.connect(self.draw_stuff)
-        return btn
-
-    def draw_stuff(self):
-        frame_id = 'base_link'
-        #data_points = [[0, 0, 0.5], [0, 0.5, 0], [0.5, 0, 0], [0.5, 0.5, 0]]
-        data_points = [[0,0,0], [0,0.12,0], [0,0.06,0]]
-        self.draw_data_points(data_points, frame_id)
-        marker = self.get_ee_pose_variance_marker(data_points, frame_id)
-        self._marker_publisher.publish(marker)
-
-    def draw_data_points(self, data_points, frame_id):
-        id = 10000
-        for point in data_points:
-            marker = Marker(type=Marker.SPHERE, id=id,
-                            scale=Vector3(0.02, 0.02, 0.02),
-                            header=Header(frame_id=frame_id),
-                            color=ColorRGBA(1,1,1,0.5),
-                            pose=Pose(Vector3(point[0], point[1], point[2]), Quaternion(0,0,0,1)))
-            self._marker_publisher.publish(marker)
-            id += 1
-
-    def get_ee_pose_variance_marker(self, data_points, frame_id):
-        mean = np.mean(data_points, axis=0)
-        cov = np.cov(data_points, rowvar=0)
-        marker = Marker()
-        marker.header.frame_id = frame_id
-        marker.header.stamp = rospy.Time.now()
-        marker.ns = "ee_pose_variance"
-        marker.id = 12345
-        marker.type = visualization_msgs.msg.Marker.SPHERE
-        marker.action = visualization_msgs.msg.Marker.ADD
-        marker.pose.position.x = mean[0]
-        marker.pose.position.y = mean[1]
-        marker.pose.position.z = mean[2]
-        eig_values, eig_vectors = np.linalg.eig(cov)
-        rospy.loginfo(eig_values)
-        eigx_n = PyKDL.Vector(eig_vectors[0,0], eig_vectors[0,1], eig_vectors[0,2])
-        eigy_n = -PyKDL.Vector(eig_vectors[1,0], eig_vectors[1,1], eig_vectors[1,2])
-        eigz_n = PyKDL.Vector(eig_vectors[2,0], eig_vectors[2,1], eig_vectors[2,2])
-        eigx_n.Normalize()
-        eigy_n.Normalize()
-        eigz_n.Normalize()
-        rot = PyKDL.Rotation(eigx_n, eigy_n, eigz_n)
-        quat = rot.GetQuaternion()
-        rospy.loginfo(quat)
-        #painting the Gaussian Ellipsoid Marker
-        marker.pose.orientation.x = quat[0]
-        marker.pose.orientation.y = quat[1]
-        marker.pose.orientation.z = quat[2]
-        marker.pose.orientation.w = quat[3]
-        for i in [0, 1, 2]:
-            # If variance is too tiny, won't be able to display it.
-            if eig_values[i] < 1e-6:
-                eig_values[i] = 1e-6
-            # Eigvalues give variance, we want standard deviation.
-            eig_values[i] = sqrt(eig_values[i])
-        # The ellipse covers 2 s.d. in both directions for each axis.
-        marker.scale.x = eig_values[0]*2*2
-        marker.scale.y = eig_values[1]*2*2
-        marker.scale.z = eig_values[2]*2*2
-        rospy.loginfo(marker.scale)
-        marker.color.a = 0.2
-        marker.color.r = 0.0
-        marker.color.g = 1.0
-        marker.color.b = 0.0
-        return marker
 
     @staticmethod
     def _set_enabled_widgets_in_layout(layout, enable=True):
