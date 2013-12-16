@@ -166,7 +166,6 @@ class Session:
     def new_action(self):
         '''Creates new action'''
         if (self.n_actions() > 0):
-            self.save_current_action()
             self.get_current_action().reset_viz()
         self.current_action_index = self.n_actions() + 1
         self.actions.update({self.current_action_index:

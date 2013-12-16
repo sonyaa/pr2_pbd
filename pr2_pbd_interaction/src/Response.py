@@ -107,6 +107,7 @@ class Response:
             Response.play_sound(RobotSound.CREATED_ACTION)
         elif (speech_resp == RobotSpeech.START_STATE_RECORDED or
               speech_resp == RobotSpeech.STOPPED_RECORDING_MOTION or
+              speech_resp == RobotSpeech.POSE_DISTRIBUTIONS_CALCULATED or
               RobotSpeech.SWITCH_SKILL in speech_resp):
             Response.play_sound(RobotSound.SUCCESS)
         elif (speech_resp == RobotSpeech.OBJECT_NOT_DETECTED or
@@ -126,7 +127,8 @@ class Response:
               speech_resp == RobotSpeech.RIGHT_ARM_ALREADY_HOLDING or
               speech_resp == RobotSpeech.RIGHT_ARM_ALREADY_RELEASED or
               speech_resp == RobotSpeech.LEFT_ARM_ALREADY_HOLDING or
-              speech_resp == RobotSpeech.LEFT_ARM_ALREADY_RELEASED):
+              speech_resp == RobotSpeech.LEFT_ARM_ALREADY_RELEASED or
+              speech_resp == RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES):
             Response.play_sound(RobotSound.ERROR)
         else:
             Response.play_sound(RobotSound.OTHER)

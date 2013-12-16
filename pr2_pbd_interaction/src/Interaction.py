@@ -540,17 +540,17 @@ class Interaction:
     def record_object_pose(self, dummy=None):
         '''Makes the robot look for a table and objects'''
         # Remember current pose.
-        states = self._get_arm_states()
-        armTarget = ArmTarget(states[0], states[1], 0.2, 0.2)
-        arms_status = self.arms.status
-        # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
-        self.arms.status = ExecutionStatus.EXECUTING
-        rospy.loginfo("Moving arms out of the way to record object poses.")
-        # Move to predefined pose with arms out of the way.
-        Arms.arms[0].move_to_joints([-1.305, -0.03, -1.55, -1.32, 19.47, -0.17, -5.03], 1)
-        Arms.arms[1].move_to_joints([1.305, 0.03, 1.55, -1.32, -19.47, 0.17, 5.03], 1)
-        time.sleep(2)
-        response = None
+        #states = self._get_arm_states()
+        #armTarget = ArmTarget(states[0], states[1], 0.2, 0.2)
+        #arms_status = self.arms.status
+        ## Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
+        #self.arms.status = ExecutionStatus.EXECUTING
+        #rospy.loginfo("Moving arms out of the way to record object poses.")
+        ## Move to predefined pose with arms out of the way.
+        #Arms.arms[0].move_to_joints([-1.305, -0.03, -1.55, -1.32, 19.47, -0.17, -5.03], 1)
+        #Arms.arms[1].move_to_joints([1.305, 0.03, 1.55, -1.32, -19.47, 0.17, 5.03], 1)
+        #time.sleep(2)
+        #response = None
         if (self.world.update_object_pose()):
             if (self.session.n_actions() > 0):
                 self.session.get_current_action().update_objects(
@@ -558,10 +558,10 @@ class Interaction:
             response = [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
         else:
             response = [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-        self.arms.status = arms_status
-        # Return to remembered pose.
-        rospy.loginfo("Moving arms back after recording object poses.")
-        self.arms.move_to_joints(armTarget.rArm, armTarget.lArm)
+        #self.arms.status = arms_status
+        ## Return to remembered pose.
+        #rospy.loginfo("Moving arms back after recording object poses.")
+        #self.arms.move_to_joints(armTarget.rArm, armTarget.lArm)
         return response
 
     def save_experiment_state(self):

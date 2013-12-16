@@ -647,8 +647,8 @@ class World:
         Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
                Response.gaze_client.get_state() == GoalStatus.ACTIVE):
-            rospy.loginfo(Response.gaze_client.get_state())
             time.sleep(0.1)
+        rospy.loginfo(Response.gaze_client.get_state())
 
         if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
             rospy.logerr('Could not look down to take table snapshot')
@@ -660,6 +660,7 @@ class World:
         while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
                self._object_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.1)
+        rospy.loginfo(Response.gaze_client.get_state())
         rospy.loginfo('Object recognition has been reset.')
         rospy.loginfo('STATUS: ' +
                       self._object_action_client.get_goal_status_text())

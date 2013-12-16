@@ -321,6 +321,7 @@ class PbDGUI(Plugin):
                 else:
                     self.l_view.selectRow(index)
 
+
     def save_pose(self, actionIndex=None):
         nColumns = 9
         if actionIndex is None:
@@ -380,6 +381,12 @@ class PbDGUI(Plugin):
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):
+        if actionIndex == -1:
+            self._set_enabled_widgets_in_layout(self.stepsButtonGrid, False)
+            self._set_enabled_widgets_in_layout(self.prev_next_buttons, False)
+        else:
+            self._set_enabled_widgets_in_layout(self.stepsButtonGrid, True)
+            self._set_enabled_widgets_in_layout(self.prev_next_buttons, True)
         for i in range(len(self.actionIcons.keys())):
             key = self.actionIcons.keys()[i]
             if key == actionIndex:
@@ -401,6 +408,8 @@ class PbDGUI(Plugin):
                 command = Command()
                 command.command = key
                 self.speech_cmd_publisher.publish(command)
+                if key == Command.EXECUTE_GENERATED_ACTION:
+                    self.action_pressed(-1, False)
         
     def robotSoundReceived(self, soundReq):
         if (soundReq.command == SoundRequest.SAY):
