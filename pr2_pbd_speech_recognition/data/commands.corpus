@@ -1,4 +1,3 @@
-test-microphone
 relax-right-arm
 relax-left-arm
 open-right-hand
@@ -21,3 +20,5 @@ edit-action
 save-pose
 start-recording-motion
 stop-recording-motion
+execute-generated-action
+calculate-pose-distribution

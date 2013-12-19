@@ -37,6 +37,7 @@ class ActionStepDistribution:
         self._gripper_states = [None, None]
         self._id = index
         self._marker_publisher = rospy.Publisher('visualization_marker', Marker)
+        self._negative_ee_poses = [[], []]
 
     @staticmethod
     def _get_absolute_pose(step, arm_index):
@@ -50,6 +51,9 @@ class ActionStepDistribution:
                 return step.armTarget.lArm.ee_pose
             else:
                 return World.get_absolute_pose(step.armTarget.lArm)
+
+    def add_negative_poses(self, pose, arm_index):
+        self._negative_ee_poses[arm_index].append(self._get_array_from_pose(pose))
 
     def add_action_step(self, step):
         if self._n_actions == 0:
@@ -81,13 +85,23 @@ class ActionStepDistribution:
         return np.array([pose.position.x, pose.position.y, pose.position.z,
                         pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w])
 
+    def _is_ee_pose_closer_to_negative(self, pose, arm_index):
+        mean = np.mean(self._ee_poses[arm_index])
+        for negative in self._negative_ee_poses[arm_index]:
+            if np.linalg.norm(pose - negative) < np.linalg.norm(pose - mean):
+                return True
+        return False
+
     def get_sampled_action_step(self):
         step = ActionStep()
         step.type = ActionStep.ARM_TARGET
         arm_states = []
         for arm_index in [0, 1]:
+            sampled_ee_pose = self._sample(self._ee_poses[arm_index])
+            while self._is_ee_pose_closer_to_negative(sampled_ee_pose, arm_index):
+                sampled_ee_pose = self._sample(self._ee_poses[arm_index])
             arm_state = ArmState(ArmState.ROBOT_BASE,
-                                 self._get_pose_from_array(self._sample(self._ee_poses[arm_index])),
+                                 self._get_pose_from_array(sampled_ee_pose),
                                  self._sample(self._joint_poses[arm_index]),
                                  Object())
             relative_arm_state = World.convert_ref_frame(arm_state,
@@ -97,6 +111,35 @@ class ActionStepDistribution:
         step.armTarget = ArmTarget(arm_states[0], arm_states[1], 0.2, 0.2)
         step.gripperAction = GripperAction(self._gripper_states[0], self._gripper_states[1])
         return step
+
+    def _get_label_query_point(self, data_points):
+        c_k = 1
+        n = len(data_points)
+        d = np.random.multivariate_normal([0]*n, np.identity(n))
+        d /= np.linalg.norm(d)
+        cov_matrix = np.cov(data_points, rowvar=0)
+        return d*sqrt(c_k*(3+1.0/self._n_actions)/(d.dot(np.linalg.inv(cov_matrix))).dot(np.transpose(d)))
+
+    def get_label_query_action_step(self):
+        step = ActionStep()
+        step.type = ActionStep.ARM_TARGET
+        arm_states = []
+        for arm_index in [0, 1]:
+            query_ee_pose = self._get_label_query_point(self._ee_poses[arm_index])
+            while self._is_ee_pose_closer_to_negative(query_ee_pose, arm_index):
+                query_ee_pose = self._get_label_query_point(self._ee_poses[arm_index])
+            arm_state = ArmState(ArmState.ROBOT_BASE,
+                                 self._get_pose_from_array(query_ee_pose),
+                                 self._get_label_query_point(self._joint_poses[arm_index]),
+                                 Object())
+            relative_arm_state = World.convert_ref_frame(arm_state,
+                                                         self._ref_frames[arm_index],
+                                                         self._ref_frame_objects[arm_index])
+            arm_states.append(relative_arm_state)
+        step.armTarget = ArmTarget(arm_states[0], arm_states[1], 0.2, 0.2)
+        step.gripperAction = GripperAction(self._gripper_states[0], self._gripper_states[1])
+        return step
+
 
     def update_viz(self):
         if self._n_actions > 1:
