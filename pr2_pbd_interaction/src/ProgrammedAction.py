@@ -1,6 +1,8 @@
 '''Classes related to programmed actions'''
 
 import roslib
+from World import World
+
 roslib.load_manifest('pr2_pbd_interaction')
 
 # Generic libraries
@@ -51,10 +53,10 @@ class ProgrammedAction:
             last_step = self.seq.seq[len(self.seq.seq) - 1]
             r_marker = ActionStepMarker(self.n_frames(), 0,
                         last_step, self.marker_click_cb)
-            r_marker.update_ref_frames(object_list)
+            r_marker.update_ref_frames(object_list, step.armTarget.rArm.refFrameObject)
             l_marker = ActionStepMarker(self.n_frames(), 1,
                         last_step, self.marker_click_cb)
-            l_marker.update_ref_frames(object_list)
+            l_marker.update_ref_frames(object_list, step.armTarget.lArm.refFrameObject)
             self.r_markers.append(r_marker)
             self.l_markers.append(l_marker)
             if (self.n_frames() > 1):
@@ -88,10 +90,23 @@ class ProgrammedAction:
         '''Updates the object list for all action steps'''
         self.lock.acquire()
         self._update_markers()
+        action_objects = self._get_action_objects()
+        action_object_unique = list(set([x for t in action_objects for x in t]))
+        map_of_objects_old_to_new = World.get_map_of_most_similar_obj(action_object_unique, object_list)
         for i in range(len(self.r_markers)):
-            self.r_markers[i].update_ref_frames(object_list)
+            r_new_object = None
+            if map_of_objects_old_to_new is not None:
+                r_old_object = action_objects[i][0]
+                if r_old_object is not None:
+                    r_new_object = map_of_objects_old_to_new[r_old_object]
+            self.r_markers[i].update_ref_frames(object_list, r_new_object)
         for i in range(len(self.l_markers)):
-            self.l_markers[i].update_ref_frames(object_list)
+            l_new_object = None
+            if map_of_objects_old_to_new is not None:
+                l_old_object = action_objects[i][1]
+                if l_old_object is not None:
+                    l_new_object = map_of_objects_old_to_new[l_old_object]
+            self.l_markers[i].update_ref_frames(object_list, l_new_object)
         self.lock.release()
 
     def _update_markers(self):
@@ -304,6 +319,9 @@ class ProgrammedAction:
     def initialize_viz(self, object_list):
         '''Initialize visualization'''
         self.lock.acquire()
+        action_objects = self._get_action_objects()
+        action_objects_unique = list(set([x for t in action_objects for x in t]))
+        map_of_objects_old_to_new = World.get_map_of_most_similar_obj(action_objects_unique, object_list)
         for i in range(len(self.seq.seq)):
             step = self.seq.seq[i]
             if (step.type == ActionStep.ARM_TARGET or
@@ -312,9 +330,17 @@ class ProgrammedAction:
                                             self.marker_click_cb)
                 l_marker = ActionStepMarker(i + 1, 1, step,
                                             self.marker_click_cb)
-
-                r_marker.update_ref_frames(object_list)
-                l_marker.update_ref_frames(object_list)
+                r_new_object = None
+                l_new_object = None
+                if map_of_objects_old_to_new is not None:
+                    r_old_object = action_objects[i][0]
+                    if r_old_object is not None:
+                        r_new_object = map_of_objects_old_to_new[r_old_object]
+                    l_old_object = action_objects[i][1]
+                    if l_old_object is not None:
+                        l_new_object = map_of_objects_old_to_new[l_old_object]
+                r_marker.update_ref_frames(object_list, r_new_object)
+                l_marker.update_ref_frames(object_list, l_new_object)
 
                 self.r_markers.append(r_marker)
                 self.l_markers.append(l_marker)
@@ -325,6 +351,20 @@ class ProgrammedAction:
 
         self._update_markers()
         self.lock.release()
+
+    def _get_action_objects(self):
+        steps = self.seq.seq
+        objects = []
+        for i in range(len(steps)):
+            step = steps[i]
+            r_object = None
+            l_object = None
+            if step.armTarget.rArm.refFrame == ArmState.OBJECT:
+                r_object = step.armTarget.rArm.refFrameObject
+            if step.armTarget.lArm.refFrame == ArmState.OBJECT:
+                l_object = step.armTarget.lArm.refFrameObject
+            objects.append((r_object, l_object))
+        return objects
 
     def get_last_step(self):
         '''Returns the last step of the action'''

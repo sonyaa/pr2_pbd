@@ -322,6 +322,47 @@ class World:
                 return ref_frame_list[chosen_obj_index]
 
     @staticmethod
+    def get_map_of_most_similar_obj(object_list, ref_frame_list):
+        if len(object_list) == 0 or len(ref_frame_list) == 0:
+            return None
+        if None in object_list:
+            object_list.remove(None)
+        orderings = []
+        World.permute(object_list, orderings)
+        costs = []
+        assignments = []
+        for ordering in orderings:
+            cur_cost = 0
+            cur_ref_frame_list = ref_frame_list[:]
+            cur_assignment = []
+            for object in ordering:
+                most_similar_object = World.get_most_similar_obj(object, cur_ref_frame_list)
+                if most_similar_object is None:
+                    return None
+                cur_ref_frame_list.remove(most_similar_object)
+                cur_assignment.append(most_similar_object)
+                cur_cost += World.object_dissimilarity(object, most_similar_object)
+            costs.append(cur_cost)
+            assignments.append(cur_assignment)
+        min_cost, min_idx = min((val, idx) for (idx, val) in enumerate(costs))
+        return dict(zip(orderings[min_idx], assignments[min_idx]))
+
+    @staticmethod
+    def permute(a, results):
+        if len(a) == 1:
+            results.insert(len(results), a)
+
+        else:
+            for i in range(0, len(a)):
+                element = a[i]
+                a_copy = [a[j] for j in range(0, len(a)) if j != i]
+                subresults = []
+                World.permute(a_copy, subresults)
+                for subresult in subresults:
+                    result = [element] + subresult
+                    results.insert(len(results), result)
+
+    @staticmethod
     def _get_mesh_marker(marker, mesh):
         '''Function that generated a marker from a mesh'''
         marker.type = Marker.TRIANGLE_LIST

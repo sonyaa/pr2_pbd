@@ -67,7 +67,7 @@ class ActionStepMarker:
         self.step_number -= 1
         self._update_menu()
 
-    def update_ref_frames(self, ref_frame_list):
+    def update_ref_frames(self, ref_frame_list, new_ref_obj):
         '''Updates and re-assigns coordinate frames when the world changes'''
         # There is a new list of objects
         # If the current frames are already assigned to object,
@@ -77,9 +77,6 @@ class ActionStepMarker:
         arm_pose = self.get_target()
 
         if (arm_pose.refFrame == ArmState.OBJECT):
-            prev_ref_obj = arm_pose.refFrameObject
-            new_ref_obj = World.get_most_similar_obj(prev_ref_obj,
-                                                    ref_frame_list)
             self.has_object = False
             if (new_ref_obj != None):
                 self.has_object = True
