@@ -323,10 +323,10 @@ class World:
 
     @staticmethod
     def get_map_of_most_similar_obj(object_list, ref_frame_list):
-        if len(object_list) == 0 or len(ref_frame_list) == 0:
-            return None
         if None in object_list:
             object_list.remove(None)
+        if len(object_list) == 0 or len(ref_frame_list) == 0:
+            return None
         orderings = []
         World.permute(object_list, orderings)
         costs = []
