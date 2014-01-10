@@ -91,7 +91,7 @@ class ProgrammedAction:
         self.lock.acquire()
         self._update_markers()
         action_objects = self._get_action_objects()
-        action_object_unique = list(set([x for t in action_objects for x in t]))
+        action_object_unique = self._get_unique_action_objects(action_objects)
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(action_object_unique, object_list)
         for i in range(len(self.r_markers)):
             r_new_object = None
@@ -320,7 +320,7 @@ class ProgrammedAction:
         '''Initialize visualization'''
         self.lock.acquire()
         action_objects = self._get_action_objects()
-        action_objects_unique = list(set([x for t in action_objects for x in t]))
+        action_objects_unique = self._get_unique_action_objects(action_objects)
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(action_objects_unique, object_list)
         for i in range(len(self.seq.seq)):
             step = self.seq.seq[i]
@@ -364,6 +364,19 @@ class ProgrammedAction:
             if step.armTarget.lArm.refFrame == ArmState.OBJECT:
                 l_object = step.armTarget.lArm.refFrameObject
             objects.append((r_object, l_object))
+        return objects
+
+    @staticmethod
+    def _get_unique_action_objects(action_objects):
+        objects = []
+        object_names = []
+        for r_object, l_object in action_objects:
+            if r_object is not None and r_object.name not in object_names:
+                object_names.append(r_object.name)
+                objects.append(r_object)
+            if l_object is not None and l_object.name not in object_names:
+                object_names.append(l_object.name)
+                objects.append(l_object)
         return objects
 
     def get_last_step(self):
