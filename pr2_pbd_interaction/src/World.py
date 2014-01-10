@@ -345,7 +345,8 @@ class World:
             costs.append(cur_cost)
             assignments.append(cur_assignment)
         min_cost, min_idx = min((val, idx) for (idx, val) in enumerate(costs))
-        return dict(zip(orderings[min_idx], assignments[min_idx]))
+        names = [x.name for x in orderings[min_idx]]
+        return dict(zip(names, assignments[min_idx]))
 
     @staticmethod
     def permute(a, results):

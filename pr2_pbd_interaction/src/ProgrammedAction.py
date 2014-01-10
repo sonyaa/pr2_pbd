@@ -98,14 +98,14 @@ class ProgrammedAction:
             if map_of_objects_old_to_new is not None:
                 r_old_object = action_objects[i][0]
                 if r_old_object is not None:
-                    r_new_object = map_of_objects_old_to_new[r_old_object]
+                    r_new_object = map_of_objects_old_to_new[r_old_object.name]
             self.r_markers[i].update_ref_frames(object_list, r_new_object)
         for i in range(len(self.l_markers)):
             l_new_object = None
             if map_of_objects_old_to_new is not None:
                 l_old_object = action_objects[i][1]
                 if l_old_object is not None:
-                    l_new_object = map_of_objects_old_to_new[l_old_object]
+                    l_new_object = map_of_objects_old_to_new[l_old_object.name]
             self.l_markers[i].update_ref_frames(object_list, l_new_object)
         self.lock.release()
 
@@ -335,10 +335,10 @@ class ProgrammedAction:
                 if map_of_objects_old_to_new is not None:
                     r_old_object = action_objects[i][0]
                     if r_old_object is not None:
-                        r_new_object = map_of_objects_old_to_new[r_old_object]
+                        r_new_object = map_of_objects_old_to_new[r_old_object.name]
                     l_old_object = action_objects[i][1]
                     if l_old_object is not None:
-                        l_new_object = map_of_objects_old_to_new[l_old_object]
+                        l_new_object = map_of_objects_old_to_new[l_old_object.name]
                 r_marker.update_ref_frames(object_list, r_new_object)
                 l_marker.update_ref_frames(object_list, l_new_object)
 
