@@ -77,94 +77,6 @@ class WorldObject:
         '''Function to decrese object index'''
         self.index -= 1
 
-class OculusReferenceObject:
-    ''' Object that allows manipulation of Oculus headset reference frame.    '''
-
-    def __init__(self, im_server):
-        self._pose = Pose(Point(1,0,1), Quaternion(0,0,1,0))
-        self.is_control_visible = False
-        self._im_server = im_server
-        self.int_marker = self._create_int_marker()
-
-    def marker_feedback_cb(self, feedback):
-        '''Callback for when feedback from a marker is received'''
-        if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
-            self._pose = feedback.pose
-            #rospy.loginfo('Oculus reference marker pose changed')
-            #rospy.loginfo(self._pose)
-        elif feedback.event_type == InteractiveMarkerFeedback.BUTTON_CLICK:
-            # Set the visibility of the 6DOF controller
-            rospy.loginfo('Changing visibility of the oculus reference marker controls.')
-            if (self.is_control_visible):
-                self.is_control_visible = False
-            else:
-                self.is_control_visible = True
-        self.int_marker = self._create_int_marker()
-
-    def _add_6dof_marker(self, int_marker, is_fixed, with_rotation=True):
-        '''Adds a 6 DoF control marker to the interactive marker'''
-        control = self._make_6dof_control('move_x',
-                        Quaternion(1, 0, 0, 1), True, is_fixed)
-        int_marker.controls.append(control)
-        control = self._make_6dof_control('move_z',
-                        Quaternion(0, 1, 0, 1), True, is_fixed)
-        int_marker.controls.append(control)
-        control = self._make_6dof_control('move_y',
-                        Quaternion(0, 0, 1, 1), True, is_fixed)
-        int_marker.controls.append(control)
-        if with_rotation:
-            control = self._make_6dof_control('rotate_x',
-                            Quaternion(1, 0, 0, 1), False, is_fixed)
-            int_marker.controls.append(control)
-            control = self._make_6dof_control('rotate_z',
-                            Quaternion(0, 1, 0, 1), False, is_fixed)
-            int_marker.controls.append(control)
-            control = self._make_6dof_control('rotate_y',
-                            Quaternion(0, 0, 1, 1), False, is_fixed)
-            int_marker.controls.append(control)
-
-    def _make_6dof_control(self, name, orientation, is_move, is_fixed):
-        '''Creates one component of the 6dof controller'''
-        control = InteractiveMarkerControl()
-        control.name = name
-        control.orientation = orientation
-        control.always_visible = False
-        if (self.is_control_visible):
-            if is_move:
-                control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-            else:
-                control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
-        else:
-            control.interaction_mode = InteractiveMarkerControl.NONE
-        if is_fixed:
-            control.orientation_mode = InteractiveMarkerControl.FIXED
-        return control
-
-    def _create_int_marker(self):
-        int_marker = InteractiveMarker()
-        int_marker.name = "oculus_reference_marker"
-        int_marker.header.frame_id = 'base_link'
-        int_marker.pose = self._pose
-        int_marker.scale = 0.2
-        button_control = InteractiveMarkerControl()
-        button_control.interaction_mode = InteractiveMarkerControl.BUTTON
-        button_control.always_visible = True
-        id = abs(hash(int_marker.name)) % (10 ** 8)
-        # The marker is a sphere because orientation doesn't matter: Oculus calibrates orientation separately
-        object_marker = Marker(type=Marker.SPHERE, id=id,
-            lifetime=rospy.Duration(2),
-            scale=Vector3(0.04, 0.04, 0.04),
-            header=Header(frame_id='base_link'),
-            color=ColorRGBA(0.2, 0.0, 0.5, 0.8),
-            pose=int_marker.pose)
-        button_control.markers.append(object_marker)
-        int_marker.controls.append(button_control)
-        # The rotation controls are not needed
-        self._add_6dof_marker(int_marker, is_fixed=True, with_rotation=False)
-        self._im_server.insert(int_marker, self.marker_feedback_cb)
-        self._im_server.applyChanges()
-        return int_marker
-
 class World:
     '''Object recognition and localization related stuff'''
 
@@ -193,8 +105,7 @@ class World:
         # The following is to get the table information
         rospy.Subscriber('tabletop_segmentation_markers',
                          Marker, self.receieve_table_marker)
-        self.oculus_reference_object = OculusReferenceObject(self._im_server)
-        self.relative_frame_threshold = 0.4
+        self.relative_frame_threshold = 0.3
 
     def _reset_objects(self):
         '''Function that removes all objects'''
@@ -786,7 +697,6 @@ class World:
     def get_nearest_object(self, arm_pose):
         '''Gives a pointed to the nearest object'''
         distances = []
-        selected = []
         for i in range(len(World.objects)):
             dist = World.pose_distance(World.objects[i].object.pose,
                                                             arm_pose)
@@ -833,8 +743,6 @@ class World:
         # Visualize the detected object
         is_world_changed = False
         self._lock.acquire()
-        self._publish_tf_pose(self.oculus_reference_object.int_marker.pose,
-            self.oculus_reference_object.int_marker.name, 'base_link')
         if (World.has_objects()):
             to_remove = None
             for i in range(len(World.objects)):
