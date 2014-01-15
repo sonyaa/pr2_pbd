@@ -8,8 +8,9 @@ roslib.load_manifest('pr2_pbd_interaction')
 # Generic libraries
 import threading
 import os
-from geometry_msgs.msg import Vector3, Pose
+from geometry_msgs.msg import Vector3, Pose, Quaternion, Point
 from visualization_msgs.msg import MarkerArray, Marker
+import numpy as np
 
 # ROS Libraries
 import rospy
@@ -496,3 +497,59 @@ class ProgrammedAction:
         ## WARNING: the following is not really copying
         copy.refFrameObject = arm_state.refFrameObject
         return copy
+
+    def get_action_for_reversed_hands(self):
+        '''Returns a new action that is like the original one except that all left-hand steps are assigned
+            to the right hand and vice versa.'''
+        reversed_action = self.copy()
+        for i in range(len(self.seq.seq)):
+            action_step = self.seq.seq[i]
+            rev_action_step = reversed_action.seq.seq[i]
+            if (action_step.type == ActionStep.ARM_TARGET):
+                rev_action_step.armTarget.rArm = action_step.armTarget.lArm
+                if rev_action_step.armTarget.rArm.refFrame == ArmState.ROBOT_BASE:
+                    rev_action_step.armTarget.rArm = self._mirror_arm_state(rev_action_step.armTarget.rArm)
+                rev_action_step.armTarget.lArm = action_step.armTarget.rArm
+                if rev_action_step.armTarget.lArm.refFrame == ArmState.ROBOT_BASE:
+                    rev_action_step.armTarget.lArm = self._mirror_arm_state(rev_action_step.armTarget.lArm)
+                rev_action_step.armTarget.rArmVelocity = action_step.armTarget.lArmVelocity
+                rev_action_step.armTarget.lArmVelocity = action_step.armTarget.rArmVelocity
+            elif (action_step.type == ActionStep.ARM_TRAJECTORY):
+                rev_action_step.armTrajectory.rArm = action_step.armTrajectory.lArm
+                if rev_action_step.armTrajectory.rRefFrameObject == ArmState.ROBOT_BASE:
+                    new_traj = []
+                    for state in rev_action_step.armTarget.rArm:
+                        new_traj.append(self._mirror_arm_state(state))
+                    rev_action_step.armTarget.rArm = new_traj
+                rev_action_step.armTrajectory.lArm = action_step.armTrajectory.rArm
+                if rev_action_step.armTrajectory.lRefFrameObject == ArmState.ROBOT_BASE:
+                    new_traj = []
+                    for state in rev_action_step.armTarget.lArm:
+                        new_traj.append(self._mirror_arm_state(state))
+                    rev_action_step.armTarget.lArm = new_traj
+                rev_action_step.armTrajectory.rRefFrame = action_step.armTrajectory.lRefFrame
+                rev_action_step.armTrajectory.lRefFrame = action_step.armTrajectory.rRefFrame
+                rev_action_step.armTrajectory.rRefFrameObject = action_step.armTrajectory.lRefFrameObject
+                rev_action_step.armTrajectory.lRefFrameObject = action_step.armTrajectory.rRefFrameObject
+            rev_action_step.gripperAction.rGripper = action_step.gripperAction.lGripper
+            rev_action_step.gripperAction.lGripper = action_step.gripperAction.rGripper
+            reversed_action.seq.seq[i] = rev_action_step
+        return reversed_action
+
+    def _mirror_arm_state(self, arm_state):
+        ''' Reflect arm state with respect to the x-z plane. '''
+        new_state = ArmState()
+        new_state.refFrame = int(arm_state.refFrame)
+        new_state.joint_pose = list(arm_state.joint_pose[:])
+        if len(new_state.joint_pose) > 0:
+            new_state.joint_pose[3] = -new_state.joint_pose[3]
+        old_o = arm_state.ee_pose.orientation
+        refl_m = np.array([[-1,0,0,0], [0,1,0,0], [0,0,-1,0], [0,0,0,1]])
+        new_o = Quaternion(*np.dot(refl_m, np.transpose(np.array([old_o.x, old_o.y, old_o.z, old_o.w]))))
+        old_p = arm_state.ee_pose.position
+        new_p = Point(old_p.x, -old_p.y, old_p.z)
+        new_state.ee_pose = Pose(new_p, new_o)
+        new_state.refFrameObject = arm_state.refFrameObject
+        return new_state
+
+

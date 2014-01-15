@@ -216,10 +216,24 @@ class Arms:
                           '(hand object or free hands).')
             self.status = ExecutionStatus.CONDITION_ERROR
         else:
+            # Copy action in case we need to revert it later, because solve_ik_for_action() overwrites action.
+            original_action = self.action.copy()
             # Check that all parts of the action are reachable
             if (not self.solve_ik_for_action()):
-                rospy.logwarn('Problems in finding IK solutions...')
-                self.status = ExecutionStatus.NO_IK
+                # Try to reverse hands and see if it helps.
+                rospy.loginfo('Trying to reverse the arms to see if that makes the poses reachable.')
+                reversed_action = original_action.get_action_for_reversed_hands()
+                self.action = reversed_action
+                if (not self.solve_ik_for_action()):
+                    rospy.logwarn('Problems in finding IK solutions...')
+                    self.status = ExecutionStatus.NO_IK
+                else:
+                    rospy.loginfo('Reversed the arms to execute the action.')
+                    Arms.set_arm_mode(0, ArmMode.HOLD)
+                    Arms.set_arm_mode(1, ArmMode.HOLD)
+                    self._loop_through_action_steps()
+                # Return to the original action.
+                self.action = original_action
             else:
                 Arms.set_arm_mode(0, ArmMode.HOLD)
                 Arms.set_arm_mode(1, ArmMode.HOLD)
