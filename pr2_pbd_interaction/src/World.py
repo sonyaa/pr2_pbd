@@ -105,7 +105,7 @@ class World:
         # The following is to get the table information
         rospy.Subscriber('tabletop_segmentation_markers',
                          Marker, self.receieve_table_marker)
-        self.relative_frame_threshold = 0.3
+        self.relative_frame_threshold = 0.4
 
     def _reset_objects(self):
         '''Function that removes all objects'''
