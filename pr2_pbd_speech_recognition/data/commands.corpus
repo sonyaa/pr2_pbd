@@ -11,6 +11,7 @@ delete-last-step
 freeze-right-arm
 freeze-left-arm
 record-object-pose
+record-marker-pose
 create-new-action
 execute-action
 next-action

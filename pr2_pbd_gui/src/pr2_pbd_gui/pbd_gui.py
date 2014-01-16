@@ -106,6 +106,7 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
+        self.commands[Command.RECORD_MARKER_POSE] = 'Record marker poses'
         self.commands[Command.EXECUTE_GENERATED_ACTION] = 'Execute generated action'
         self.commands[Command.CALCULATE_POSE_DISTRIBUTION] = 'Calculate pose distributions'
         
@@ -162,6 +163,7 @@ class PbDGUI(Plugin):
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
         misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
+        misc_grid.addWidget(self.create_button(Command.RECORD_MARKER_POSE))
         misc_grid.addStretch(1)
         
         misc_grid2 = QtGui.QHBoxLayout()

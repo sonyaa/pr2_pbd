@@ -12,6 +12,7 @@ string DELETE_LAST_STEP = delete-last-step
 string FREEZE_RIGHT_ARM = freeze-right-arm
 string FREEZE_LEFT_ARM = freeze-left-arm
 string RECORD_OBJECT_POSE = record-object-pose
+string RECORD_MARKER_POSE = record-marker-pose
 string CREATE_NEW_ACTION = create-new-action
 string EXECUTE_ACTION = execute-action
 string NEXT_ACTION = next-action

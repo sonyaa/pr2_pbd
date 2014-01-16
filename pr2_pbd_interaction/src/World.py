@@ -1,4 +1,5 @@
 '''Everything related to perception of the world'''
+from ar_track_alvar.msg import AlvarMarkers
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
@@ -106,6 +107,10 @@ class World:
         rospy.Subscriber('tabletop_segmentation_markers',
                          Marker, self.receieve_table_marker)
         self.relative_frame_threshold = 0.4
+        rospy.Subscriber("ar_pose_marker",
+                         AlvarMarkers, self.receive_ar_markers)
+        self.is_looking_for_markers = False
+        self.marker_dims = Vector3(0.04, 0.04, 0.01)
 
     def _reset_objects(self):
         '''Function that removes all objects'''
@@ -140,6 +145,19 @@ class World:
                 self._im_server.insert(self.surface,
                                      self.marker_feedback_cb)
                 self._im_server.applyChanges()
+
+    def receive_ar_markers(self, data):
+        '''Callback function to receive marker info'''
+        self._lock.acquire()
+        if self.is_looking_for_markers:
+            rospy.loginfo('Received marker list.')
+            if len(data.markers) > 0:
+                for i in range(len(data.markers)):
+                    marker = data.markers[i]
+                    self._add_new_object(marker.pose.pose, self.marker_dims, False, id=marker.id)
+            else:
+                rospy.logwarn('... but the list was empty.')
+        self._lock.release()
 
     def receieve_object_info(self, object_list):
         '''Callback function to receive object info'''
@@ -293,7 +311,7 @@ class World:
                 break
         return marker
 
-    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None):
+    def _add_new_object(self, pose, dimensions, is_recognized, mesh=None, id=None):
         '''Function to add new objects'''
         dist_threshold = 0.02
         to_remove = None
@@ -321,8 +339,11 @@ class World:
                 self._remove_object(to_remove)
 
             n_objects = len(World.objects)
-            World.objects.append(WorldObject(pose, n_objects,
-                                            dimensions, is_recognized))
+            new_object = WorldObject(pose, n_objects,
+                                            dimensions, is_recognized)
+            if id is not None:
+                new_object.assign_name("marker" + str(id))
+            World.objects.append(new_object)
             int_marker = self._get_object_marker(len(World.objects) - 1, mesh)
             World.objects[-1].int_marker = int_marker
             self._im_server.insert(int_marker, self.marker_feedback_cb)
@@ -339,8 +360,11 @@ class World:
                                   'location, will not add this object.')
                     return False
             n_objects = len(World.objects)
-            World.objects.append(WorldObject(pose, n_objects,
-                                            dimensions, is_recognized))
+            new_object = WorldObject(pose, n_objects,
+                                            dimensions, is_recognized)
+            if id is not None:
+                new_object.assign_name("marker" + str(id))
+            World.objects.append(new_object)
             int_marker = self._get_object_marker(len(World.objects) - 1)
             World.objects[-1].int_marker = int_marker
             self._im_server.insert(int_marker, self.marker_feedback_cb)
@@ -349,6 +373,27 @@ class World:
                                                int_marker.name)
             self._im_server.applyChanges()
             return True
+
+    def _add_new_marker(self, id, pose):
+        '''Function to add new markers'''
+        #dist_threshold = 0.01
+        #to_remove = None
+        #for i in range(len(World.markers)):
+        #    if (World.pose_distance(World.markers[i].pose, pose)
+        #            < dist_threshold):
+        #        rospy.loginfo('Previously detected marker at the same' +
+        #                      'location, will not add this marker.')
+        #        return False
+        #n_markers = len(World.markers)
+        #World.markers.append(WorldMarker(id, pose))
+        #int_marker = self._get_object_marker(len(World.objects) - 1)
+        #World.markers[-1].int_marker = int_marker
+        #self._im_server.insert(int_marker, self.marker_feedback_cb)
+        #self._im_server.applyChanges()
+        #World.markers[-1].menu_handler.apply(self._im_server,
+        #                                   int_marker.name)
+        #self._im_server.applyChanges()
+        return True
 
     def _remove_object(self, to_remove):
         '''Function to remove object by index'''
@@ -664,6 +709,40 @@ class World:
         else:
             rospy.logerr('Could not recognize.')
             return False
+
+    def update_marker_pose(self):
+        ''' Function to externally update a marker pose'''
+        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
+        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
+               Response.gaze_client.get_state() == GoalStatus.ACTIVE):
+            time.sleep(0.1)
+        rospy.loginfo(Response.gaze_client.get_state())
+
+        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logerr('Could not look down to take table snapshot')
+            return False
+
+        rospy.loginfo('Looking at table now.')
+        self._reset_objects()
+        rospy.loginfo('Objects have been reset.')
+        self.is_looking_for_markers = True
+        rospy.loginfo('Looking for markers...')
+        time.sleep(1)
+
+        # Record the result
+        wait_time = 0
+        total_wait_time = 5
+        while (not World.has_objects() and wait_time < total_wait_time):
+            time.sleep(0.1)
+            wait_time += 0.1
+        self.is_looking_for_markers = False
+        if (not World.has_objects()):
+            rospy.logerr('Timeout waiting for a recognition result.')
+            return False
+        else:
+            rospy.loginfo('Got the marker list.')
+            return True
+
 
     def clear_all_objects(self):
         '''Removes all objects from the world'''
