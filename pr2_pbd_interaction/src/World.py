@@ -710,6 +710,80 @@ class World:
             rospy.logerr('Could not recognize.')
             return False
 
+
+    def update_object_and_marker_pose(self):
+        ''' Function to externally update an object pose'''
+        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
+        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
+               Response.gaze_client.get_state() == GoalStatus.ACTIVE):
+            time.sleep(0.1)
+        rospy.loginfo(Response.gaze_client.get_state())
+
+        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logerr('Could not look down to take table snapshot')
+            return False
+
+        rospy.loginfo('Looking at table now.')
+        goal = UserCommandGoal(UserCommandGoal.RESET, False)
+        self._object_action_client.send_goal(goal)
+        while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
+               self._object_action_client.get_state() == GoalStatus.PENDING):
+            time.sleep(0.1)
+        rospy.loginfo(Response.gaze_client.get_state())
+        rospy.loginfo('Object recognition has been reset.')
+        rospy.loginfo('STATUS: ' +
+                      self._object_action_client.get_goal_status_text())
+        self._reset_objects()
+
+        if (self._object_action_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logerr('Could not reset recognition.')
+            return False
+
+        self.is_looking_for_markers = True
+        rospy.loginfo('Looking for markers...')
+        # Do segmentation
+        goal = UserCommandGoal(UserCommandGoal.SEGMENT, False)
+        self._object_action_client.send_goal(goal)
+        while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
+               self._object_action_client.get_state() == GoalStatus.PENDING):
+            time.sleep(0.1)
+        rospy.loginfo('Table segmentation is complete.')
+        rospy.loginfo('STATUS: ' +
+                      self._object_action_client.get_goal_status_text())
+
+        if (self._object_action_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logerr('Could not segment.')
+            return False
+
+        # Do recognition
+        goal = UserCommandGoal(UserCommandGoal.RECOGNIZE, False)
+        self._object_action_client.send_goal(goal)
+        while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
+               self._object_action_client.get_state() == GoalStatus.PENDING):
+            time.sleep(0.1)
+        rospy.loginfo('Objects on the table have been recognized.')
+        rospy.loginfo('STATUS: ' +
+                      self._object_action_client.get_goal_status_text())
+
+        # Record the result
+        if (self._object_action_client.get_state() == GoalStatus.SUCCEEDED):
+            wait_time = 0
+            total_wait_time = 5
+            while wait_time < total_wait_time:
+                time.sleep(0.1)
+                wait_time += 0.1
+
+            self.is_looking_for_markers = False
+            if (not World.has_objects()):
+                rospy.logerr('Timeout waiting for a recognition result.')
+                return False
+            else:
+                rospy.loginfo('Got the object list.')
+                return True
+        else:
+            rospy.logerr('Could not recognize.')
+            return False
+
     def update_marker_pose(self):
         ''' Function to externally update a marker pose'''
         Response.perform_gaze_action(GazeGoal.LOOK_DOWN)

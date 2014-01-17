@@ -216,6 +216,7 @@ class ActionStepMarker:
             else:
                 pose = ActionStepMarker._offset_pose(new_pose, -1)
                 self.action_step.armTarget.lArm.ee_pose = pose
+            rospy.loginfo('Set new pose for action step.')
             self.update_viz()
         elif (self.action_step.type == ActionStep.ARM_TRAJECTORY):
             rospy.logwarn('Modification of whole trajectory ' +

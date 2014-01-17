@@ -68,6 +68,8 @@ class Interaction:
                                             self.record_object_pose, None),
             Command.RECORD_MARKER_POSE: Response(
                                             self.record_marker_pose, None),
+            Command.RECORD_OBJECT_AND_MARKER_POSE: Response(
+                                            self.record_object_and_marker_pose, None),
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording, None),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None),
@@ -538,6 +540,16 @@ class Interaction:
             Response.perform_gaze_action(GazeGoal.SHAKE)
 
         self.arms.status = ExecutionStatus.NOT_EXECUTING
+
+    def record_object_and_marker_pose(self, dummy=None):
+        '''Makes the robot look for markers'''
+        if (self.world.update_object_and_marker_pose()):
+            if (self.session.n_actions() > 0):
+                self.session.get_current_action().update_objects(
+                                            self.world.get_frame_list())
+            return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
+        else:
+            return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
 
     def record_marker_pose(self, dummy=None):
         '''Makes the robot look for markers'''
