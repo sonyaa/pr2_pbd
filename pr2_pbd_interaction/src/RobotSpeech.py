@@ -3,6 +3,7 @@ import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 import rospy
 from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
 from std_msgs.msg import Header, ColorRGBA
@@ -15,12 +16,12 @@ class RobotSpeech:
     SKILL_CREATED = 'Created action'
     RIGHT_ARM_RELEASED = 'Right arm relaxed'
     RIGHT_ARM_HOLDING = 'Right arm frozen'
-    RIGHT_HAND_OPENING = 'Opening right hand'
-    RIGHT_HAND_CLOSING = 'Closing right hand'
+    RIGHT_HAND_OPENING = 'Opening right hand.'
+    RIGHT_HAND_CLOSING = 'Closing right hand.'
     LEFT_ARM_RELEASED = 'Left arm relaxed'
     LEFT_ARM_HOLDING = 'Left arm frozen'
-    LEFT_HAND_OPENING = 'Opening left hand'
-    LEFT_HAND_CLOSING = 'Closing left hand'
+    LEFT_HAND_OPENING = 'Opening left hand.'
+    LEFT_HAND_CLOSING = 'Closing left hand.'
     STEP_RECORDED = 'Pose saved.'
     POSE_DELETED = 'Last pose deleted'
     POSE_RESUMED = 'Pose resumed'
@@ -28,7 +29,7 @@ class RobotSpeech:
     START_EXECUTION = 'Starting execution of action'
     EXECUTION_ENDED = 'Execution ended'
     SWITCH_SKILL = 'Switched to action'
-    SKILL_EMPTY = 'Skill has no poses to delete.'
+    SKILL_EMPTY = 'Action has no poses to delete.'
     EXECUTION_ERROR_NOIK = 'Cannot execute action'
     EXECUTION_ERROR_NOPOSES = 'Not enough poses in action'
     ERROR_NEXT_SKILL = 'No actions after action'
@@ -48,7 +49,7 @@ class RobotSpeech:
     SKILL_CLEARED = 'All poses deleted.'
     LAST_POSE_DELETED = 'Last pose deleted.'
     ALL_POSES_RESUMED = 'All poses resumed.'
-    START_STATE_RECORDED = 'Start state recorded.'
+    START_STATE_RECORDED = 'Object poses recorded.'
     OBJECT_NOT_DETECTED = 'No objects were detected.'
     ACTION_SAVED = 'Saved Action '
     ALREADY_EDITING = 'Already in editing mode.'
@@ -65,14 +66,16 @@ class RobotSpeech:
     POSE_DISTRIBUTIONS_CALCULATED = 'Calculated pose distributions'
 
     def __init__(self):
-        self.speech_publisher = rospy.Publisher('robotsound', SoundRequest)
+        #self.speech_publisher = rospy.Publisher('robotsound', SoundRequest)
+        self.soundhandle = SoundClient()
         self.marker_publisher = rospy.Publisher('visualization_marker', Marker)
 
     def say(self, text, is_using_sounds=False):
         ''' Send a TTS command'''
         if (not is_using_sounds):
-            self.speech_publisher.publish(SoundRequest(
-                                        command=SoundRequest.SAY, arg=text))
+            #self.speech_publisher.publish(SoundRequest(
+            #                            sound=SoundRequest.SAY, command=SoundRequest.PLAY_ONCE, arg=text))
+            self.soundhandle.say(text)
         self.say_in_rviz(text)
 
     def say_in_rviz(self, text):

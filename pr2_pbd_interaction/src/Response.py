@@ -1,5 +1,7 @@
 ''' Robot responses in the dialog '''
 import roslib
+import rospy
+
 roslib.load_manifest('pr2_pbd_interaction')
 
 from actionlib import SimpleActionClient
@@ -65,7 +67,7 @@ class Response:
         # Speech response
         if (speech_resp != None):
             Response.say(speech_resp)
-            Response.respond_with_sound(speech_resp)
+            #Response.respond_with_sound(speech_resp)
         # Gaze response
         if (gaze_resp != None):
             Response.perform_gaze_action(gaze_resp)
@@ -139,6 +141,8 @@ class Response:
         if (requested_sound in Response.all_sounds):
             Response._sound_client.playWave(os.path.join(Response._sounds_dir,
                                               requested_sound + '.wav'))
+            rospy.loginfo("playing a sound")
+            Response._sound_client.say("sound!")
         else:
             Response._sound_client.playWave(os.path.join(Response._sounds_dir, 
                                                          'OTHER.wav'))
