@@ -53,6 +53,7 @@ class WorldObject:
         self.int_marker = None
         self.is_removed = False
         self.menu_handler.insert('Remove from scene', callback=self.remove)
+        self.is_marker = False
 
     def remove(self, dummy):
         '''Function for removing object from the world'''
@@ -256,6 +257,15 @@ class World:
             object_list.remove(None)
         if len(object_list) == 0 or len(ref_frame_list) == 0:
             return None
+        markers_dict = {}
+        for ref_frame in ref_frame_list:
+            name = ref_frame.name
+            if name.startswith("marker"):
+                markers_dict[name] = ref_frame
+        ref_frame_list = [x for x in ref_frame_list if x.name not in markers_dict.keys()]
+        object_list = [x for x in object_list if x.name not in markers_dict.keys()]
+        if len(object_list) == 0 or len(ref_frame_list) == 0:
+            return markers_dict
         orderings = []
         World.permute(object_list, orderings)
         costs = []
@@ -275,7 +285,9 @@ class World:
             assignments.append(cur_assignment)
         min_cost, min_idx = min((val, idx) for (idx, val) in enumerate(costs))
         names = [x.name for x in orderings[min_idx]]
-        return dict(zip(names, assignments[min_idx]))
+        object_dict = dict(zip(names, assignments[min_idx]))
+        object_dict.update(markers_dict)
+        return object_dict
 
     @staticmethod
     def permute(a, results):
@@ -343,6 +355,7 @@ class World:
                                             dimensions, is_recognized)
             if id is not None:
                 new_object.assign_name("marker" + str(id))
+                new_object.is_marker = True
             World.objects.append(new_object)
             int_marker = self._get_object_marker(len(World.objects) - 1, mesh)
             World.objects[-1].int_marker = int_marker
@@ -363,7 +376,7 @@ class World:
             new_object = WorldObject(pose, n_objects,
                                             dimensions, is_recognized)
             if id is not None:
-                new_object.assign_name("marker" + str(id))
+                new_object.assign_name("marker_" + str(id))
             World.objects.append(new_object)
             int_marker = self._get_object_marker(len(World.objects) - 1)
             World.objects[-1].int_marker = int_marker
@@ -529,6 +542,14 @@ class World:
         return len(World.objects) > 0
 
     @staticmethod
+    def has_non_marker_objects():
+        '''Function that checks if there are any objects'''
+        for o in World.objects:
+            if not o.is_marker:
+                return True
+        return False
+
+    @staticmethod
     def object_dissimilarity(obj1, obj2):
         '''Distance between two objects'''
         dims1 = obj1.dimensions
@@ -668,77 +689,6 @@ class World:
             rospy.logerr('Could not reset recognition.')
             return False
 
-        # Do segmentation
-        goal = UserCommandGoal(UserCommandGoal.SEGMENT, False)
-        self._object_action_client.send_goal(goal)
-        while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
-            time.sleep(0.1)
-        rospy.loginfo('Table segmentation is complete.')
-        rospy.loginfo('STATUS: ' +
-                      self._object_action_client.get_goal_status_text())
-
-        if (self._object_action_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logerr('Could not segment.')
-            return False
-
-        # Do recognition
-        goal = UserCommandGoal(UserCommandGoal.RECOGNIZE, False)
-        self._object_action_client.send_goal(goal)
-        while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
-            time.sleep(0.1)
-        rospy.loginfo('Objects on the table have been recognized.')
-        rospy.loginfo('STATUS: ' +
-                      self._object_action_client.get_goal_status_text())
-
-        # Record the result
-        if (self._object_action_client.get_state() == GoalStatus.SUCCEEDED):
-            wait_time = 0
-            total_wait_time = 5
-            while (not World.has_objects() and wait_time < total_wait_time):
-                time.sleep(0.1)
-                wait_time += 0.1
-
-            if (not World.has_objects()):
-                rospy.logerr('Timeout waiting for a recognition result.')
-                return False
-            else:
-                rospy.loginfo('Got the object list.')
-                return True
-        else:
-            rospy.logerr('Could not recognize.')
-            return False
-
-
-    def update_object_and_marker_pose(self):
-        ''' Function to externally update an object pose'''
-        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
-        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
-               Response.gaze_client.get_state() == GoalStatus.ACTIVE):
-            time.sleep(0.1)
-        rospy.loginfo(Response.gaze_client.get_state())
-
-        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logerr('Could not look down to take table snapshot')
-            return False
-
-        rospy.loginfo('Looking at table now.')
-        goal = UserCommandGoal(UserCommandGoal.RESET, False)
-        self._object_action_client.send_goal(goal)
-        while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
-            time.sleep(0.1)
-        rospy.loginfo(Response.gaze_client.get_state())
-        rospy.loginfo('Object recognition has been reset.')
-        rospy.loginfo('STATUS: ' +
-                      self._object_action_client.get_goal_status_text())
-        self._reset_objects()
-
-        if (self._object_action_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logerr('Could not reset recognition.')
-            return False
-
         self.is_looking_for_markers = True
         rospy.loginfo('Looking for markers...')
         # Do segmentation
@@ -769,7 +719,7 @@ class World:
         if (self._object_action_client.get_state() == GoalStatus.SUCCEEDED):
             wait_time = 0
             total_wait_time = 5
-            while wait_time < total_wait_time:
+            while not World.has_non_marker_objects() and wait_time < total_wait_time:
                 time.sleep(0.1)
                 wait_time += 0.1
 
@@ -783,40 +733,6 @@ class World:
         else:
             rospy.logerr('Could not recognize.')
             return False
-
-    def update_marker_pose(self):
-        ''' Function to externally update a marker pose'''
-        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
-        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
-               Response.gaze_client.get_state() == GoalStatus.ACTIVE):
-            time.sleep(0.1)
-        rospy.loginfo(Response.gaze_client.get_state())
-
-        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logerr('Could not look down to take table snapshot')
-            return False
-
-        rospy.loginfo('Looking at table now.')
-        self._reset_objects()
-        rospy.loginfo('Objects have been reset.')
-        self.is_looking_for_markers = True
-        rospy.loginfo('Looking for markers...')
-        time.sleep(1)
-
-        # Record the result
-        wait_time = 0
-        total_wait_time = 5
-        while (not World.has_objects() and wait_time < total_wait_time):
-            time.sleep(0.1)
-            wait_time += 0.1
-        self.is_looking_for_markers = False
-        if (not World.has_objects()):
-            rospy.logerr('Timeout waiting for a recognition result.')
-            return False
-        else:
-            rospy.loginfo('Got the marker list.')
-            return True
-
 
     def clear_all_objects(self):
         '''Removes all objects from the world'''
