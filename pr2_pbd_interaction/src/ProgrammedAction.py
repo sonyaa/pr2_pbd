@@ -508,25 +508,33 @@ class ProgrammedAction:
             if (action_step.type == ActionStep.ARM_TARGET):
                 rev_action_step.armTarget.rArm = action_step.armTarget.lArm
                 if rev_action_step.armTarget.rArm.refFrame == ArmState.ROBOT_BASE:
-                    rev_action_step.armTarget.rArm = self._mirror_arm_state(rev_action_step.armTarget.rArm)
+                    rev_action_step.armTarget.rArm = ProgrammedAction._mirror_ee_pose_and_joints(rev_action_step.armTarget.rArm)
+                else:
+                    rev_action_step.armTarget.rArm = ProgrammedAction._mirror_joints(rev_action_step.armTarget.rArm)
                 rev_action_step.armTarget.lArm = action_step.armTarget.rArm
                 if rev_action_step.armTarget.lArm.refFrame == ArmState.ROBOT_BASE:
-                    rev_action_step.armTarget.lArm = self._mirror_arm_state(rev_action_step.armTarget.lArm)
+                    rev_action_step.armTarget.lArm = ProgrammedAction._mirror_ee_pose_and_joints(rev_action_step.armTarget.lArm)
+                else:
+                    rev_action_step.armTarget.lArm = ProgrammedAction._mirror_joints(rev_action_step.armTarget.lArm)
                 rev_action_step.armTarget.rArmVelocity = action_step.armTarget.lArmVelocity
                 rev_action_step.armTarget.lArmVelocity = action_step.armTarget.rArmVelocity
             elif (action_step.type == ActionStep.ARM_TRAJECTORY):
                 rev_action_step.armTrajectory.rArm = action_step.armTrajectory.lArm
-                if rev_action_step.armTrajectory.rRefFrameObject == ArmState.ROBOT_BASE:
-                    new_traj = []
-                    for state in rev_action_step.armTarget.rArm:
-                        new_traj.append(self._mirror_arm_state(state))
-                    rev_action_step.armTarget.rArm = new_traj
+                new_traj = []
+                for state in rev_action_step.armTarget.rArm:
+                    if rev_action_step.armTrajectory.rRefFrameObject == ArmState.ROBOT_BASE:
+                        new_traj.append(ProgrammedAction._mirror_ee_pose_and_joints(state))
+                    else:
+                        new_traj.append(ProgrammedAction._mirror_joints(state))
+                rev_action_step.armTarget.rArm = new_traj
                 rev_action_step.armTrajectory.lArm = action_step.armTrajectory.rArm
-                if rev_action_step.armTrajectory.lRefFrameObject == ArmState.ROBOT_BASE:
-                    new_traj = []
-                    for state in rev_action_step.armTarget.lArm:
-                        new_traj.append(self._mirror_arm_state(state))
-                    rev_action_step.armTarget.lArm = new_traj
+                new_traj = []
+                for state in rev_action_step.armTarget.lArm:
+                    if rev_action_step.armTrajectory.lRefFrameObject == ArmState.ROBOT_BASE:
+                        new_traj.append(ProgrammedAction._mirror_ee_pose_and_joints(state))
+                    else:
+                        new_traj.append(ProgrammedAction._mirror_joints(state))
+                rev_action_step.armTarget.lArm = new_traj
                 rev_action_step.armTrajectory.rRefFrame = action_step.armTrajectory.lRefFrame
                 rev_action_step.armTrajectory.lRefFrame = action_step.armTrajectory.rRefFrame
                 rev_action_step.armTrajectory.rRefFrameObject = action_step.armTrajectory.lRefFrameObject
@@ -536,20 +544,35 @@ class ProgrammedAction:
             reversed_action.seq.seq[i] = rev_action_step
         return reversed_action
 
-    def _mirror_arm_state(self, arm_state):
-        ''' Reflect arm state with respect to the x-z plane. '''
+    @staticmethod
+    def _mirror_joints(arm_state):
+        ''' Create new arm state with reflected joints with respect to the x-z plane. '''
         new_state = ArmState()
         new_state.refFrame = int(arm_state.refFrame)
+        new_state.refFrameObject = arm_state.refFrameObject
+        new_state.ee_pose = arm_state.ee_pose
         new_state.joint_pose = list(arm_state.joint_pose[:])
-        if len(new_state.joint_pose) > 0:
-            new_state.joint_pose[3] = -new_state.joint_pose[3]
+        for i in range(len(new_state.joint_pose)):
+            if i == 0 or i == 2 or i == 4:
+                new_state.joint_pose[i] = -new_state.joint_pose[i]
+        return new_state
+
+    @staticmethod
+    def _mirror_ee_pose_and_joints(arm_state):
+        ''' Create new arm state with reflected ee pose and joints with respect to the x-z plane. '''
+        new_state = ArmState()
+        new_state.refFrame = int(arm_state.refFrame)
+        new_state.refFrameObject = arm_state.refFrameObject
+        new_state.joint_pose = list(arm_state.joint_pose[:])
+        for i in range(len(new_state.joint_pose)):
+            if i == 0 or i == 2 or i == 4:
+                new_state.joint_pose[i] = -new_state.joint_pose[i]
         old_o = arm_state.ee_pose.orientation
         refl_m = np.array([[-1,0,0,0], [0,1,0,0], [0,0,-1,0], [0,0,0,1]])
         new_o = Quaternion(*np.dot(refl_m, np.transpose(np.array([old_o.x, old_o.y, old_o.z, old_o.w]))))
         old_p = arm_state.ee_pose.position
         new_p = Point(old_p.x, -old_p.y, old_p.z)
         new_state.ee_pose = Pose(new_p, new_o)
-        new_state.refFrameObject = arm_state.refFrameObject
         return new_state
 
 
