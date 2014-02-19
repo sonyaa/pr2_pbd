@@ -3,6 +3,7 @@ uint8 ARM_TRAJECTORY=1
 uint8 type
 ArmTarget armTarget
 ArmTrajectory armTrajectory
+BaseTarget baseTarget
 Condition preCond
 Condition postCond
 GripperAction gripperAction

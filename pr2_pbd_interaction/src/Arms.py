@@ -1,4 +1,6 @@
 '''Control of the two arms for action execution'''
+from actionlib import SimpleActionClient
+from actionlib_msgs.msg import GoalStatus
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 import rospy
@@ -9,10 +11,13 @@ from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import ActionStep, Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
 from Response import Response
 from World import World
 from Arm import Arm, ArmMode
+from move_base_msgs.msg import MoveBaseAction
+from move_base_msgs.msg import MoveBaseActionGoal
+from move_base_msgs.msg import MoveBaseGoal
 
 
 class Arms:
@@ -36,6 +41,12 @@ class Arms:
         Arms.arms[Side.RIGHT].close_gripper()
         Arms.arms[Side.LEFT].close_gripper()
         self.status = ExecutionStatus.NOT_EXECUTING
+
+
+        self.nav_action_client = SimpleActionClient(
+                        'move_base', MoveBaseAction)
+        self.nav_action_client.wait_for_server()
+        rospy.loginfo('Got response from move base action server.')
 
     @staticmethod
     def set_arm_mode(arm_index, mode):
@@ -280,8 +291,46 @@ class Arms:
 
             rospy.loginfo('Step ' + str(i) + ' of action is complete.')
 
+    def move_base(self, base_pose):
+        '''Moves the base to the desired position'''
+        # Setup the goal
+        #nav_goal = MoveBaseActionGoal()
+        #nav_goal.header.stamp = (rospy.Time.now() +
+        #                                     rospy.Duration(0.1))
+        #nav_goal.goal_id.stamp = nav_goal.header.stamp
+        #nav_goal.goal_id.id = 1
+        pose_stamped = PoseStamped()
+        pose_stamped.header.stamp = rospy.Time.now()
+        pose_stamped.header.frame_id = "/map"
+        pose_stamped.pose = base_pose
+        #nav_goal.goal = MoveBaseGoal()
+        #nav_goal.goal.target_pose = pose_stamped
+        #rospy.loginfo(nav_goal)
+        nav_goal = MoveBaseGoal()
+        nav_goal.target_pose = pose_stamped
+        # Client sends the goal to the Server
+        self.nav_action_client.send_goal(nav_goal)
+        while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
+                or self.nav_action_client.get_state() == GoalStatus.PENDING):
+            time.sleep(0.01)
+        rospy.loginfo('Base reached target.')
+
+        # Verify that base succeeded
+        if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logwarn('Aborting because base failed to move to pose.')
+            return False
+        else:
+            return True
+
     def _execute_action_step(self, action_step):
         '''Executes the motion part of an action step'''
+
+        # For each step navigate the base to the desired position.
+        if (not self.move_base(action_step.baseTarget.pose)):
+            self.status = ExecutionStatus.OBSTRUCTED
+            return False
+
+
         # For each step check step type
         # If arm target action
         if (action_step.type == ActionStep.ARM_TARGET):

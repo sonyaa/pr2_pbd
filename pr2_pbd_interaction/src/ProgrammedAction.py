@@ -453,6 +453,7 @@ class ProgrammedAction:
         '''Makes a copy of an action step'''
         copy = ActionStep()
         copy.type = int(action_step.type)
+        copy.baseTarget = action_step.baseTarget
         if (copy.type == ActionStep.ARM_TARGET):
             copy.armTarget = ArmTarget()
             copy.armTarget.rArmVelocity = float(

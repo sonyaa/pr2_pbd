@@ -1,6 +1,9 @@
 '''Main interaction loop'''
+from geometry_msgs.msg import Pose, Point, Quaternion
 
 import roslib
+import tf
+
 roslib.load_manifest('pr2_pbd_interaction')
 
 # Generic libraries
@@ -238,6 +241,7 @@ class Interaction:
                            self.arms.get_gripper_state(1)]
                 actions[arm_index] = gripper_state
                 step.gripperAction = GripperAction(actions[0], actions[1])
+                step.baseTarget.pose = self._get_base_state()
                 self.session.add_step_to_action(step,
                                                 self.world.get_frame_list())
 
@@ -284,6 +288,7 @@ class Interaction:
             traj_step.gripperAction = GripperAction(
                                         self.arms.get_gripper_state(0),
                                         self.arms.get_gripper_state(1))
+            traj_step.baseTarget.pose = self._get_base_state()
             self.session.add_step_to_action(traj_step,
                                         self.world.get_frame_list())
             Interaction._arm_trajectory = None
@@ -351,6 +356,7 @@ class Interaction:
                 step.gripperAction = GripperAction(
                                             self.arms.get_gripper_state(0),
                                             self.arms.get_gripper_state(1))
+                step.baseTarget.pose = self._get_base_state()
                 self.session.add_step_to_action(step,
                                             self.world.get_frame_list())
                 return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
@@ -359,6 +365,25 @@ class Interaction:
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
+
+
+    def _get_base_state(self):
+        try:
+            ref_frame = "/map"
+            time = World.tf_listener.getLatestCommonTime(ref_frame,
+                                                         "/base_link")
+            (position, orientation) = World.tf_listener.lookupTransform(
+                                                ref_frame, "/base_link", time)
+            ee_pose = Pose()
+            ee_pose.position = Point(position[0], position[1], position[2])
+            ee_pose.orientation = Quaternion(orientation[0], orientation[1],
+                                             orientation[2], orientation[3])
+            return ee_pose
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            rospy.logwarn('Something wrong with transform request for base state.')
+            return None
+
 
     def _get_arm_states(self):
         '''Returns the current arms states in the right format'''
