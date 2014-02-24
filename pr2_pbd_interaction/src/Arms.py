@@ -182,9 +182,14 @@ class Arms:
             return arm_state, True
 
     @staticmethod
-    def is_condition_met(dummy):
+    def is_condition_met(condition):
         ''' Checks if the given precondition is currently met'''
-        # TO-DO
+        if condition.rGripperPosition is None or condition.lGripperPosition is None:
+            return True
+        threshold = 0.1
+        if ((abs(condition.rGripperPosition - Arms.get_gripper_position(0)) > threshold)
+            or (abs(condition.lGripperPosition - Arms.get_gripper_position(1)) > threshold)):
+            return False
         return True
 
     def start_move_to_pose(self, arm_state, arm_index):
@@ -476,6 +481,11 @@ class Arms:
     def get_gripper_state(arm_index):
         ''' Get gripper status on the indicated side'''
         return Arms.arms[arm_index].get_gripper_state()
+
+    @staticmethod
+    def get_gripper_position(arm_index):
+        ''' Get gripper status on the indicated side'''
+        return Arms.arms[arm_index].get_gripper_position()
 
     @staticmethod
     def get_ee_state(arm_index):

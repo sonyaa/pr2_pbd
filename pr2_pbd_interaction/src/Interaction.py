@@ -22,6 +22,7 @@ from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import ActionStep, ArmTarget, Object
 from pr2_pbd_interaction.msg import GripperAction, ArmTrajectory
 from pr2_pbd_interaction.msg import ExecutionStatus, GuiCommand
+from pr2_pbd_interaction.msg import Condition
 from pr2_pbd_speech_recognition.msg import Command
 from pr2_social_gaze.msg import GazeGoal
 
@@ -241,6 +242,8 @@ class Interaction:
                            self.arms.get_gripper_state(1)]
                 actions[arm_index] = gripper_state
                 step.gripperAction = GripperAction(actions[0], actions[1])
+                step.postCond = Condition(self.arms.get_gripper_position(0),
+                                          self.arms.get_gripper_position(1))
                 step.baseTarget.pose = self._get_base_state()
                 self.session.add_step_to_action(step,
                                                 self.world.get_frame_list())
@@ -356,6 +359,8 @@ class Interaction:
                 step.gripperAction = GripperAction(
                                             self.arms.get_gripper_state(0),
                                             self.arms.get_gripper_state(1))
+                step.postCond = Condition(self.arms.get_gripper_position(0),
+                                          self.arms.get_gripper_position(1))
                 step.baseTarget.pose = self._get_base_state()
                 self.session.add_step_to_action(step,
                                             self.world.get_frame_list())
