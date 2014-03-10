@@ -11,13 +11,13 @@ from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import ActionStep, Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, Point, PoseStamped
 from Response import Response
 from World import World
 from Arm import Arm, ArmMode
-from move_base_msgs.msg import MoveBaseAction
-from move_base_msgs.msg import MoveBaseActionGoal
-from move_base_msgs.msg import MoveBaseGoal
+#from move_base_msgs.msg import MoveBaseAction
+#from move_base_msgs.msg import MoveBaseActionGoal
+#from move_base_msgs.msg import MoveBaseGoal
 
 
 class Arms:
@@ -31,6 +31,7 @@ class Arms:
         self.attended_arm = -1
         self.action = None
         self.preempt = False
+	self.z_offset = 0
 
         rospy.loginfo('Arms have been initialized.')
 
@@ -43,10 +44,10 @@ class Arms:
         self.status = ExecutionStatus.NOT_EXECUTING
 
 
-        self.nav_action_client = SimpleActionClient(
-                        'move_base', MoveBaseAction)
-        self.nav_action_client.wait_for_server()
-        rospy.loginfo('Got response from move base action server.')
+        #self.nav_action_client = SimpleActionClient(
+        #                'move_base', MoveBaseAction)
+        #self.nav_action_client.wait_for_server()
+        #rospy.loginfo('Got response from move base action server.')
 
     @staticmethod
     def set_arm_mode(arm_index, mode):
@@ -75,11 +76,12 @@ class Arms:
         '''Whether or not there is an ongoing action execution'''
         return (self.status == ExecutionStatus.EXECUTING)
 
-    def start_execution(self, action):
+    def start_execution(self, action, z_offset=0):
         ''' Starts execution of an action'''
         # This will take long, create a thread
         self.action = action.copy()
         self.preempt = False
+	self.z_offset = z_offset
         thread = threading.Thread(group=None, target=self.execute_action,
                                   name='skill_execution_thread')
         thread.start()
@@ -98,10 +100,13 @@ class Arms:
             # If arm target action
             if (self.action.seq.seq[i].type == ActionStep.ARM_TARGET):
                 # Find frames that are relative and convert to absolute
+
                 r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
-                                        self.action.seq.seq[i].armTarget.rArm)
+                                        self.action.seq.seq[i].armTarget.rArm,
+					self.z_offset)
                 l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
-                                        self.action.seq.seq[i].armTarget.lArm)
+                                        self.action.seq.seq[i].armTarget.lArm,
+					self.z_offset)
 
                 self.action.seq.seq[i].armTarget.rArm = r_arm
                 self.action.seq.seq[i].armTarget.lArm = l_arm
@@ -112,9 +117,11 @@ class Arms:
                 n_frames = len(self.action.seq.seq[i].armTrajectory.timing)
                 for j in range(n_frames):
                     r_arm, has_solution_r = Arms.solve_ik_for_arm(0,
-                            self.action.seq.seq[i].armTrajectory.r_arm[j])
+                            self.action.seq.seq[i].armTrajectory.r_arm[j],
+			    self.z_offset)
                     l_arm, has_solution_l = Arms.solve_ik_for_arm(1,
-                            self.action.seq.seq[i].armTrajectory.l_arm[j])
+                            self.action.seq.seq[i].armTrajectory.l_arm[j],
+			    self.z_offset)
                     self.action.seq.seq[i].armTrajectory.r_arm[j] = r_arm
                     self.action.seq.seq[i].armTrajectory.l_arm[j] = l_arm
                     if (not has_solution_r) or (not has_solution_l):
@@ -144,7 +151,7 @@ class Arms:
         return True
 
     @staticmethod
-    def solve_ik_for_arm(arm_index, arm_state):
+    def solve_ik_for_arm(arm_index, arm_state, z_offset=0):
         '''Finds an  IK solution for a particular arm pose'''
         # We need to find IK only if the frame is relative to an object
         if (arm_state.refFrame == ArmState.OBJECT):
@@ -152,6 +159,9 @@ class Arms:
             solution = ArmState()
             target_pose = World.transform(arm_state.ee_pose,
                             arm_state.refFrameObject.name, 'base_link')
+
+	    target_pose.position.z = target_pose.position.z + z_offset
+
             target_joints = Arms.arms[arm_index].get_ik_for_ee(target_pose,
                                             arm_state.joint_pose)
             if (target_joints == None):
@@ -165,8 +175,10 @@ class Arms:
                 return solution, True
         elif (arm_state.refFrame == ArmState.ROBOT_BASE):
 	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
-            target_joints = Arms.arms[arm_index].get_ik_for_ee(
-                                                    arm_state.ee_pose,
+	    pos = arm_state.ee_pose.position
+	    target_position = Point(pos.x, pos.y, pos.z + z_offset)
+	    target_pose = Pose(target_position, arm_state.ee_pose.orientation)
+            target_joints = Arms.arms[arm_index].get_ik_for_ee(target_pose,
                                                     arm_state.joint_pose)
             if (target_joints == None):
                 rospy.logerr('No IK for absolute end-effector pose.')
@@ -296,44 +308,44 @@ class Arms:
 
             rospy.loginfo('Step ' + str(i) + ' of action is complete.')
 
-    def move_base(self, base_pose):
-        '''Moves the base to the desired position'''
-        # Setup the goal
-        #nav_goal = MoveBaseActionGoal()
-        #nav_goal.header.stamp = (rospy.Time.now() +
-        #                                     rospy.Duration(0.1))
-        #nav_goal.goal_id.stamp = nav_goal.header.stamp
-        #nav_goal.goal_id.id = 1
-        pose_stamped = PoseStamped()
-        pose_stamped.header.stamp = rospy.Time.now()
-        pose_stamped.header.frame_id = "/map"
-        pose_stamped.pose = base_pose
-        #nav_goal.goal = MoveBaseGoal()
-        #nav_goal.goal.target_pose = pose_stamped
-        #rospy.loginfo(nav_goal)
-        nav_goal = MoveBaseGoal()
-        nav_goal.target_pose = pose_stamped
-        # Client sends the goal to the Server
-        self.nav_action_client.send_goal(nav_goal)
-        while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
-                or self.nav_action_client.get_state() == GoalStatus.PENDING):
-            time.sleep(0.01)
-        rospy.loginfo('Base reached target.')
-
-        # Verify that base succeeded
-        if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logwarn('Aborting because base failed to move to pose.')
-            return False
-        else:
-            return True
+    #def move_base(self, base_pose):
+    #    '''Moves the base to the desired position'''
+    #    # Setup the goal
+    #    #nav_goal = MoveBaseActionGoal()
+    #    #nav_goal.header.stamp = (rospy.Time.now() +
+    #    #                                     rospy.Duration(0.1))
+    #    #nav_goal.goal_id.stamp = nav_goal.header.stamp
+    #    #nav_goal.goal_id.id = 1
+    #    pose_stamped = PoseStamped()
+    #    pose_stamped.header.stamp = rospy.Time.now()
+    #    pose_stamped.header.frame_id = "/map"
+    #    pose_stamped.pose = base_pose
+    #    #nav_goal.goal = MoveBaseGoal()
+    #    #nav_goal.goal.target_pose = pose_stamped
+    #    #rospy.loginfo(nav_goal)
+    #    nav_goal = MoveBaseGoal()
+    #    nav_goal.target_pose = pose_stamped
+    #    # Client sends the goal to the Server
+    #    self.nav_action_client.send_goal(nav_goal)
+    #    while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
+    #            or self.nav_action_client.get_state() == GoalStatus.PENDING):
+    #        time.sleep(0.01)
+    #    rospy.loginfo('Base reached target.')
+    #
+    #    # Verify that base succeeded
+    #    if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
+    #        rospy.logwarn('Aborting because base failed to move to pose.')
+    #        return False
+    #    else:
+    #        return True
 
     def _execute_action_step(self, action_step):
         '''Executes the motion part of an action step'''
 
         # For each step navigate the base to the desired position.
-        if (not self.move_base(action_step.baseTarget.pose)):
-            self.status = ExecutionStatus.OBSTRUCTED
-            return False
+        #if (not self.move_base(action_step.baseTarget.pose)):
+        #    self.status = ExecutionStatus.OBSTRUCTED
+        #    return False
 
 
         # For each step check step type
