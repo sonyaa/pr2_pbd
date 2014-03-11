@@ -31,7 +31,8 @@ class Arms:
         self.attended_arm = -1
         self.action = None
         self.preempt = False
-	self.z_offset = 0
+        self.is_continue_execution = False
+        self.z_offset = 0
 
         rospy.loginfo('Arms have been initialized.')
 
@@ -76,6 +77,10 @@ class Arms:
         '''Whether or not there is an ongoing action execution'''
         return (self.status == ExecutionStatus.EXECUTING)
 
+    def is_condition_error(self):
+        '''Whether or not there is an ongoing action execution'''
+        return (self.status == ExecutionStatus.CONDITION_ERROR)
+
     def start_execution(self, action, z_offset=0):
         ''' Starts execution of an action'''
         # This will take long, create a thread
@@ -85,6 +90,9 @@ class Arms:
         thread = threading.Thread(group=None, target=self.execute_action,
                                   name='skill_execution_thread')
         thread.start()
+
+    def continue_execution(self):
+        self.is_continue_execution = True
 
     def stop_execution(self):
         '''Preempts an ongoing execution'''
@@ -241,9 +249,18 @@ class Arms:
         if (not Arms.is_condition_met(action_step.preCond)):
             rospy.logwarn('First precond is not met, first make sure ' +
                           'the robot is ready to execute action ' +
-                          '(hand object or free hands).')
+                          '(hand object or free hands). Waiting for user response.')
             self.status = ExecutionStatus.CONDITION_ERROR
-        else:
+            while not (self.preempt or self.is_continue_execution):
+                time.sleep(0.1)
+            if self.preempt:
+                rospy.loginfo('Aborting execution.')
+                self.status = ExecutionStatus.PREEMPTED
+            else:
+                rospy.loginfo('Continuing execution.')
+                self.status = ExecutionStatus.EXECUTING
+                self.is_continue_execution = False
+        if self.status == ExecutionStatus.EXECUTING:
             # Copy action in case we need to revert it later, because solve_ik_for_action() overwrites action.
             original_action = self.action.copy()
             # Check that all parts of the action are reachable
@@ -285,10 +302,18 @@ class Arms:
             # Check that preconditions are met
             if (not Arms.is_condition_met(action_step.preCond)):
                 rospy.logwarn('Preconditions of action step ' + str(i) +
-                              ' are not satisfied. Aborting.')
-                self.status = ExecutionStatus.PREEMPTED
-                break
-            else:
+                              ' are not satisfied. Will wait for user response.')
+                self.status = ExecutionStatus.CONDITION_ERROR
+                while not (self.preempt or self.is_continue_execution):
+                    time.sleep(0.1)
+                if self.preempt:
+                    rospy.loginfo('Aborting execution.')
+                    break
+                else:
+                    rospy.loginfo('Continuing execution.')
+                    self.status = ExecutionStatus.EXECUTING
+                    self.is_continue_execution = False
+            if self.status == ExecutionStatus.EXECUTING:
                 if (not self._execute_action_step(action_step)):
                     break
 
@@ -297,9 +322,17 @@ class Arms:
                     rospy.loginfo('Post-conditions of the action are met.')
                 else:
                     rospy.logwarn('Post-conditions of action step ' +
-                                  str(i) + ' are not satisfied. Aborting.')
-                    self.status = ExecutionStatus.PREEMPTED
-                    break
+                                  str(i) + ' are not satisfied. Will wait for user response.')
+                    self.status = ExecutionStatus.CONDITION_ERROR
+                    while not (self.preempt or self.is_continue_execution):
+                        time.sleep(0.1)
+                    if self.preempt:
+                        rospy.loginfo('Aborting execution.')
+                        break
+                    else:
+                        rospy.loginfo('Continuing execution.')
+                        self.status = ExecutionStatus.EXECUTING
+                        self.is_continue_execution = False
 
             if (self.preempt):
                 rospy.logwarn('Execution preempted by user.')

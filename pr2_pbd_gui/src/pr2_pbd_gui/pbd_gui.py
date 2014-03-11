@@ -103,6 +103,7 @@ class PbDGUI(Plugin):
         self.commands[Command.CLOSE_LEFT_HAND] = 'Close left hand'
         self.commands[Command.EXECUTE_ACTION] = 'Execute action'
         self.commands[Command.STOP_EXECUTION] = 'Stop execution'
+        self.commands[Command.CONTINUE_EXECUTION] = 'Continue execution'
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
@@ -155,9 +156,12 @@ class PbDGUI(Plugin):
         self.stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
         self.stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_ACTION))
         self.stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
-        self.stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
-        self.stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
+        self.stepsButtonGrid.addWidget(self.create_button(Command.CONTINUE_EXECUTION))
         self._set_enabled_widgets_in_layout(self.stepsButtonGrid, False)
+        self.stepsButtonGrid2 = QtGui.QHBoxLayout()
+        self.stepsButtonGrid2.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
+        self.stepsButtonGrid2.addWidget(self.create_button(Command.DELETE_LAST_STEP))
+        self._set_enabled_widgets_in_layout(self.stepsButtonGrid2, False)
 
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
@@ -205,6 +209,7 @@ class PbDGUI(Plugin):
         
         allWidgetsBox.addWidget(self.stepsBox)
         allWidgetsBox.addLayout(self.stepsButtonGrid)
+        allWidgetsBox.addLayout(self.stepsButtonGrid2)
         
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         allWidgetsBox.addLayout(misc_grid)
@@ -383,9 +388,11 @@ class PbDGUI(Plugin):
     def action_pressed(self, actionIndex, isPublish=True):
         if actionIndex == -1:
             self._set_enabled_widgets_in_layout(self.stepsButtonGrid, False)
+            self._set_enabled_widgets_in_layout(self.stepsButtonGrid2, False)
             self._set_enabled_widgets_in_layout(self.prev_next_buttons, False)
         else:
             self._set_enabled_widgets_in_layout(self.stepsButtonGrid, True)
+            self._set_enabled_widgets_in_layout(self.stepsButtonGrid2, True)
             self._set_enabled_widgets_in_layout(self.prev_next_buttons, True)
         for i in range(len(self.actionIcons.keys())):
             key = self.actionIcons.keys()[i]

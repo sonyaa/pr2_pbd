@@ -74,7 +74,8 @@ class Interaction:
                                             self.start_recording, None),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None),
             Command.EXECUTE_GENERATED_ACTION: Response(self.execute_generated_action, None),
-            Command.CALCULATE_POSE_DISTRIBUTION: Response(self.calculate_pose_distribution, None)
+            Command.CALCULATE_POSE_DISTRIBUTION: Response(self.calculate_pose_distribution, None),
+            Command.CONTINUE_EXECUTION: Response(self.continue_execution, None)
             }
 
         rospy.loginfo('Interaction initialized.')
@@ -228,11 +229,19 @@ class Interaction:
 
     def stop_execution(self, dummy=None):
         '''Stops ongoing execution'''
-        if (self.arms.is_executing()):
+        if (self.arms.is_executing() or self.arms.is_condition_error()):
             self.arms.stop_execution()
             return [RobotSpeech.STOPPING_EXECUTION, GazeGoal.NOD]
         else:
             return [RobotSpeech.ERROR_NO_EXECUTION, GazeGoal.SHAKE]
+
+    def continue_execution(self, dummy=None):
+        '''Continues execution that was interrupted because of condition error'''
+        if (self.arms.is_executing() or self.arms.is_condition_error()):
+            self.arms.continue_execution()
+            return [RobotSpeech.CONTINUING_EXECUTION, GazeGoal.NOD]
+        else:
+            return [RobotSpeech.ERROR_NO_CONDITION_ERROR, GazeGoal.SHAKE]
 
     def save_gripper_step(self, arm_index, gripper_state, initial_condition):
         '''Saves an action step that involves a gripper state change'''
@@ -472,14 +481,20 @@ class Interaction:
                           command.command + '\033[0m')
             response = self.responses[command.command]
 
-            if (not self.arms.is_executing()):
+            if (self.arms.is_condition_error()):
+                if command.command == Command.STOP_EXECUTION or command.command == Command.CONTINUE_EXECUTION:
+                    response.respond()
+                else:
+                    rospy.logwarn('Ignoring speech command during condition error: '
+                                  + command.command)
+            elif (not self.arms.is_executing()):
                 if (self._undo_function != None):
                     response.respond()
                     self._undo_function = None
                 else:
                     response.respond()
             else:
-                if command.command == Command.STOP_EXECUTION:
+                if command.command == Command.STOP_EXECUTION or command.command == Command.CONTINUE_EXECUTION:
                     response.respond()
                 else:
                     rospy.logwarn('Ignoring speech command during execution: '
@@ -507,7 +522,7 @@ class Interaction:
     def gui_command_cb(self, command):
         '''Callback for when a GUI command is received'''
 
-        if (not self.arms.is_executing()):
+        if (not self.arms.is_executing() and not self.arms.is_condition_error()):
             if (self.session.n_actions() > 0):
                 if (command.command == GuiCommand.SWITCH_TO_ACTION):
                     action_no = command.param
@@ -537,7 +552,11 @@ class Interaction:
         self.arms.update()
 
         if (self.arms.status != ExecutionStatus.NOT_EXECUTING):
-            if (self.arms.status != ExecutionStatus.EXECUTING):
+            if (self.arms.status == ExecutionStatus.CONDITION_ERROR):
+                Response.say(RobotSpeech.CONDITION_ERROR)
+                self.arms.status = ExecutionStatus.EXECUTING
+                Response.perform_gaze_action(GazeGoal.SHAKE)
+            elif (self.arms.status != ExecutionStatus.EXECUTING):
                 self._end_execution()
         if (Interaction._is_recording_motion):
             self._save_arm_to_trajectory()
