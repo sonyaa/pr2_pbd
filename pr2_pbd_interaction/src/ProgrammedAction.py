@@ -383,7 +383,11 @@ class ProgrammedAction:
     def get_last_step(self):
         '''Returns the last step of the action'''
         self.lock.acquire()
-        last_step = self.seq.seq[len(self.seq.seq) - 1]
+        #If there are no steps yet, return None.
+        if len(self.seq.seq) == 0:
+            last_step = None
+        else:
+            last_step = self.seq.seq[len(self.seq.seq) - 1]
         self.lock.release()
         return last_step
 

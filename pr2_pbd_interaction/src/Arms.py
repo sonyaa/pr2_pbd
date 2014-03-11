@@ -198,7 +198,7 @@ class Arms:
         ''' Checks if the given precondition is currently met'''
         if condition.rGripperPosition is None or condition.lGripperPosition is None:
             return True
-        threshold = 0.1
+        threshold = 0.015
         if ((abs(condition.rGripperPosition - Arms.get_gripper_position(0)) > threshold)
             or (abs(condition.lGripperPosition - Arms.get_gripper_position(1)) > threshold)):
             return False
