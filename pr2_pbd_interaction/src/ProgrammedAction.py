@@ -489,6 +489,8 @@ class ProgrammedAction:
             copy.armTrajectory.lRefFrameObject = l_obj
         copy.gripperAction = GripperAction(action_step.gripperAction.rGripper,
                                            action_step.gripperAction.lGripper)
+        copy.preCond = action_step.preCond
+        copy.postCond = action_step.postCond
         return copy
 
     @staticmethod

@@ -80,11 +80,13 @@ class Interaction:
         rospy.loginfo('Interaction initialized.')
 
     def open_hand(self, arm_index):
+        initial_condition = Condition(self.arms.get_gripper_position(0),
+                                          self.arms.get_gripper_position(1))
         '''Opens gripper on the indicated side'''
         if self.arms.set_gripper_state(arm_index, GripperState.OPEN):
             speech_response = Response.open_responses[arm_index]
             if (Interaction._is_programming and self.session.n_actions() > 0):
-                self.save_gripper_step(arm_index, GripperState.OPEN)
+                self.save_gripper_step(arm_index, GripperState.OPEN, initial_condition)
                 speech_response = (speech_response + ' ' +
                                    RobotSpeech.STEP_RECORDED)
             return [speech_response, Response.glance_actions[arm_index]]
@@ -94,10 +96,12 @@ class Interaction:
 
     def close_hand(self, arm_index):
         '''Closes gripper on the indicated side'''
+        initial_condition = Condition(self.arms.get_gripper_position(0),
+                                          self.arms.get_gripper_position(1))
         if Arms.set_gripper_state(arm_index, GripperState.CLOSED):
             speech_response = Response.close_responses[arm_index]
             if (Interaction._is_programming and self.session.n_actions() > 0):
-                self.save_gripper_step(arm_index, GripperState.CLOSED)
+                self.save_gripper_step(arm_index, GripperState.CLOSED, initial_condition)
                 speech_response = (speech_response + ' ' +
                                    RobotSpeech.STEP_RECORDED)
             return [speech_response, Response.glance_actions[arm_index]]
@@ -230,7 +234,7 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_EXECUTION, GazeGoal.SHAKE]
 
-    def save_gripper_step(self, arm_index, gripper_state):
+    def save_gripper_step(self, arm_index, gripper_state, initial_condition):
         '''Saves an action step that involves a gripper state change'''
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
@@ -243,7 +247,7 @@ class Interaction:
                 actions[arm_index] = gripper_state
                 step.gripperAction = GripperAction(actions[0], actions[1])
                 prev_step = self.session.get_current_action().get_last_step()
-                step.preCond = None if prev_step is None else prev_step.postCond
+                step.preCond = initial_condition if prev_step is None else prev_step.postCond
                 step.postCond = Condition(self.arms.get_gripper_position(0),
                                           self.arms.get_gripper_position(1))
                 #step.baseTarget.pose = self._get_base_state()
@@ -362,9 +366,15 @@ class Interaction:
                                             self.arms.get_gripper_state(0),
                                             self.arms.get_gripper_state(1))
                 prev_step = self.session.get_current_action().get_last_step()
-                step.preCond = None if prev_step is None else prev_step.postCond
+                if prev_step is None:
+                    step.preCond = Condition(self.arms.get_gripper_position(0),
+                                          self.arms.get_gripper_position(1))
+                else:
+                    step.preCond = prev_step.postCond
                 step.postCond = Condition(self.arms.get_gripper_position(0),
                                           self.arms.get_gripper_position(1))
+                rospy.loginfo("post")
+                rospy.loginfo(step.postCond)
                 #step.baseTarget.pose = self._get_base_state()
                 self.session.add_step_to_action(step,
                                             self.world.get_frame_list())
