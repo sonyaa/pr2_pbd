@@ -4,6 +4,7 @@
   <arg name="isReload" value="False" />
   <arg name="dataRoot" value="$(env HOME)" />
   <arg name="experimentNumber" value="0" />
+  <arg name="map_file" default="$(find pr2_pbd_interaction)/config/map.yaml"/>
   
   <!-- This runs the interactive manipulation -->
   
@@ -21,7 +22,11 @@
   
   <include file="$(find pr2_interactive_manipulation)/launch/pr2_interactive_manipulation_robot.launch" >
     <arg name="sim" value="false" />
+    <arg name="nav" value="true" />
   </include>
+
+  <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   <node name="pr2_pbd_interaction" pkg="pr2_pbd_interaction" type="interaction.py" output="screen">
     <param name="dataRoot" value="$(arg dataRoot)" />

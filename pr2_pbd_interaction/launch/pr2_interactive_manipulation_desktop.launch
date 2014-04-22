@@ -2,8 +2,8 @@
     <!-- create a temporary rviz file... hopefully $HOME is defined on all the systems we use... --> 
     <arg name="rviz_config_file" value="$(env HOME)/.ros/pr2_interactive_manipulation_temp.rviz"/>
     <node pkg="pr2_interactive_manipulation_frontend" type="adjust_rviz_config.py" 
-	  args="$(find pr2_pbd_interaction)/config/pr2_interactive_manipulation_pbd.rviz $(arg rviz_config_file) 
-		false false false false false" 
+	  args="$(find pr2_pbd_interaction)/config/pr2_interactive_manipulation_pbd_with_nav.rviz $(arg rviz_config_file) 
+		false true false false false" 
 	  name="rviz_config_adjuster" output="screen" />
     
     <!-- tf republish; the throttler gets launched on the robot side and the republisher on the desktop side -->

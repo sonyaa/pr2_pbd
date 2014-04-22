@@ -259,7 +259,7 @@ class Interaction:
                 step.preCond = initial_condition if prev_step is None else prev_step.postCond
                 step.postCond = Condition(self.arms.get_gripper_position(0),
                                           self.arms.get_gripper_position(1))
-                #step.baseTarget.pose = self._get_base_state()
+                step.baseTarget.pose = self._get_base_state()
                 self.session.add_step_to_action(step,
                                                 self.world.get_frame_list())
 
@@ -384,7 +384,7 @@ class Interaction:
                                           self.arms.get_gripper_position(1))
                 rospy.loginfo("post")
                 rospy.loginfo(step.postCond)
-                #step.baseTarget.pose = self._get_base_state()
+                step.baseTarget.pose = self.arms.get_base_state()
                 self.session.add_step_to_action(step,
                                             self.world.get_frame_list())
                 return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
@@ -393,24 +393,6 @@ class Interaction:
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
-    #
-    #
-    #def _get_base_state(self):
-    #    try:
-    #        ref_frame = "/map"
-    #        time = World.tf_listener.getLatestCommonTime(ref_frame,
-    #                                                     "/base_link")
-    #        (position, orientation) = World.tf_listener.lookupTransform(
-    #                                            ref_frame, "/base_link", time)
-    #        ee_pose = Pose()
-    #        ee_pose.position = Point(position[0], position[1], position[2])
-    #        ee_pose.orientation = Quaternion(orientation[0], orientation[1],
-    #                                         orientation[2], orientation[3])
-    #        return ee_pose
-    #    except (tf.LookupException, tf.ConnectivityException,
-    #            tf.ExtrapolationException):
-    #        rospy.logwarn('Something wrong with transform request for base state.')
-    #        return None
 
 
     def _get_arm_states(self):

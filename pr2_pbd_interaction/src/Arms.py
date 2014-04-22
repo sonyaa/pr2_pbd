@@ -1,7 +1,10 @@
 '''Control of the two arms for action execution'''
-from actionlib import SimpleActionClient
+
+from actionlib.simple_action_client import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 import roslib
+import tf
+
 roslib.load_manifest('pr2_pbd_interaction')
 import rospy
 
@@ -11,13 +14,15 @@ from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import ActionStep, Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
-from geometry_msgs.msg import Pose, Point, PoseStamped
+from geometry_msgs.msg import Pose, Point, PoseStamped, Quaternion
 from Response import Response
 from World import World
 from Arm import Arm, ArmMode
-#from move_base_msgs.msg import MoveBaseAction
-#from move_base_msgs.msg import MoveBaseActionGoal
-#from move_base_msgs.msg import MoveBaseGoal
+from move_base_msgs.msg import MoveBaseAction
+from move_base_msgs.msg import MoveBaseActionGoal
+from move_base_msgs.msg import MoveBaseGoal
+from pr2_common_action_msgs.msg import TuckArmsAction, TuckArmsGoal
+from pr2_pbd_interaction.msg import ArmTarget, Object
 
 
 class Arms:
@@ -44,11 +49,14 @@ class Arms:
         Arms.arms[Side.LEFT].close_gripper()
         self.status = ExecutionStatus.NOT_EXECUTING
 
+        self.nav_action_client = SimpleActionClient(
+                       'move_base', MoveBaseAction)
+        self.nav_action_client.wait_for_server()
+        rospy.loginfo('Got response from move base action server.')
 
-        #self.nav_action_client = SimpleActionClient(
-        #                'move_base', MoveBaseAction)
-        #self.nav_action_client.wait_for_server()
-        #rospy.loginfo('Got response from move base action server.')
+        self.tuck_arms_client = SimpleActionClient('tuck_arms', TuckArmsAction)
+        self.tuck_arms_client.wait_for_server()
+        rospy.loginfo('Got response from tuck arms action server.')
 
     @staticmethod
     def set_arm_mode(arm_index, mode):
@@ -246,20 +254,20 @@ class Arms:
         self.status = ExecutionStatus.EXECUTING
         # Check if the very first precondition is met
         action_step = self.action.get_step(0)
-        if (not Arms.is_condition_met(action_step.preCond)):
-            rospy.logwarn('First precond is not met, first make sure ' +
-                          'the robot is ready to execute action ' +
-                          '(hand object or free hands). Waiting for user response.')
-            self.status = ExecutionStatus.CONDITION_ERROR
-            while not (self.preempt or self.is_continue_execution):
-                time.sleep(0.1)
-            if self.preempt:
-                rospy.loginfo('Aborting execution.')
-                self.status = ExecutionStatus.PREEMPTED
-            else:
-                rospy.loginfo('Continuing execution.')
-                self.status = ExecutionStatus.EXECUTING
-                self.is_continue_execution = False
+        # if (not Arms.is_condition_met(action_step.preCond)):
+        #     rospy.logwarn('First precond is not met, first make sure ' +
+        #                   'the robot is ready to execute action ' +
+        #                   '(hand object or free hands). Waiting for user response.')
+        #     self.status = ExecutionStatus.CONDITION_ERROR
+        #     while not (self.preempt or self.is_continue_execution):
+        #         time.sleep(0.1)
+        #     if self.preempt:
+        #         rospy.loginfo('Aborting execution.')
+        #         self.status = ExecutionStatus.PREEMPTED
+        #     else:
+        #         rospy.loginfo('Continuing execution.')
+        #         self.status = ExecutionStatus.EXECUTING
+        #         self.is_continue_execution = False
         if self.status == ExecutionStatus.EXECUTING:
             # Copy action in case we need to revert it later, because solve_ik_for_action() overwrites action.
             original_action = self.action.copy()
@@ -300,39 +308,39 @@ class Arms:
             action_step = self.action.get_step(i)
 
             # Check that preconditions are met
-            if (not Arms.is_condition_met(action_step.preCond)):
-                rospy.logwarn('Preconditions of action step ' + str(i) +
-                              ' are not satisfied. Will wait for user response.')
-                self.status = ExecutionStatus.CONDITION_ERROR
-                while not (self.preempt or self.is_continue_execution):
-                    time.sleep(0.1)
-                if self.preempt:
-                    rospy.loginfo('Aborting execution.')
-                    break
-                else:
-                    rospy.loginfo('Continuing execution.')
-                    self.status = ExecutionStatus.EXECUTING
-                    self.is_continue_execution = False
+            # if (not Arms.is_condition_met(action_step.preCond)):
+            #     rospy.logwarn('Preconditions of action step ' + str(i) +
+            #                   ' are not satisfied. Will wait for user response.')
+            #     self.status = ExecutionStatus.CONDITION_ERROR
+            #     while not (self.preempt or self.is_continue_execution):
+            #         time.sleep(0.1)
+            #     if self.preempt:
+            #         rospy.loginfo('Aborting execution.')
+            #         break
+            #     else:
+            #         rospy.loginfo('Continuing execution.')
+            #         self.status = ExecutionStatus.EXECUTING
+            #         self.is_continue_execution = False
             if self.status == ExecutionStatus.EXECUTING:
                 if (not self._execute_action_step(action_step)):
                     break
 
                 # Check that postconditions are met
-                if (Arms.is_condition_met(action_step.postCond)):
-                    rospy.loginfo('Post-conditions of the action are met.')
-                else:
-                    rospy.logwarn('Post-conditions of action step ' +
-                                  str(i) + ' are not satisfied. Will wait for user response.')
-                    self.status = ExecutionStatus.CONDITION_ERROR
-                    while not (self.preempt or self.is_continue_execution):
-                        time.sleep(0.1)
-                    if self.preempt:
-                        rospy.loginfo('Aborting execution.')
-                        break
-                    else:
-                        rospy.loginfo('Continuing execution.')
-                        self.status = ExecutionStatus.EXECUTING
-                        self.is_continue_execution = False
+                # if (Arms.is_condition_met(action_step.postCond)):
+                #     rospy.loginfo('Post-conditions of the action are met.')
+                # else:
+                #     rospy.logwarn('Post-conditions of action step ' +
+                #                   str(i) + ' are not satisfied. Will wait for user response.')
+                #     self.status = ExecutionStatus.CONDITION_ERROR
+                #     while not (self.preempt or self.is_continue_execution):
+                #         time.sleep(0.1)
+                #     if self.preempt:
+                #         rospy.loginfo('Aborting execution.')
+                #         break
+                #     else:
+                #         rospy.loginfo('Continuing execution.')
+                #         self.status = ExecutionStatus.EXECUTING
+                #         self.is_continue_execution = False
 
             if (self.preempt):
                 rospy.logwarn('Execution preempted by user.')
@@ -341,44 +349,105 @@ class Arms:
 
             rospy.loginfo('Step ' + str(i) + ' of action is complete.')
 
-    #def move_base(self, base_pose):
-    #    '''Moves the base to the desired position'''
-    #    # Setup the goal
-    #    #nav_goal = MoveBaseActionGoal()
-    #    #nav_goal.header.stamp = (rospy.Time.now() +
-    #    #                                     rospy.Duration(0.1))
-    #    #nav_goal.goal_id.stamp = nav_goal.header.stamp
-    #    #nav_goal.goal_id.id = 1
-    #    pose_stamped = PoseStamped()
-    #    pose_stamped.header.stamp = rospy.Time.now()
-    #    pose_stamped.header.frame_id = "/map"
-    #    pose_stamped.pose = base_pose
-    #    #nav_goal.goal = MoveBaseGoal()
-    #    #nav_goal.goal.target_pose = pose_stamped
-    #    #rospy.loginfo(nav_goal)
-    #    nav_goal = MoveBaseGoal()
-    #    nav_goal.target_pose = pose_stamped
-    #    # Client sends the goal to the Server
-    #    self.nav_action_client.send_goal(nav_goal)
-    #    while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
-    #            or self.nav_action_client.get_state() == GoalStatus.PENDING):
-    #        time.sleep(0.01)
-    #    rospy.loginfo('Base reached target.')
-    #
-    #    # Verify that base succeeded
-    #    if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
-    #        rospy.logwarn('Aborting because base failed to move to pose.')
-    #        return False
-    #    else:
-    #        return True
+    def get_base_state(self):
+       try:
+           ref_frame = "/map"
+           time = World.tf_listener.getLatestCommonTime(ref_frame,
+                                                        "/base_link")
+           (position, orientation) = World.tf_listener.lookupTransform(
+                                               ref_frame, "/base_link", time)
+           base_pose = Pose()
+           base_pose.position = Point(position[0], position[1], position[2])
+           base_pose.orientation = Quaternion(orientation[0], orientation[1],
+                                            orientation[2], orientation[3])
+           rospy.loginfo('Current base pose:')
+           rospy.loginfo(base_pose)
+           return base_pose
+       except (tf.LookupException, tf.ConnectivityException,
+               tf.ExtrapolationException):
+           rospy.logwarn('Something wrong with transform request for base state.')
+           return None
+
+    def _get_absolute_arm_states(self):
+        abs_ee_poses = [Arms.get_ee_state(0),
+                      Arms.get_ee_state(1)]
+        joint_poses = [Arms.get_joint_state(0),
+                      Arms.get_joint_state(1)]
+        states = [None, None]
+        for arm_index in [0, 1]:
+            states[arm_index] = ArmState(ArmState.ROBOT_BASE,
+                    abs_ee_poses[arm_index], joint_poses[arm_index], Object())
+        return states
+
+    def move_base(self, base_pose):
+       '''Moves the base to the desired position'''
+       # Setup the goal
+       #nav_goal = MoveBaseActionGoal()
+       #nav_goal.header.stamp = (rospy.Time.now() +
+       #                                     rospy.Duration(0.1))
+       #nav_goal.goal_id.stamp = nav_goal.header.stamp
+       #nav_goal.goal_id.id = 1
+       current_pose = self.get_base_state()
+       rospy.loginfo('Current base pose:')
+       rospy.loginfo(current_pose)
+       rospy.loginfo('Sending base to pose:')
+       rospy.loginfo(base_pose)
+       if World.pose_distance(current_pose, base_pose) < 0.1:
+           rospy.loginfo("Don't need to move the base, we're already there.")
+           return True
+
+       #Remember arm states
+       states = self._get_absolute_arm_states()
+       armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
+       arms_status = self.status
+       # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
+       self.status = ExecutionStatus.EXECUTING
+       rospy.loginfo("Tucking arms for navigation.")
+       goal = TuckArmsGoal()
+       goal.tuck_left = True
+       goal.tuck_right = True
+       self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+
+       pose_stamped = PoseStamped()
+       pose_stamped.header.stamp = rospy.Time.now()
+       pose_stamped.header.frame_id = "/map"
+       pose_stamped.pose = base_pose
+       #nav_goal.goal = MoveBaseGoal()
+       #nav_goal.goal.target_pose = pose_stamped
+       #rospy.loginfo(nav_goal)
+       nav_goal = MoveBaseGoal()
+       nav_goal.target_pose = pose_stamped
+       # Client sends the goal to the Server
+       self.nav_action_client.send_goal(nav_goal)
+       while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
+               or self.nav_action_client.get_state() == GoalStatus.PENDING):
+           time.sleep(0.01)
+       rospy.loginfo('Done with base navigation.')
+
+       # Untuck arms and move to where they were.
+       rospy.loginfo("Untucking arms and moving them back after navigation.")
+       goal = TuckArmsGoal()
+       goal.tuck_left = False
+       goal.tuck_right = False
+       self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+       # Return to remembered pose.
+       self.status = arms_status
+       self.move_to_joints(armTarget.rArm, armTarget.lArm)
+
+       # Verify that base succeeded
+       if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
+           rospy.logwarn('Aborting because base failed to move to pose.')
+           return False
+       else:
+           return True
 
     def _execute_action_step(self, action_step):
         '''Executes the motion part of an action step'''
 
         # For each step navigate the base to the desired position.
-        #if (not self.move_base(action_step.baseTarget.pose)):
-        #    self.status = ExecutionStatus.OBSTRUCTED
-        #    return False
+        if (not self.move_base(action_step.baseTarget.pose)):
+           self.status = ExecutionStatus.OBSTRUCTED
+           return False
 
 
         # For each step check step type
