@@ -104,6 +104,12 @@ class Session:
         self.actions[self.current_action_index].select_step(step_id)
         self._selected_step = step_id
 
+    def deselect_action_step(self, step_id):
+        ''' Removes the 6D controls from the interactive marker
+        when the indicated action step is deselected'''
+        self.actions[self.current_action_index].deselect_step(step_id)
+        self._selected_step = 0
+
     def _get_participant_id(self):
         '''Gets the experiment number from the command line'''
         while (self._exp_number == None):

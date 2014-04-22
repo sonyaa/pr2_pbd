@@ -309,20 +309,38 @@ class ProgrammedAction:
         Goes over all markers and un-selects them'''
         for i in range(len(self.r_markers)):
             if (self.r_markers[i].get_uid() == uid):
+                self.r_markers[i].is_dimmed = False
                 self.r_markers[i].is_control_visible = is_selected
                 self.r_markers[i].update_viz()
             else:
                 if (self.r_markers[i].is_control_visible):
                     self.r_markers[i].is_control_visible = False
                     self.r_markers[i].update_viz()
+                # If a new marker is selected, dim all the others.
+                if (is_selected == True):
+                    self.r_markers[i].is_dimmed = True
+                    self.r_markers[i].update_viz()
+                # Otherwise, it's deselected: undim all the others if they were dimmed.
+                elif (self.r_markers[i].is_dimmed):
+                    self.r_markers[i].is_dimmed = False
+                    self.r_markers[i].update_viz()
 
         for i in range(len(self.l_markers)):
             if (self.l_markers[i].get_uid() == uid):
+                self.l_markers[i].is_dimmed = False
                 self.l_markers[i].is_control_visible = is_selected
                 self.l_markers[i].update_viz()
             else:
                 if (self.l_markers[i].is_control_visible):
                     self.l_markers[i].is_control_visible = False
+                    self.l_markers[i].update_viz()
+                # If a new marker is selected, dim all the others.
+                if (is_selected == True):
+                    self.l_markers[i].is_dimmed = True
+                    self.l_markers[i].update_viz()
+                # Otherwise, it's deselected: undim all the others if they were dimmed.
+                elif (self.l_markers[i].is_dimmed):
+                    self.l_markers[i].is_dimmed = False
                     self.l_markers[i].update_viz()
 
         if is_selected:
@@ -332,6 +350,11 @@ class ProgrammedAction:
         ''' Makes the interactive marker for the indicated action
         step selected, by showing the 6D controls'''
         self.marker_click_cb(step_id, True)
+
+    def deselect_step(self, step_id):
+        ''' Makes the interactive marker for the indicated action
+        step deselected, by removing the 6D controls'''
+        self.marker_click_cb(step_id, False)
 
     def initialize_viz(self, object_list):
         '''Initialize visualization'''

@@ -42,6 +42,7 @@ class ActionStepMarker:
         self.is_control_visible = False
         self.is_edited = False
         self.has_object = False
+        self.is_dimmed = False
 
         self._sub_entries = None
         self._menu_handler = None
@@ -564,6 +565,9 @@ class ActionStepMarker:
         mesh.scale.x = 1.0
         mesh.scale.y = 1.0
         mesh.scale.z = 1.0
+        alpha = 0.6
+        if self.is_dimmed:
+            alpha = 0.1
         if self._is_reachable():
             # Original: some kinda orange
             # r,g,b = 1.0, 0.5, 0.0
@@ -571,9 +575,9 @@ class ActionStepMarker:
             # New: rainbow! See method comment for details.
             r,g,b = self.get_marker_color()
 
-            mesh.color = ColorRGBA(r, g, b, 0.6)
+            mesh.color = ColorRGBA(r, g, b, alpha)
         else:
-            mesh.color = ColorRGBA(0.5, 0.5, 0.5, 0.6)
+            mesh.color = ColorRGBA(0.5, 0.5, 0.5, alpha)
         return mesh
 
     def _make_gripper_marker(self, control, is_hand_open=False):

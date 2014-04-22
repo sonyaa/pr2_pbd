@@ -112,6 +112,7 @@ class PbDGUI(Plugin):
         
         self.currentAction = -1
         self.currentStep = -1
+        self.selectedStepUid = -1
 
         allWidgetsBox = QtGui.QVBoxLayout()
         actionBox = QGroupBox('Actions', self._widget)
@@ -382,7 +383,14 @@ class PbDGUI(Plugin):
         self.actionIcons[actionIndex] = actIcon
 
     def step_pressed(self, step_index):
-        gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
+        rospy.loginfo(step_index)
+        rospy.loginfo(self.selectedStepUid)
+        if step_index != self.selectedStepUid:
+            self.selectedStepUid = step_index
+            gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
+        else:
+            self.selectedStepUid = -1
+            gui_cmd = GuiCommand(GuiCommand.DESELECT_ACTION_STEP, step_index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):

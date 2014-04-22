@@ -518,6 +518,10 @@ class Interaction:
                     step_no = command.param
                     self.session.select_action_step(step_no)
                     rospy.loginfo('Selected action step ' + str(step_no))
+                elif (command.command == GuiCommand.DESELECT_ACTION_STEP):
+                    step_no = command.param
+                    self.session.deselect_action_step(step_no)
+                    rospy.loginfo('Deselected action step ' + str(step_no))
                 else:
                     rospy.logwarn('\033[32m This command (' + command.command
                                   + ') is unknown. \033[0m')
