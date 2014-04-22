@@ -392,11 +392,11 @@ class Arms:
        rospy.loginfo(current_pose)
        rospy.loginfo('Sending base to pose:')
        rospy.loginfo(base_pose)
-       if World.pose_distance(current_pose, base_pose) < 0.1:
+       if World.pose_distance(current_pose, base_pose) < 0.2:
            rospy.loginfo("Don't need to move the base, we're already there.")
            return True
 
-       #Remember arm states
+       #Remember arm states and tuck arms
        states = self._get_absolute_arm_states()
        armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
        arms_status = self.status
