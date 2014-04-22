@@ -49,6 +49,7 @@ class ProgrammedAction:
         '''Function to add a new step to the action'''
         self.lock.acquire()
         self.seq.seq.append(self._copy_action_step(step))
+        ActionStepMarker.set_total_n_markers(len(self.seq.seq))
         if (step.type == ActionStep.ARM_TARGET
             or step.type == ActionStep.ARM_TRAJECTORY):
             last_step = self.seq.seq[len(self.seq.seq) - 1]
@@ -65,27 +66,37 @@ class ProgrammedAction:
                                                         self.n_frames() - 1)
                 self.l_links[self.n_frames() - 1] = self._get_link(1,
                                                         self.n_frames() - 1)
+        # Note(max): what is the lock locking? I'm putting this in here to be
+        # safe but have no idea whether it could go outside.
+        self._update_markers()
         self.lock.release()
 
     def _get_link(self, arm_index, to_index):
         '''Returns a marker representing a link b/w two
         consecutive action steps'''
-        if (arm_index == 0):
-            start = self.r_markers[to_index - 1].get_absolute_position(
-                                                            is_start=True)
-            end = self.r_markers[to_index].get_absolute_position(
-                                                            is_start=False)
-        else:
-            start = self.l_markers[to_index - 1].get_absolute_position(
-                                                            is_start=True)
-            end = self.l_markers[to_index].get_absolute_position(
-                                                            is_start=False)
+        # Grab the start/end point via the two markers
+        markers = self.r_markers if arm_index == 0 else self.l_markers
+        start = markers[to_index - 1].get_absolute_position(is_start=True)
+        end = markers[to_index].get_absolute_position(is_start=False)
+
+        # Scale the arrow
+        scale = 0.8 # should be constant; shortening arrows to see ends
+        # NOTE(max): Check if we should worry about object creation / garbage
+        # collection, and if so just turn these intermediate objects into
+        # locals.
+        diff = Point(end.x - start.x, end.y - start.y, end.z - start.z)
+        diff_scaled = Point(diff.x * scale, diff.y * scale, diff.z * scale)
+        new_start = Point(end.x - diff_scaled.x, end.y - diff_scaled.y,
+            end.z - diff_scaled.z)
+        new_end = Point(start.x + diff_scaled.x, start.y + diff_scaled.y,
+            start.z + diff_scaled.z)
 
         return Marker(type=Marker.ARROW, id=(2 * to_index + arm_index),
                       lifetime=rospy.Duration(2),
-                      scale=Vector3(0.01, 0.03, 0.01),
+                      scale=Vector3(0.01, 0.03, 0.07),
                       header=Header(frame_id='base_link'),
-                      color=ColorRGBA(0.8, 0.8, 0.8, 0.3), points=[start, end])
+                      color=ColorRGBA(0.8, 0.8, 0.5, 0.4),
+                      points=[new_start, new_end])
 
     def update_objects(self, object_list):
         '''Updates the object list for all action steps'''
@@ -140,6 +151,10 @@ class ProgrammedAction:
                 self.r_markers[i].is_deleted = False
                 self.l_markers[i].is_deleted = False
                 to_delete = i
+                # NOTE(max): This only deletes at most a single marker, but the
+                # method name and comment implies it should delete all that have
+                # been requested for deletion. Is the method name or
+                # implementation wrong?
                 break
         if (to_delete != None):
             self._delete_step(to_delete)
@@ -165,6 +180,7 @@ class ProgrammedAction:
         self.r_markers.pop(to_delete)
         self.l_markers.pop(to_delete)
         self.seq.seq.pop(to_delete)
+        ActionStepMarker.set_total_n_markers(len(self.seq.seq))
 
     def change_requested_steps(self, r_arm, l_arm):
         '''Change an arm step to the current end effector
@@ -323,6 +339,7 @@ class ProgrammedAction:
         action_objects = self._get_action_objects()
         action_objects_unique = self._get_unique_action_objects(action_objects)
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(action_objects_unique, object_list)
+        ActionStepMarker.set_total_n_markers(len(self.seq.seq))
         for i in range(len(self.seq.seq)):
             step = self.seq.seq[i]
             if (step.type == ActionStep.ARM_TARGET or
