@@ -1,7 +1,10 @@
 '''Classes related to programmed actions'''
 
 import roslib
+
 from World import World
+from step_types import Step
+
 
 roslib.load_manifest('pr2_pbd_interaction')
 
@@ -22,8 +25,9 @@ from ActionStepMarker import ActionStepMarker
 from std_msgs.msg import Header, ColorRGBA
 
 
-class ProgrammedAction:
-    '''Class that holds information for one action'''
+class ProgrammedAction(Step):
+    '''Class that holds information for one action.
+    An action is also a step that can be contained in another action.'''
 
     _marker_publisher = None
 
@@ -40,6 +44,9 @@ class ProgrammedAction:
         if ProgrammedAction._marker_publisher == None:
             ProgrammedAction._marker_publisher = rospy.Publisher(
                     'visualization_marker_array', MarkerArray)
+
+    def execute(self):
+        pass
 
     def get_name(self):
         '''Returns the name of the action'''
