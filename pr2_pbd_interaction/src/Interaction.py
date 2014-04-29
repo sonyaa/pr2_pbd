@@ -16,7 +16,7 @@ from World import World
 from RobotSpeech import RobotSpeech
 from Session import Session
 from Response import Response
-from Arms import Arms
+from Robot import Robot
 from Arm import ArmMode
 from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import ActionStep, ArmTarget, Object
@@ -36,7 +36,7 @@ class Interaction:
     _trajectory_start_time = None
 
     def __init__(self):
-        self.arms = Arms()
+        self.arms = Robot()
         self.world = World()
         self.session = Session(object_list=self.world.get_frame_list(),
                                is_debug=True)
@@ -99,7 +99,7 @@ class Interaction:
         '''Closes gripper on the indicated side'''
         initial_condition = Condition(self.arms.get_gripper_position(0),
                                           self.arms.get_gripper_position(1))
-        if Arms.set_gripper_state(arm_index, GripperState.CLOSED):
+        if Robot.set_gripper_state(arm_index, GripperState.CLOSED):
             speech_response = Response.close_responses[arm_index]
             if (Interaction._is_programming and self.session.n_actions() > 0):
                 self.save_gripper_step(arm_index, GripperState.CLOSED, initial_condition)
@@ -397,10 +397,10 @@ class Interaction:
 
     def _get_arm_states(self):
         '''Returns the current arms states in the right format'''
-        abs_ee_poses = [Arms.get_ee_state(0),
-                      Arms.get_ee_state(1)]
-        joint_poses = [Arms.get_joint_state(0),
-                      Arms.get_joint_state(1)]
+        abs_ee_poses = [Robot.get_ee_state(0),
+                      Robot.get_ee_state(1)]
+        joint_poses = [Robot.get_joint_state(0),
+                      Robot.get_joint_state(1)]
 
         rel_ee_poses = [None, None]
         states = [None, None]
@@ -596,8 +596,8 @@ class Interaction:
         #self.arms.status = ExecutionStatus.EXECUTING
         #rospy.loginfo("Moving arms out of the way to record object poses.")
         ## Move to predefined pose with arms out of the way.
-        #Arms.arms[0].move_to_joints([-1.305, -0.03, -1.55, -1.32, 19.47, -0.17, -5.03], 1)
-        #Arms.arms[1].move_to_joints([1.305, 0.03, 1.55, -1.32, -19.47, 0.17, 5.03], 1)
+        #Robot.arms[0].move_to_joints([-1.305, -0.03, -1.55, -1.32, 19.47, -0.17, -5.03], 1)
+        #Robot.arms[1].move_to_joints([1.305, 0.03, 1.55, -1.32, -19.47, 0.17, 5.03], 1)
         #time.sleep(2)
         #response = None
         if (self.world.update_object_pose()):
@@ -637,21 +637,21 @@ class Interaction:
                 rospy.loginfo("Generating an action from the pose distributions.")
                 action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
                 # Check is all poses are reachable. If not, try to execute one of the existing (original) actions.
-                if not Arms.is_action_reachable(action):
+                if not Robot.is_action_reachable(action):
                     rospy.loginfo("Generated action has unreachable poses. Will try to execute original demonstration.")
                     for (index, action) in self.session.actions.items():
-                        if Arms.is_action_reachable(action):
+                        if Robot.is_action_reachable(action):
                             rospy.loginfo("Will execute action " + str(index))
                             self.session.switch_to_action(index, self.world.get_frame_list())
                             break
                     # If no original action can be executed, try to generate an action for n_tries.
-                    if not Arms.is_action_reachable(action):
+                    if not Robot.is_action_reachable(action):
                         n_tries = 10
                         rospy.loginfo("No original demonstration was reachable, "
                                       "will try to generate " + str(n_tries) + " more actions.")
                         for i in range(n_tries):
                             action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
-                            if Arms.is_action_reachable(action):
+                            if Robot.is_action_reachable(action):
                                 break
                 self.arms.start_execution(action)
                 return [RobotSpeech.START_EXECUTION, None]

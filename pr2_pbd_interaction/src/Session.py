@@ -1,12 +1,12 @@
 '''Everything related to an experiment session'''
-from ActionDistribution import ActionDistribution
-from ActionStepDistribution import ActionStepDistribution
-
-from ProgrammedAction import ProgrammedAction
-import rospy
 import os
 import yaml
-from pr2_pbd_interaction.msg import ExperimentState, ActionStep, GripperAction, ArmTarget
+
+import rospy
+from active_learning.ActionDistribution import ActionDistribution
+
+from step_types.Action import Action
+from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 
@@ -162,7 +162,7 @@ class Session:
         exp_state = yaml.load(state_file)
         n_actions = exp_state['nProgrammedActions']
         for i in range(n_actions):
-            self.actions.update({(i + 1): ProgrammedAction(i + 1,
+            self.actions.update({(i + 1): Action(i + 1,
                                             self._selected_step_cb)})
             self.actions[(i + 1)].load(self._data_dir)
         self.current_action_index = exp_state['currentProgrammedActionIndex']
@@ -175,7 +175,7 @@ class Session:
             self.get_current_action().reset_viz()
         self.current_action_index = self.n_actions() + 1
         self.actions.update({self.current_action_index:
-                             ProgrammedAction(self.current_action_index,
+                             Action(self.current_action_index,
                                               self._selected_step_cb)})
         self._update_experiment_state()
 

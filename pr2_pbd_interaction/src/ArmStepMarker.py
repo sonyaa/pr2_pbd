@@ -1,4 +1,4 @@
-'''Stuff related to a single marker for steps of an action'''
+'''Stuff related to a single marker for arm steps of an action'''
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
@@ -13,11 +13,11 @@ from visualization_msgs.msg import InteractiveMarkerControl
 from visualization_msgs.msg import InteractiveMarkerFeedback
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from interactive_markers.menu_handler import MenuHandler
-from Arms import Arms
+from Robot import Robot
 from World import World
 
 
-class ActionStepMarker:
+class ArmStepMarker:
     ''' Marker for visualizing the steps of an action'''
 
     _im_server = None
@@ -30,9 +30,9 @@ class ActionStepMarker:
     def __init__(self, step_number, arm_index, action_step,
                  marker_click_cb):
 
-        if ActionStepMarker._im_server == None:
+        if ArmStepMarker._im_server == None:
             im_server = InteractiveMarkerServer('programmed_actions')
-            ActionStepMarker._im_server = im_server
+            ArmStepMarker._im_server = im_server
 
         self.action_step = action_step
         self.arm_index = arm_index
@@ -46,11 +46,11 @@ class ActionStepMarker:
 
         self._sub_entries = None
         self._menu_handler = None
-        ActionStepMarker._marker_click_cb = marker_click_cb
+        ArmStepMarker._marker_click_cb = marker_click_cb
 
     def _is_reachable(self):
         '''Checks if there is an IK solution for action step'''
-        dummy, is_reachable = Arms.solve_ik_for_arm(self.arm_index,
+        dummy, is_reachable = Robot.solve_ik_for_arm(self.arm_index,
                                                     self.get_target())
         rospy.loginfo('Reachability of pose in ActionStepMarker : ' +
             str(is_reachable))
@@ -75,7 +75,7 @@ class ActionStepMarker:
         # There is a new list of objects
         # If the current frames are already assigned to object,
         # we need to figure out the correspondences
-        ActionStepMarker._ref_object_list = ref_frame_list
+        ArmStepMarker._ref_object_list = ref_frame_list
 
         arm_pose = self.get_target()
 
@@ -85,32 +85,32 @@ class ActionStepMarker:
                 self.has_object = True
                 arm_pose.refFrameObject = new_ref_obj
 
-        ActionStepMarker._ref_names = ['base_link']
-        for i in range(len(ActionStepMarker._ref_object_list)):
-            ActionStepMarker._ref_names.append(
-                            ActionStepMarker._ref_object_list[i].name)
+        ArmStepMarker._ref_names = ['base_link']
+        for i in range(len(ArmStepMarker._ref_object_list)):
+            ArmStepMarker._ref_names.append(
+                            ArmStepMarker._ref_object_list[i].name)
 
         self._update_menu()
 
     def destroy(self):
         '''Removes marker from the world'''
-        ActionStepMarker._im_server.erase(self._get_name())
-        ActionStepMarker._im_server.applyChanges()
+        ArmStepMarker._im_server.erase(self._get_name())
+        ArmStepMarker._im_server.applyChanges()
 
     def _update_menu(self):
         '''Recreates the menu when something has changed'''
         self._menu_handler = MenuHandler()
         frame_entry = self._menu_handler.insert('Reference frame')
-        self._sub_entries = [None] * len(ActionStepMarker._ref_names)
-        for i in range(len(ActionStepMarker._ref_names)):
+        self._sub_entries = [None] * len(ArmStepMarker._ref_names)
+        for i in range(len(ArmStepMarker._ref_names)):
             self._sub_entries[i] = self._menu_handler.insert(
-                            ActionStepMarker._ref_names[i], parent=frame_entry,
+                            ArmStepMarker._ref_names[i], parent=frame_entry,
                             callback=self.change_ref_cb)
         self._menu_handler.insert('Move arm here', callback=self.move_to_cb)
         self._menu_handler.insert('Move to current arm pose',
                             callback=self.move_pose_to_cb)
         self._menu_handler.insert('Delete', callback=self.delete_step_cb)
-        for i in range(len(ActionStepMarker._ref_names)):
+        for i in range(len(ArmStepMarker._ref_names)):
             self._menu_handler.setCheckState(self._sub_entries[i],
                                             MenuHandler.UNCHECKED)
 
@@ -121,14 +121,14 @@ class ActionStepMarker:
             self._menu_handler.setCheckState(menu_id,
                             MenuHandler.CHECKED)
         self._update_viz_core()
-        self._menu_handler.apply(ActionStepMarker._im_server, self._get_name())
-        ActionStepMarker._im_server.applyChanges()
+        self._menu_handler.apply(ArmStepMarker._im_server, self._get_name())
+        ArmStepMarker._im_server.applyChanges()
 
     def _get_menu_id(self, ref_name):
         '''Returns the unique menu id from its name
         None if the object is not found'''
-        if ref_name in ActionStepMarker._ref_names:
-            index = ActionStepMarker._ref_names.index(ref_name)
+        if ref_name in ArmStepMarker._ref_names:
+            index = ArmStepMarker._ref_names.index(ref_name)
             return self._sub_entries[index]
         else:
             return None
@@ -136,7 +136,7 @@ class ActionStepMarker:
     def _get_menu_name(self, menu_id):
         '''Returns the menu name from its unique menu id'''
         index = self._sub_entries.index(menu_id)
-        return ActionStepMarker._ref_names[index]
+        return ArmStepMarker._ref_names[index]
 
     def _get_ref_name(self):
         '''Returns the name string for the reference
@@ -171,8 +171,8 @@ class ActionStepMarker:
         '''Changes the reference frame of the action step'''
         new_ref = World.get_ref_from_name(new_ref_name)
         if (new_ref != ArmState.ROBOT_BASE):
-            index = ActionStepMarker._ref_names.index(new_ref_name)
-            new_ref_obj = ActionStepMarker._ref_object_list[index - 1]
+            index = ArmStepMarker._ref_names.index(new_ref_name)
+            new_ref_obj = ArmStepMarker._ref_object_list[index - 1]
         else:
             new_ref_obj = Object()
 
@@ -214,10 +214,10 @@ class ActionStepMarker:
         '''Changes the pose of the action step'''
         if (self.action_step.type == ActionStep.ARM_TARGET):
             if self.arm_index == 0:
-                pose = ActionStepMarker._offset_pose(new_pose, -1)
+                pose = ArmStepMarker._offset_pose(new_pose, -1)
                 self.action_step.armTarget.rArm.ee_pose = pose
             else:
-                pose = ActionStepMarker._offset_pose(new_pose, -1)
+                pose = ArmStepMarker._offset_pose(new_pose, -1)
                 self.action_step.armTarget.lArm.ee_pose = pose
             rospy.loginfo('Set new pose for action step.')
             self.update_viz()
@@ -257,19 +257,19 @@ class ActionStepMarker:
         #    return ActionStepMarker._offset_pose(arm_pose.ee_pose)
         #else:
         world_pose = World.get_absolute_pose(arm_pose)
-        return ActionStepMarker._offset_pose(world_pose)
+        return ArmStepMarker._offset_pose(world_pose)
 
     def get_pose(self):
         '''Returns the pose of the action step'''
         target = self.get_target()
         if (target != None):
-            return ActionStepMarker._offset_pose(target.ee_pose)
+            return ArmStepMarker._offset_pose(target.ee_pose)
 
     @staticmethod
     def _offset_pose(pose, constant=1):
         '''Offsets the world pose for visualization'''
         transform = World.get_matrix_from_pose(pose)
-        offset_array = [constant * ActionStepMarker._offset, 0, 0]
+        offset_array = [constant * ArmStepMarker._offset, 0, 0]
         offset_transform = tf.transformations.translation_matrix(offset_array)
         hand_transform = tf.transformations.concatenate_matrices(transform,
                                                         offset_transform)
@@ -340,11 +340,11 @@ class ActionStepMarker:
                                 color=ColorRGBA(0.8, 0.4, 0.0, 0.8),
                                 points=point_list)
             menu_control.markers.append(main_marker)
-            menu_control.markers.append(ActionStepMarker.make_sphere_marker(
+            menu_control.markers.append(ArmStepMarker.make_sphere_marker(
                                 self.get_uid() + 2000,
                                 self._get_traj_pose(0), frame_id, 0.05))
             last_index = len(self.action_step.armTrajectory.timing) - 1
-            menu_control.markers.append(ActionStepMarker.make_sphere_marker(
+            menu_control.markers.append(ArmStepMarker.make_sphere_marker(
                 self.get_uid() + 3000, self._get_traj_pose(last_index),
                 frame_id, 0.05))
         else:
@@ -392,7 +392,7 @@ class ActionStepMarker:
         self._add_6dof_marker(int_marker, True)
 
         int_marker.controls.append(menu_control)
-        ActionStepMarker._im_server.insert(int_marker,
+        ArmStepMarker._im_server.insert(int_marker,
                                            self.marker_feedback_cb)
 
     @staticmethod
@@ -415,7 +415,7 @@ class ActionStepMarker:
                 self.is_control_visible = False
             else:
                 self.is_control_visible = True
-            ActionStepMarker._marker_click_cb(self.get_uid(),
+            ArmStepMarker._marker_click_cb(self.get_uid(),
                                               self.is_control_visible)
         else:
             rospy.loginfo('Unknown event' + str(feedback.event_type))
@@ -447,15 +447,15 @@ class ActionStepMarker:
         self._set_ref(new_ref)
         rospy.loginfo('Switching reference frame to '
                       + new_ref + ' for action step ' + self._get_name())
-        self._menu_handler.reApply(ActionStepMarker._im_server)
-        ActionStepMarker._im_server.applyChanges()
+        self._menu_handler.reApply(ArmStepMarker._im_server)
+        ArmStepMarker._im_server.applyChanges()
         self.update_viz()
 
     def update_viz(self):
         '''Updates visualization fully'''
         self._update_viz_core()
-        self._menu_handler.reApply(ActionStepMarker._im_server)
-        ActionStepMarker._im_server.applyChanges()
+        self._menu_handler.reApply(ArmStepMarker._im_server)
+        ArmStepMarker._im_server.applyChanges()
 
     def _add_6dof_marker(self, int_marker, is_fixed):
         '''Adds a 6 DoF control marker to the interactive marker'''
@@ -497,7 +497,7 @@ class ActionStepMarker:
 
     @staticmethod
     def set_total_n_markers(total_n_markers):
-        ActionStepMarker._total_n_markers = total_n_markers
+        ArmStepMarker._total_n_markers = total_n_markers
 
     def get_marker_color(self):
         '''Makes marker colors in a gradient according to the progression set in
@@ -505,7 +505,7 @@ class ActionStepMarker:
 
         returns (r,g,b) tuple, each from 0.0 to 1.0
         '''
-        total = ActionStepMarker._total_n_markers
+        total = ArmStepMarker._total_n_markers
         # These are 1-based indexing; turn them into 0-based indexing.
         idx = self.step_number - 1
 
@@ -588,7 +588,7 @@ class ActionStepMarker:
             angle = 0
 
         transform1 = tf.transformations.euler_matrix(0, 0, angle)
-        transform1[:3, 3] = [0.07691 - ActionStepMarker._offset, 0.01, 0]
+        transform1[:3, 3] = [0.07691 - ArmStepMarker._offset, 0.01, 0]
         transform2 = tf.transformations.euler_matrix(0, 0, -angle)
         transform2[:3, 3] = [0.09137, 0.00495, 0]
         t_proximal = transform1
@@ -598,7 +598,7 @@ class ActionStepMarker:
         mesh1 = self._make_mesh_marker()
         mesh1.mesh_resource = ('package://pr2_description/meshes/' +
                                 'gripper_v0/gripper_palm.dae')
-        mesh1.pose.position.x = -ActionStepMarker._offset
+        mesh1.pose.position.x = -ArmStepMarker._offset
         mesh1.pose.orientation.w = 1
 
         mesh2 = self._make_mesh_marker()
@@ -615,7 +615,7 @@ class ActionStepMarker:
                     tf.transformations.quaternion_from_euler(numpy.pi, 0, 0),
                     tf.transformations.quaternion_from_euler(0, 0, angle))
         transform1 = tf.transformations.quaternion_matrix(quat)
-        transform1[:3, 3] = [0.07691 - ActionStepMarker._offset, -0.01, 0]
+        transform1[:3, 3] = [0.07691 - ArmStepMarker._offset, -0.01, 0]
         transform2 = tf.transformations.euler_matrix(0, 0, -angle)
         transform2[:3, 3] = [0.09137, 0.00495, 0]
         t_proximal = transform1

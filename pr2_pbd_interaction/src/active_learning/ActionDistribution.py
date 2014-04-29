@@ -1,6 +1,6 @@
 """Class that holds distribution information for all actions"""
-from ActionStepDistribution import ActionStepDistribution
-from ProgrammedAction import ProgrammedAction
+from active_learning.ArmStepDistribution import ArmStepDistribution
+from step_types.Action import Action
 
 
 class ActionDistribution:
@@ -31,7 +31,7 @@ class ActionDistribution:
         if self._n_actions == 0:
             self._n_frames = action.n_frames()
             for i in range(self._n_frames):
-                self._action_step_distributions.append(ActionStepDistribution(i))
+                self._action_step_distributions.append(ArmStepDistribution(i))
         for i in range(self._n_frames):
             self._action_step_distributions[i].add_action_step(action.get_step(i))
         self._n_actions += 1
@@ -42,7 +42,7 @@ class ActionDistribution:
 
 
     def get_generated_action(self, object_list):
-        generated_action = ProgrammedAction(-1, None)
+        generated_action = Action(-1, None)
         for i in range(self._n_frames):
             step_distribution = self._action_step_distributions[i]
             new_step = step_distribution.get_sampled_action_step()

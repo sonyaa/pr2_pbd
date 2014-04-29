@@ -27,7 +27,7 @@ from World import World
 #  lGripper = GripperState()
 
 
-class ActionStepDistribution:
+class ArmStepDistribution:
     def __init__(self, index):
         self._n_actions = 0
         self._ref_frames = [None, None]

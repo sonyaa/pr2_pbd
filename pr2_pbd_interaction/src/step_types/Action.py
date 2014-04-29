@@ -21,11 +21,11 @@ import rosbag
 from pr2_pbd_interaction.msg import ArmState, ActionStepSequence
 from pr2_pbd_interaction.msg import ActionStep, ArmTarget
 from pr2_pbd_interaction.msg import GripperAction, ArmTrajectory
-from ActionStepMarker import ActionStepMarker
+from ArmStepMarker import ArmStepMarker
 from std_msgs.msg import Header, ColorRGBA
 
 
-class ProgrammedAction(Step):
+class Action(Step):
     '''Class that holds information for one action.
     An action is also a step that can be contained in another action.'''
 
@@ -41,8 +41,8 @@ class ProgrammedAction(Step):
         self.l_links = dict()
         self.lock = threading.Lock()
 
-        if ProgrammedAction._marker_publisher == None:
-            ProgrammedAction._marker_publisher = rospy.Publisher(
+        if Action._marker_publisher == None:
+            Action._marker_publisher = rospy.Publisher(
                     'visualization_marker_array', MarkerArray)
 
     def execute(self):
@@ -56,14 +56,14 @@ class ProgrammedAction(Step):
         '''Function to add a new step to the action'''
         self.lock.acquire()
         self.seq.seq.append(self._copy_action_step(step))
-        ActionStepMarker.set_total_n_markers(len(self.seq.seq))
+        ArmStepMarker.set_total_n_markers(len(self.seq.seq))
         if (step.type == ActionStep.ARM_TARGET
             or step.type == ActionStep.ARM_TRAJECTORY):
             last_step = self.seq.seq[len(self.seq.seq) - 1]
-            r_marker = ActionStepMarker(self.n_frames(), 0,
+            r_marker = ArmStepMarker(self.n_frames(), 0,
                         last_step, self.marker_click_cb)
             r_marker.update_ref_frames(object_list, step.armTarget.rArm.refFrameObject)
-            l_marker = ActionStepMarker(self.n_frames(), 1,
+            l_marker = ArmStepMarker(self.n_frames(), 1,
                         last_step, self.marker_click_cb)
             l_marker.update_ref_frames(object_list, step.armTarget.lArm.refFrameObject)
             self.r_markers.append(r_marker)
@@ -187,7 +187,7 @@ class ProgrammedAction(Step):
         self.r_markers.pop(to_delete)
         self.l_markers.pop(to_delete)
         self.seq.seq.pop(to_delete)
-        ActionStepMarker.set_total_n_markers(len(self.seq.seq))
+        ArmStepMarker.set_total_n_markers(len(self.seq.seq))
 
     def change_requested_steps(self, r_arm, l_arm):
         '''Change an arm step to the current end effector
@@ -369,14 +369,14 @@ class ProgrammedAction(Step):
         action_objects = self._get_action_objects()
         action_objects_unique = self._get_unique_action_objects(action_objects)
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(action_objects_unique, object_list)
-        ActionStepMarker.set_total_n_markers(len(self.seq.seq))
+        ArmStepMarker.set_total_n_markers(len(self.seq.seq))
         for i in range(len(self.seq.seq)):
             step = self.seq.seq[i]
             if (step.type == ActionStep.ARM_TARGET or
                 step.type == ActionStep.ARM_TRAJECTORY):
-                r_marker = ActionStepMarker(i + 1, 0, step,
+                r_marker = ArmStepMarker(i + 1, 0, step,
                                             self.marker_click_cb)
-                l_marker = ActionStepMarker(i + 1, 1, step,
+                l_marker = ArmStepMarker(i + 1, 1, step,
                                             self.marker_click_cb)
                 r_new_object = None
                 l_new_object = None
@@ -491,11 +491,11 @@ class ProgrammedAction(Step):
 
     def copy(self):
         '''Makes a copy of the instance'''
-        action = ProgrammedAction(self.action_index, self.step_click_cb)
+        action = Action(self.action_index, self.step_click_cb)
         action.seq = ActionStepSequence()
         for i in range(len(self.seq.seq)):
             action_step = self.seq.seq[i]
-            copy = ProgrammedAction._copy_action_step(action_step)
+            copy = Action._copy_action_step(action_step)
             action.seq.seq.append(copy)
         return action
 
@@ -511,19 +511,19 @@ class ProgrammedAction(Step):
                                     action_step.armTarget.rArmVelocity)
             copy.armTarget.lArmVelocity = float(
                                     action_step.armTarget.lArmVelocity)
-            copy.armTarget.rArm = ProgrammedAction._copy_arm_state(
+            copy.armTarget.rArm = Action._copy_arm_state(
                                                 action_step.armTarget.rArm)
-            copy.armTarget.lArm = ProgrammedAction._copy_arm_state(
+            copy.armTarget.lArm = Action._copy_arm_state(
                                                 action_step.armTarget.lArm)
         elif (copy.type == ActionStep.ARM_TRAJECTORY):
             copy.armTrajectory = ArmTrajectory()
             copy.armTrajectory.timing = action_step.armTrajectory.timing[:]
             for j in range(len(action_step.armTrajectory.timing)):
                 copy.armTrajectory.rArm.append(
-                    ProgrammedAction._copy_arm_state(
+                    Action._copy_arm_state(
                                         action_step.armTrajectory.rArm[j]))
                 copy.armTrajectory.lArm.append(
-                    ProgrammedAction._copy_arm_state(
+                    Action._copy_arm_state(
                                         action_step.armTrajectory.lArm[j]))
             copy.armTrajectory.rRefFrame = int(
                     action_step.armTrajectory.rRefFrame)
@@ -562,14 +562,14 @@ class ProgrammedAction(Step):
             if (action_step.type == ActionStep.ARM_TARGET):
                 rev_action_step.armTarget.rArm = action_step.armTarget.lArm
                 if rev_action_step.armTarget.rArm.refFrame == ArmState.ROBOT_BASE:
-                    rev_action_step.armTarget.rArm = ProgrammedAction._mirror_ee_pose_and_joints(rev_action_step.armTarget.rArm)
+                    rev_action_step.armTarget.rArm = Action._mirror_ee_pose_and_joints(rev_action_step.armTarget.rArm)
                 else:
-                    rev_action_step.armTarget.rArm = ProgrammedAction._mirror_joints(rev_action_step.armTarget.rArm)
+                    rev_action_step.armTarget.rArm = Action._mirror_joints(rev_action_step.armTarget.rArm)
                 rev_action_step.armTarget.lArm = action_step.armTarget.rArm
                 if rev_action_step.armTarget.lArm.refFrame == ArmState.ROBOT_BASE:
-                    rev_action_step.armTarget.lArm = ProgrammedAction._mirror_ee_pose_and_joints(rev_action_step.armTarget.lArm)
+                    rev_action_step.armTarget.lArm = Action._mirror_ee_pose_and_joints(rev_action_step.armTarget.lArm)
                 else:
-                    rev_action_step.armTarget.lArm = ProgrammedAction._mirror_joints(rev_action_step.armTarget.lArm)
+                    rev_action_step.armTarget.lArm = Action._mirror_joints(rev_action_step.armTarget.lArm)
                 rev_action_step.armTarget.rArmVelocity = action_step.armTarget.lArmVelocity
                 rev_action_step.armTarget.lArmVelocity = action_step.armTarget.rArmVelocity
             elif (action_step.type == ActionStep.ARM_TRAJECTORY):
@@ -577,17 +577,17 @@ class ProgrammedAction(Step):
                 new_traj = []
                 for state in rev_action_step.armTarget.rArm:
                     if rev_action_step.armTrajectory.rRefFrameObject == ArmState.ROBOT_BASE:
-                        new_traj.append(ProgrammedAction._mirror_ee_pose_and_joints(state))
+                        new_traj.append(Action._mirror_ee_pose_and_joints(state))
                     else:
-                        new_traj.append(ProgrammedAction._mirror_joints(state))
+                        new_traj.append(Action._mirror_joints(state))
                 rev_action_step.armTarget.rArm = new_traj
                 rev_action_step.armTrajectory.lArm = action_step.armTrajectory.rArm
                 new_traj = []
                 for state in rev_action_step.armTarget.lArm:
                     if rev_action_step.armTrajectory.lRefFrameObject == ArmState.ROBOT_BASE:
-                        new_traj.append(ProgrammedAction._mirror_ee_pose_and_joints(state))
+                        new_traj.append(Action._mirror_ee_pose_and_joints(state))
                     else:
-                        new_traj.append(ProgrammedAction._mirror_joints(state))
+                        new_traj.append(Action._mirror_joints(state))
                 rev_action_step.armTarget.lArm = new_traj
                 rev_action_step.armTrajectory.rRefFrame = action_step.armTrajectory.lRefFrame
                 rev_action_step.armTrajectory.lRefFrame = action_step.armTrajectory.rRefFrame
