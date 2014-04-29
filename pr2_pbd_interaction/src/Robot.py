@@ -29,6 +29,7 @@ class Robot:
     Controller for the robot: moves the arms and base.
     '''
     arms = []
+    robot = None
 
     def __init__(self):
         r_arm = Arm(Side.RIGHT)
@@ -58,6 +59,12 @@ class Robot:
         self.tuck_arms_client = SimpleActionClient('tuck_arms', TuckArmsAction)
         self.tuck_arms_client.wait_for_server()
         rospy.loginfo('Got response from tuck arms action server.')
+
+    @staticmethod
+    def get_robot():
+        if Robot.robot is None:
+            Robot.robot = Robot()
+        return Robot.robot
 
     @staticmethod
     def set_arm_mode(arm_index, mode):
