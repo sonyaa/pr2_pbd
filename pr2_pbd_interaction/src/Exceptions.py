@@ -1,12 +1,17 @@
 class ExecutionError(Exception):
     """Base class for exceptions that occur during action execution."""
-    pass
+
+    def __init__(self, msg="An error occurred during execution"):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 class NoObjectError(ExecutionError):
     """ Exception raised when no object is detected when one is needed.
     """
 
-    def __init__(self, msg="No object was detected"):
+    def __init__(self, msg="The required objects were not found"):
         self.msg = msg
 
     def __str__(self):

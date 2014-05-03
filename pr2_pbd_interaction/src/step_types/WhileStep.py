@@ -12,3 +12,4 @@ class WhileStep(Step):
     def execute(self):
         while self.condition.check():
             self.step.execute()
+            # do object detection if it is required

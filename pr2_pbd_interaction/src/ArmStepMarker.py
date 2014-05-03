@@ -11,7 +11,6 @@ from std_msgs.msg import Header, ColorRGBA
 from visualization_msgs.msg import Marker, InteractiveMarker
 from visualization_msgs.msg import InteractiveMarkerControl
 from visualization_msgs.msg import InteractiveMarkerFeedback
-from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from interactive_markers.menu_handler import MenuHandler
 from Robot import Robot
 from World import World
@@ -20,20 +19,11 @@ from World import World
 class ArmStepMarker:
     ''' Marker for visualizing the steps of an action'''
 
-    _im_server = None
     _offset = 0.09
-    _ref_object_list = None
-    _ref_names = None
     _marker_click_cb = None
-    _total_n_markers = 0
 
     def __init__(self, step_number, arm_index, action_step,
-                 marker_click_cb):
-
-        if ArmStepMarker._im_server == None:
-            im_server = InteractiveMarkerServer('programmed_actions')
-            ArmStepMarker._im_server = im_server
-
+                 marker_click_cb, parent_sequence):
         self.action_step = action_step
         self.arm_index = arm_index
         self.step_number = step_number
@@ -47,6 +37,8 @@ class ArmStepMarker:
         self._sub_entries = None
         self._menu_handler = None
         ArmStepMarker._marker_click_cb = marker_click_cb
+
+        self.parent_step_sequence = parent_sequence
 
     def _is_reachable(self):
         '''Checks if there is an IK solution for action step'''
@@ -75,7 +67,7 @@ class ArmStepMarker:
         # There is a new list of objects
         # If the current frames are already assigned to object,
         # we need to figure out the correspondences
-        ArmStepMarker._ref_object_list = ref_frame_list
+        self.parent_step_sequence._ref_object_list = ref_frame_list
 
         arm_pose = self.get_target()
 
@@ -85,32 +77,32 @@ class ArmStepMarker:
                 self.has_object = True
                 arm_pose.refFrameObject = new_ref_obj
 
-        ArmStepMarker._ref_names = ['base_link']
-        for i in range(len(ArmStepMarker._ref_object_list)):
-            ArmStepMarker._ref_names.append(
-                            ArmStepMarker._ref_object_list[i].name)
+        self.parent_step_sequence.ref_names = ['base_link']
+        for i in range(len(self.parent_step_sequence.ref_object_list)):
+            self.parent_step_sequence.ref_names.append(
+                            self.parent_step_sequence.ref_object_list[i].name)
 
         self._update_menu()
 
     def destroy(self):
         '''Removes marker from the world'''
-        ArmStepMarker._im_server.erase(self._get_name())
-        ArmStepMarker._im_server.applyChanges()
+        self.parent_step_sequence.im_server.erase(self._get_name())
+        self.parent_step_sequence.im_server.applyChanges()
 
     def _update_menu(self):
         '''Recreates the menu when something has changed'''
         self._menu_handler = MenuHandler()
         frame_entry = self._menu_handler.insert('Reference frame')
-        self._sub_entries = [None] * len(ArmStepMarker._ref_names)
-        for i in range(len(ArmStepMarker._ref_names)):
+        self._sub_entries = [None] * len(self.parent_step_sequence.ref_names)
+        for i in range(len(self.parent_step_sequence.ref_names)):
             self._sub_entries[i] = self._menu_handler.insert(
-                            ArmStepMarker._ref_names[i], parent=frame_entry,
+                            self.parent_step_sequence.ref_names[i], parent=frame_entry,
                             callback=self.change_ref_cb)
         self._menu_handler.insert('Move arm here', callback=self.move_to_cb)
         self._menu_handler.insert('Move to current arm pose',
                             callback=self.move_pose_to_cb)
         self._menu_handler.insert('Delete', callback=self.delete_step_cb)
-        for i in range(len(ArmStepMarker._ref_names)):
+        for i in range(len(self.parent_step_sequence.ref_names)):
             self._menu_handler.setCheckState(self._sub_entries[i],
                                             MenuHandler.UNCHECKED)
 
@@ -121,14 +113,14 @@ class ArmStepMarker:
             self._menu_handler.setCheckState(menu_id,
                             MenuHandler.CHECKED)
         self._update_viz_core()
-        self._menu_handler.apply(ArmStepMarker._im_server, self._get_name())
-        ArmStepMarker._im_server.applyChanges()
+        self._menu_handler.apply(self.parent_step_sequence.im_server, self._get_name())
+        self.parent_step_sequence.im_server.applyChanges()
 
     def _get_menu_id(self, ref_name):
         '''Returns the unique menu id from its name
         None if the object is not found'''
-        if ref_name in ArmStepMarker._ref_names:
-            index = ArmStepMarker._ref_names.index(ref_name)
+        if ref_name in self.parent_step_sequence.ref_names:
+            index = self.parent_step_sequence.ref_names.index(ref_name)
             return self._sub_entries[index]
         else:
             return None
@@ -136,7 +128,7 @@ class ArmStepMarker:
     def _get_menu_name(self, menu_id):
         '''Returns the menu name from its unique menu id'''
         index = self._sub_entries.index(menu_id)
-        return ArmStepMarker._ref_names[index]
+        return self.parent_step_sequence.ref_names[index]
 
     def _get_ref_name(self):
         '''Returns the name string for the reference
@@ -171,8 +163,8 @@ class ArmStepMarker:
         '''Changes the reference frame of the action step'''
         new_ref = World.get_ref_from_name(new_ref_name)
         if (new_ref != ArmState.ROBOT_BASE):
-            index = ArmStepMarker._ref_names.index(new_ref_name)
-            new_ref_obj = ArmStepMarker._ref_object_list[index - 1]
+            index = self.parent_step_sequence.ref_names.index(new_ref_name)
+            new_ref_obj = self.parent_step_sequence.ref_object_list[index - 1]
         else:
             new_ref_obj = Object()
 
@@ -392,7 +384,7 @@ class ArmStepMarker:
         self._add_6dof_marker(int_marker, True)
 
         int_marker.controls.append(menu_control)
-        ArmStepMarker._im_server.insert(int_marker,
+        self.parent_step_sequence.im_server.insert(int_marker,
                                            self.marker_feedback_cb)
 
     @staticmethod
@@ -447,15 +439,15 @@ class ArmStepMarker:
         self._set_ref(new_ref)
         rospy.loginfo('Switching reference frame to '
                       + new_ref + ' for action step ' + self._get_name())
-        self._menu_handler.reApply(ArmStepMarker._im_server)
-        ArmStepMarker._im_server.applyChanges()
+        self._menu_handler.reApply(self.parent_step_sequence.im_server)
+        self.parent_step_sequence.im_server.applyChanges()
         self.update_viz()
 
     def update_viz(self):
         '''Updates visualization fully'''
         self._update_viz_core()
-        self._menu_handler.reApply(ArmStepMarker._im_server)
-        ArmStepMarker._im_server.applyChanges()
+        self._menu_handler.reApply(self.parent_step_sequence.im_server)
+        self.parent_step_sequence.im_server.applyChanges()
 
     def _add_6dof_marker(self, int_marker, is_fixed):
         '''Adds a 6 DoF control marker to the interactive marker'''
@@ -495,9 +487,6 @@ class ArmStepMarker:
             control.orientation_mode = InteractiveMarkerControl.FIXED
         return control
 
-    @staticmethod
-    def set_total_n_markers(total_n_markers):
-        ArmStepMarker._total_n_markers = total_n_markers
 
     def get_marker_color(self):
         '''Makes marker colors in a gradient according to the progression set in
@@ -505,7 +494,7 @@ class ArmStepMarker:
 
         returns (r,g,b) tuple, each from 0.0 to 1.0
         '''
-        total = ArmStepMarker._total_n_markers
+        total = self.parent_step_sequence.total_n_markers
         # These are 1-based indexing; turn them into 0-based indexing.
         idx = self.step_number - 1
 

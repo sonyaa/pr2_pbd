@@ -59,6 +59,7 @@ class Robot:
         self.tuck_arms_client = SimpleActionClient('tuck_arms', TuckArmsAction)
         self.tuck_arms_client.wait_for_server()
         rospy.loginfo('Got response from tuck arms action server.')
+        Robot.robot = self
 
     @staticmethod
     def get_robot():
@@ -451,12 +452,6 @@ class Robot:
 
     def _execute_action_step(self, action_step):
         '''Executes the motion part of an action step'''
-
-        # For each step navigate the base to the desired position.
-        if (not self.move_base(action_step.baseTarget.pose)):
-           self.status = ExecutionStatus.OBSTRUCTED
-           return False
-
 
         # For each step check step type
         # If arm target action

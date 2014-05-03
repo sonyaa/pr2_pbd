@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-class Condition:
+class AnyObjectCondition:
     '''
     Checks that there are as many objects present as specified.
     '''
@@ -9,5 +9,5 @@ class Condition:
 
 
     def check(self):
-        # record object poses, verify that there are self.num_objects objects
+        # look at the state of the world, verify that there are self.num_objects objects
         return True

@@ -14,7 +14,7 @@ from visualization_msgs.msg import MarkerArray
 # Local stuff
 from World import World
 from RobotSpeech import RobotSpeech
-from Session import Session
+from Session_old import Session
 from Response import Response
 from Robot import Robot
 from Arm import ArmMode

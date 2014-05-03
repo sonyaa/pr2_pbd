@@ -84,6 +84,7 @@ class World:
 
     tf_listener = None
     objects = []
+    world = None
 
     def __init__(self):
         if World.tf_listener == None:
@@ -112,6 +113,13 @@ class World:
                          AlvarMarkers, self.receive_ar_markers)
         self.is_looking_for_markers = False
         self.marker_dims = Vector3(0.04, 0.04, 0.01)
+        World.world = self
+
+    @staticmethod
+    def get_world():
+        if World.world is None:
+            World.world = World()
+        return World.world
 
     def _reset_objects(self):
         '''Function that removes all objects'''

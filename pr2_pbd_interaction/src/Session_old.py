@@ -3,14 +3,16 @@ import os
 import yaml
 
 import rospy
+from active_learning.ActionDistribution import ActionDistribution
 
+from step_types.Action import Action
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 
 
 class Session:
-    '''This class holds and maintains experimental data: list of MasterActions'''
+    '''This class holds and maintains experimental data'''
 
     def __init__(self, object_list, is_debug=False):
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
@@ -31,6 +33,8 @@ class Session:
 
         self.actions = dict()
         self.current_action_index = 0
+
+        self.action_distribution = ActionDistribution()
 
         if (self._is_reload):
             self._load_session_state(object_list)
@@ -297,4 +301,18 @@ class Session:
             rospy.logwarn('No skills created yet.')
             return 0
 
+    def calculate_action_distribution(self):
+        self.action_distribution = ActionDistribution()
+        for i in range(1, self.n_actions()+1):
+            self.action_distribution.add_action(self.actions[i])
+        self.action_distribution.update_viz()
+
+
+    def is_number_of_frames_consistent(self):
+        if self.n_actions() == 0:
+            return True
+        for action in self.actions.values():
+            if action.n_frames() != self.actions[1].n_frames():
+                return False
+        return True
 
