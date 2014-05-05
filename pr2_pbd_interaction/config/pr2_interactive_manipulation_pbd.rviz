@@ -102,7 +102,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/InteractiveMarkers
           Enabled: true
-          Name: ActionSteps
+          Name: ArmSteps
           Show Axes: false
           Show Descriptions: true
           Show Visual Aids: false
@@ -728,7 +728,7 @@ Visualization Manager:
         Grid: true
         Interactive Markers:
           ActionLinks: true
-          ActionSteps: true
+          ArmSteps: true
           Interactive Gripper: true
           Marker: true
           PR2 Nav: true
@@ -823,7 +823,7 @@ Visualization Manager:
         Head Camera: true
         Interactive Markers:
           ActionLinks: true
-          ActionSteps: true
+          ArmSteps: true
           Interactive Gripper: true
           Marker: true
           PR2 Nav: true

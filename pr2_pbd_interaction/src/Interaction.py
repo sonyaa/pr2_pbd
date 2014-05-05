@@ -3,6 +3,8 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 
 import roslib
 import tf
+from Exceptions import *
+from step_types.ObjectDetectionStep import ObjectDetectionStep
 
 roslib.load_manifest('pr2_pbd_interaction')
 
@@ -14,12 +16,12 @@ from visualization_msgs.msg import MarkerArray
 # Local stuff
 from World import World
 from RobotSpeech import RobotSpeech
-from Session_old import Session
+from Session import Session
 from Response import Response
 from Robot import Robot
 from Arm import ArmMode
 from pr2_pbd_interaction.msg import ArmState, GripperState
-from pr2_pbd_interaction.msg import ActionStep, ArmTarget, Object
+from pr2_pbd_interaction.msg import ArmStep, ArmTarget, Object
 from pr2_pbd_interaction.msg import GripperAction, ArmTrajectory
 from pr2_pbd_interaction.msg import ExecutionStatus, GuiCommand
 from pr2_pbd_interaction.msg import Condition
@@ -58,7 +60,6 @@ class Interaction:
             Command.CLOSE_RIGHT_HAND: Response(self.close_hand, 0),
             Command.CLOSE_LEFT_HAND: Response(self.close_hand, 1),
             Command.STOP_EXECUTION: Response(self.stop_execution, None),
-            Command.UNDO: Response(self.undo, None),
             Command.DELETE_ALL_STEPS: Response(self.delete_all_steps, None),
             Command.DELETE_LAST_STEP: Response(self.delete_last_step, None),
             Command.FREEZE_RIGHT_ARM: Response(self.freeze_arm, 0),
@@ -67,27 +68,22 @@ class Interaction:
             Command.EXECUTE_ACTION: Response(self.execute_action, None),
             Command.NEXT_ACTION: Response(self.next_action, None),
             Command.PREV_ACTION: Response(self.previous_action, None),
-            Command.SAVE_POSE: Response(self.save_step, None),
+            Command.SAVE_POSE: Response(self.save_arm_step, None),
             Command.RECORD_OBJECT_POSE: Response(
                                             self.record_object_pose, None),
             Command.START_RECORDING_MOTION: Response(
                                             self.start_recording, None),
-            Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None),
-            Command.EXECUTE_GENERATED_ACTION: Response(self.execute_generated_action, None),
-            Command.CALCULATE_POSE_DISTRIBUTION: Response(self.calculate_pose_distribution, None),
-            Command.CONTINUE_EXECUTION: Response(self.continue_execution, None)
+            Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None)
             }
 
         rospy.loginfo('Interaction initialized.')
 
     def open_hand(self, arm_index):
-        initial_condition = Condition(self.robot.get_gripper_position(0),
-                                          self.robot.get_gripper_position(1))
         '''Opens gripper on the indicated side'''
         if self.robot.set_gripper_state(arm_index, GripperState.OPEN):
             speech_response = Response.open_responses[arm_index]
             if (Interaction._is_programming and self.session.n_actions() > 0):
-                self.save_gripper_step(arm_index, GripperState.OPEN, initial_condition)
+                self.save_gripper_step(arm_index, GripperState.OPEN)
                 speech_response = (speech_response + ' ' +
                                    RobotSpeech.STEP_RECORDED)
             return [speech_response, Response.glance_actions[arm_index]]
@@ -210,23 +206,6 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
-    def undo(self, dummy=None):
-        '''Undoes the effect of the previous command'''
-        if (self._undo_function == None):
-            return [RobotSpeech.ERROR_NOTHING_TO_UNDO, GazeGoal.SHAKE]
-        else:
-            return self._undo_function()
-
-    def _resume_all_steps(self):
-        '''Resumes all steps after clearing'''
-        self.session.undo_clear()
-        return [RobotSpeech.ALL_POSES_RESUMED, GazeGoal.NOD]
-
-    def _resume_last_step(self):
-        '''Resumes last step after deleting'''
-        self.session.resume_deleted_step()
-        return [RobotSpeech.POSE_RESUMED, GazeGoal.NOD]
-
     def stop_execution(self, dummy=None):
         '''Stops ongoing execution'''
         if (self.robot.is_executing() or self.robot.is_condition_error()):
@@ -235,33 +214,20 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_EXECUTION, GazeGoal.SHAKE]
 
-    def continue_execution(self, dummy=None):
-        '''Continues execution that was interrupted because of condition error'''
-        if (self.robot.is_executing() or self.robot.is_condition_error()):
-            self.robot.continue_execution()
-            return [RobotSpeech.CONTINUING_EXECUTION, GazeGoal.NOD]
-        else:
-            return [RobotSpeech.ERROR_NO_CONDITION_ERROR, GazeGoal.SHAKE]
-
-    def save_gripper_step(self, arm_index, gripper_state, initial_condition):
+    def save_gripper_step(self, arm_index, gripper_state):
         '''Saves an action step that involves a gripper state change'''
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
                 states = self._get_arm_states()
-                step = ActionStep()
-                step.type = ActionStep.ARM_TARGET
+                step = ArmStep()
+                step.type = ArmStep.ARM_TARGET
                 step.armTarget = ArmTarget(states[0], states[1], 0.2, 0.2)
                 actions = [self.robot.get_gripper_state(0),
                            self.robot.get_gripper_state(1)]
                 actions[arm_index] = gripper_state
                 step.gripperAction = GripperAction(actions[0], actions[1])
-                prev_step = self.session.get_current_action().get_last_step()
-                step.preCond = initial_condition if prev_step is None else prev_step.postCond
-                step.postCond = Condition(self.robot.get_gripper_position(0),
-                                          self.robot.get_gripper_position(1))
-                step.baseTarget.pose = self._get_base_state()
-                self.session.add_step_to_action(step,
-                                                self.world.get_frame_list())
+                step.baseTarget.pose = self.robot.get_base_state()
+                self.session.add_step_to_action(step)
 
     def start_recording(self, dummy=None):
         '''Starts recording continuous motion'''
@@ -286,8 +252,8 @@ class Interaction:
         '''Stops recording continuous motion'''
         if (Interaction._is_recording_motion):
             Interaction._is_recording_motion = False
-            traj_step = ActionStep()
-            traj_step.type = ActionStep.ARM_TRAJECTORY
+            traj_step = ArmStep()
+            traj_step.type = ArmStep.ARM_TRAJECTORY
 
             waited_time = Interaction._arm_trajectory.timing[0]
             for i in range(len(Interaction._arm_trajectory.timing)):
@@ -295,7 +261,7 @@ class Interaction:
                 Interaction._arm_trajectory.timing[i] += rospy.Duration(0.1)
 
             self._fix_trajectory_ref()
-            traj_step.arm_trajectory = ArmTrajectory(
+            traj_step.armTrajectory = ArmTrajectory(
                 Interaction._arm_trajectory.rArm[:],
                 Interaction._arm_trajectory.lArm[:],
                 Interaction._arm_trajectory.timing[:],
@@ -306,9 +272,7 @@ class Interaction:
             traj_step.gripperAction = GripperAction(
                                         self.robot.get_gripper_state(0),
                                         self.robot.get_gripper_state(1))
-            #traj_step.baseTarget.pose = self._get_base_state()
-            self.session.add_step_to_action(traj_step,
-                                        self.world.get_frame_list())
+            self.session.add_step_to_action(traj_step)
             Interaction._arm_trajectory = None
             Interaction._trajectory_start_time = None
             return [RobotSpeech.STOPPED_RECORDING_MOTION + ' ' +
@@ -362,13 +326,13 @@ class Interaction:
             Interaction._arm_trajectory.timing.append(
                         rospy.Time.now() - Interaction._trajectory_start_time)
 
-    def save_step(self, dummy=None):
+    def save_arm_step(self, dummy=None):
         '''Saves current arm state as an action step'''
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
                 states = self._get_arm_states()
-                step = ActionStep()
-                step.type = ActionStep.ARM_TARGET
+                step = ArmStep()
+                step.type = ArmStep.ARM_TARGET
                 step.armTarget = ArmTarget(states[0], states[1],
                                            0.2, 0.2)
                 step.gripperAction = GripperAction(
@@ -384,9 +348,7 @@ class Interaction:
                                           self.robot.get_gripper_position(1))
                 rospy.loginfo("post")
                 rospy.loginfo(step.postCond)
-                step.baseTarget.pose = self.robot.get_base_state()
-                self.session.add_step_to_action(step,
-                                            self.world.get_frame_list())
+                self.session.add_step_to_action(step)
                 return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
             else:
                 return ['Action ' + str(self.session.current_action_index) +
@@ -437,17 +399,23 @@ class Interaction:
             if (self.session.n_frames() > 1):
                 self.session.save_current_action()
                 action = self.session.get_current_action()
-
-                if (action.is_object_required()):
-                    object_pose_result = self.record_object_pose()
-                    if object_pose_result[0] == RobotSpeech.START_STATE_RECORDED:
-                        self.robot.start_execution(action)
-                    else:
-                        return [RobotSpeech.OBJECT_NOT_DETECTED,
-                                GazeGoal.SHAKE]
-                else:
+                try:
                     self.robot.start_execution(action)
-
+                except NoObjectError as e:
+                    rospy.logerr('Cannot execute action: ' + e.msg)
+                    return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+                except ArmObstructedError as e:
+                    rospy.logerr('Cannot execute action: ' + e.msg)
+                    return [RobotSpeech.EXECUTION_ERROR_OBSTRUCTED, GazeGoal.SHAKE]
+                except BaseObstructedError as e:
+                    rospy.logerr('Cannot execute action: ' + e.msg)
+                    return [RobotSpeech.EXECUTION_ERROR_OBSTRUCTED, GazeGoal.SHAKE]
+                except UnreachablePoseError as e:
+                    rospy.logerr('Cannot execute action: ' + e.msg)
+                    return [RobotSpeech.EXECUTION_ERROR_NOIK, GazeGoal.SHAKE]
+                except StoppedByUserError as e:
+                    rospy.logerr('Cannot execute action: ' + e.msg)
+                    return [RobotSpeech.STOPPING_EXECUTION, GazeGoal.SHAKE]
                 return [RobotSpeech.START_EXECUTION + ' ' +
                         str(self.session.current_action_index), None]
             else:
@@ -553,11 +521,11 @@ class Interaction:
             action.update_viz()
             r_target = action.get_requested_targets(0)
             if (r_target != None):
-                self.robot.start_move_to_pose(r_target, 0)
+                self.robot.start_move_arm_to_pose(r_target, 0)
                 action.reset_targets(0)
             l_target = action.get_requested_targets(1)
             if (l_target != None):
-                self.robot.start_move_to_pose(l_target, 1)
+                self.robot.start_move_arm_to_pose(l_target, 1)
                 action.reset_targets(1)
 
             action.delete_requested_steps()
@@ -573,7 +541,7 @@ class Interaction:
         time.sleep(0.1)
 
     def _end_execution(self):
-        '''Responses for when the action execution ends'''
+        """Responses for when the action execution ends"""
         if (self.robot.status == ExecutionStatus.SUCCEEDED):
             Response.say(RobotSpeech.EXECUTION_ENDED)
             Response.perform_gaze_action(GazeGoal.NOD)
@@ -587,91 +555,21 @@ class Interaction:
         self.robot.status = ExecutionStatus.NOT_EXECUTING
 
     def record_object_pose(self, dummy=None):
-        '''Makes the robot look for a table and objects'''
-        # Remember current pose.
-        #states = self._get_arm_states()
-        #armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
-        #arms_status = self.arms.status
-        ## Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
-        #self.arms.status = ExecutionStatus.EXECUTING
-        #rospy.loginfo("Moving arms out of the way to record object poses.")
-        ## Move to predefined pose with arms out of the way.
-        #Robot.arms[0].move_to_joints([-1.305, -0.03, -1.55, -1.32, 19.47, -0.17, -5.03], 1)
-        #Robot.arms[1].move_to_joints([1.305, 0.03, 1.55, -1.32, -19.47, 0.17, 5.03], 1)
-        #time.sleep(2)
-        #response = None
-        if (self.world.update_object_pose()):
-            if (self.session.n_actions() > 0):
-                self.session.get_current_action().update_objects(
-                                            self.world.get_frame_list())
-            response = [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
+        """Makes the robot look for a table and objects"""
+        if self.session.n_actions() > 0:
+            if self.world.update_object_pose():
+                self.session.add_step_to_action(ObjectDetectionStep())
+                return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
+            else:
+                return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
         else:
-            response = [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-        #self.arms.status = arms_status
-        ## Return to remembered pose.
-        #rospy.loginfo("Moving arms back after recording object poses.")
-        #self.arms.move_to_joints(armTarget.rArm, armTarget.lArm)
-        return response
+            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     def save_experiment_state(self):
-        '''Saves session state'''
+        """Saves session state"""
         self.session.save_current_action()
-
-
-    def execute_generated_action(self, dummy=None):
-        '''Samples a new action out of the pose distributions'''
-        if (self.session.n_actions() > 0):
-            if (self.session.n_frames() > 1):
-                # Update pose distibutions.
-                pose_distribution_result = self.calculate_pose_distribution()
-                if pose_distribution_result[0] != RobotSpeech.POSE_DISTRIBUTIONS_CALCULATED:
-                    return pose_distribution_result
-                self.session.save_current_action()
-                self.session.get_current_action().reset_viz()
-                # Will require an object if the first action required an object.
-                if (self.session.actions[1].is_object_required()):
-                    object_pose_result = self.record_object_pose()
-                    if object_pose_result[0] != RobotSpeech.START_STATE_RECORDED:
-                        return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-                # Generate an action only after the objects were detected or if the object is not required.
-                rospy.loginfo("Generating an action from the pose distributions.")
-                action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
-                # Check is all poses are reachable. If not, try to execute one of the existing (original) actions.
-                if not Robot.is_action_reachable(action):
-                    rospy.loginfo("Generated action has unreachable poses. Will try to execute original demonstration.")
-                    for (index, action) in self.session.actions.items():
-                        if Robot.is_action_reachable(action):
-                            rospy.loginfo("Will execute action " + str(index))
-                            self.session.switch_to_action(index, self.world.get_frame_list())
-                            break
-                    # If no original action can be executed, try to generate an action for n_tries.
-                    if not Robot.is_action_reachable(action):
-                        n_tries = 10
-                        rospy.loginfo("No original demonstration was reachable, "
-                                      "will try to generate " + str(n_tries) + " more actions.")
-                        for i in range(n_tries):
-                            action = self.session.action_distribution.get_generated_action(self.world.get_frame_list())
-                            if Robot.is_action_reachable(action):
-                                break
-                self.robot.start_execution(action)
-                return [RobotSpeech.START_EXECUTION, None]
-            else:
-                return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
-                        str(self.session.current_action_index), GazeGoal.SHAKE]
-        else:
-            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
-
-    def calculate_pose_distribution(self, dummy=None):
-        if self.session.n_actions() > 0:
-            if self.session.is_number_of_frames_consistent():
-                self.session.calculate_action_distribution()
-                return [RobotSpeech.POSE_DISTRIBUTIONS_CALCULATED, GazeGoal.NOD]
-            else:
-                return [RobotSpeech.ERROR_WRONG_NUMBER_OF_POSES, GazeGoal.SHAKE]
-        else:
-            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     @staticmethod
     def empty_response(responses):
-        '''Default response to speech commands'''
+        """Default response to speech commands"""
         return responses

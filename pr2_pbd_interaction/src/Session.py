@@ -7,38 +7,57 @@ import rospy
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
+from step_types.ActionReference import ActionReference
+from pr2_pbd_interaction.msg import ArmStep
+from step_types.ManipulationStep import ManipulationStep
 
 
 class Session:
     '''This class holds and maintains experimental data: list of MasterActions'''
 
-    def __init__(self, object_list, is_debug=False):
+    session = None
+
+    def __init__(self, object_list):
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
 
         self._exp_number = None
         self._selected_step = 0
-        self._object_list = object_list
 
-        if (is_debug):
-            self._exp_number = rospy.get_param(
-                                '/pr2_pbd_interaction/experimentNumber')
-            self._data_dir = self._get_data_dir(self._exp_number)
-            if (not os.path.exists(self._data_dir)):
-                os.mkdir(self._data_dir)
-        else:
-            self._get_participant_id()
-        rospy.set_param('data_directory', self._data_dir)
+        self.actions = ActionReference.get_saved_actions()
+        self.current_action_index = 0 if len(self.actions) > 0 else None
 
-        self.actions = dict()
-        self.current_action_index = 0
+        #link actions in action list to themselves
+        for act in self.actions:
+            new_steps = []
+            for step in act.steps:
+                is_step_action = False
+                for other_act in self.actions:
+                    if other_act.id == step.id:
+                        new_steps.append(other_act)
+                        is_step_action = True
+                        break
+                if not is_step_action:
+                    new_steps.append(step)
+            act.steps = new_steps
 
-        if (self._is_reload):
-            self._load_session_state(object_list)
-            rospy.loginfo("Session state loaded.")
+            # act.steps = [next((self_act for self_act in self.actions if
+            #                    self_act.id == child_act.id), None)
+            #              if child_act.type == ActionReference.ACTION_QUEUE else child_act
+            #              for child_act in
+            #              act.steps]
 
-        n_actions = dict()
-        for k in self.actions.keys():
-            n_actions[str(k)] = self.actions[k].n_frames()
+        # rospy.set_param('data_directory', self._data_dir)
+        #
+        # self.actions = dict()
+        # self.current_action_index = 0
+        #
+        # if (self._is_reload):
+        #     self._load_session_state(object_list)
+        #     rospy.loginfo("Session state loaded.")
+        #
+        # n_actions = dict()
+        # for k in self.actions.keys():
+        #     n_actions[str(k)] = self.actions[k].n_frames()
 
         self._state_publisher = rospy.Publisher('experiment_state',
                                                 ExperimentState)
@@ -46,6 +65,12 @@ class Session:
                       self.get_experiment_state_cb)
 
         self._update_experiment_state()
+        Session.session = self
+
+
+    @staticmethod
+    def get_session():
+        return Session.session
 
     def _selected_step_cb(self, selected_step):
         '''Updates the selected step when interactive
@@ -64,15 +89,14 @@ class Session:
 
     def _get_experiment_state(self):
         ''' Creates a message with the latest state'''
-        return ExperimentState(self.n_actions(),
-                    self.current_action_index,
-                    self.n_frames(),
-                    self._selected_step,
-                    self._get_gripper_states(0),
-                    self._get_gripper_states(1),
-                    self._get_ref_frames(0),
-                    self._get_ref_frames(1),
-                    self._object_list)
+        return ExperimentState(
+            (self.actions[self.current_action_index].to_string()
+             if self.current_action_index is not None
+             else ""),
+            map(lambda act: act.name, self.actions),
+            map(lambda act: act.id, self.actions),
+            0 if self.current_action_index is None else self.current_action_index,
+            self._selected_step)
 
     def _get_ref_frames(self, arm_index):
         ''' Returns the reference frames for the steps of the
@@ -111,7 +135,7 @@ class Session:
         while (self._exp_number == None):
             try:
                 self._exp_number = int(raw_input(
-                                    'Please enter participant ID:'))
+                    'Please enter participant ID:'))
             except ValueError:
                 rospy.logerr("Participant ID needs to be a number")
 
@@ -137,42 +161,31 @@ class Session:
     def _get_data_dir(exp_number):
         '''Returns the directory where action information is saved'''
         return (rospy.get_param('/pr2_pbd_interaction/dataRoot') +
-                    '/data/experiment' + str(exp_number) + '/')
+                '/data/experiment' + str(exp_number) + '/')
+
 
     def save_session_state(self, is_save_actions=True):
-        '''Saves the session state onto hard drive'''
-        exp_state = dict()
-        exp_state['nProgrammedActions'] = self.n_actions()
-        exp_state['currentProgrammedActionIndex'] = self.current_action_index
-        state_file = open(self._data_dir + 'experimentState.yaml', 'w')
-        state_file.write(yaml.dump(exp_state))
-        state_file.close()
-
-        if (is_save_actions):
+        if is_save_actions:
             for i in range(self.n_actions()):
-                self.actions[i].save(self._data_dir)
+                self.actions[i].save()
 
-    def _load_session_state(self, object_list):
-        '''Loads the experiment state from the hard drive'''
-        state_file = open(self._data_dir + 'experimentState.yaml', 'r')
-        exp_state = yaml.load(state_file)
-        n_actions = exp_state['nProgrammedActions']
-        for i in range(n_actions):
-            self.actions.update({(i + 1): Action(i + 1,
-                                            self._selected_step_cb)})
-            self.actions[(i + 1)].load(self._data_dir)
-        self.current_action_index = exp_state['currentProgrammedActionIndex']
-        self.actions[self.current_action_index].initialize_viz(object_list)
-        state_file.close()
+    # def new_action(self):
+    #     '''Creates new action'''
+    #     if (self.n_actions() > 0):
+    #         self.get_current_action().reset_viz()
+    #     self.current_action_index = self.n_actions() + 1
+    #     self.actions.update({self.current_action_index:
+    #                              Action(self.current_action_index,
+    #                                     self._selected_step_cb)})
+    #     self._update_experiment_state()
 
     def new_action(self):
         '''Creates new action'''
-        if (self.n_actions() > 0):
-            self.get_current_action().reset_viz()
-        self.current_action_index = self.n_actions() + 1
-        self.actions.update({self.current_action_index:
-                             Action(self.current_action_index,
-                                              self._selected_step_cb)})
+        self.current_action_index = len(self.actions)
+        self._selected_step = 0
+        newAct = ActionReference(name="Unnamed " + str(self.current_action_index))
+        newAct.save()
+        self.actions.append(newAct)
         self._update_experiment_state()
 
     def n_actions(self):
@@ -183,8 +196,12 @@ class Session:
         '''Returns the current action'''
         return self.actions[self.current_action_index]
 
-#     def get_current_action_name(self):
-#         return self.actions[self.current_action_index].get_name()
+    def get_current_step(self):
+        '''Returns the current action'''
+        return self.actions[self.current_action_index].get_selected_step()
+
+    #     def get_current_action_name(self):
+    #         return self.actions[self.current_action_index].get_name()
 
     def clear_current_action(self):
         '''Removes all steps in the current action'''
@@ -210,20 +227,31 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
 
-    def add_step_to_action(self, step, object_list):
+    def add_step_to_action(self, step):
         '''Add a new step to the current action'''
         if (self.n_actions() > 0):
-            self.actions[self.current_action_index].add_action_step(step,
-                                                                object_list)
+            if isinstance(step, ArmStep):
+                current_step = self.get_current_step()
+                if isinstance(current_step, ManipulationStep):
+                    current_step.add_arm_step(step)
+                else:
+                    new_step = ManipulationStep(self._selected_step_cb)
+                    new_step.add_arm_step(step)
+                    self.actions[self.current_action_index].add_step(new_step)
+            else:
+                self.actions[self.current_action_index].add_step(step)
         else:
             rospy.logwarn('No skills created yet.')
-        self._object_list = object_list
         self._update_experiment_state()
 
     def delete_last_step(self):
         '''Removes the last step of the action'''
         if (self.n_actions() > 0):
-            self.actions[self.current_action_index].delete_last_step()
+            current_step = self.get_current_step()
+            if isinstance(current_step, ManipulationStep):
+                current_step.delete_last_step_and_update_viz()
+            else:
+                self.actions[self.current_action_index].delete_last_step()
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
@@ -251,7 +279,6 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
             success = False
-        self._object_list = object_list
         self._update_experiment_state()
         return success
 
@@ -268,7 +295,6 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
             success = False
-        self._object_list = object_list
         self._update_experiment_state()
         return success
 
@@ -285,7 +311,6 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
             success = False
-        self._object_list = object_list
         self._update_experiment_state()
         return success
 

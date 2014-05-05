@@ -208,3 +208,77 @@ class ArmStepMarkerSequence:
         """ Makes the interactive marker for the indicated arm
         step deselected, by removing the 6D controls"""
         self.marker_click_cb(step_id, False)
+
+    def reset_targets(self, arm_index):
+        """Resets requests after reaching a previous target"""
+        if (arm_index == 0):
+            for i in range(len(self.r_markers)):
+                self.r_markers[i].pose_reached()
+        else:
+            for i in range(len(self.l_markers)):
+                self.l_markers[i].pose_reached()
+
+    def delete_requested_steps(self):
+        """Delete steps that were requested from interactive
+        marker menus"""
+        to_delete = None
+        for i in range(len(self.r_markers)):
+            if (self.r_markers[i].is_deleted or
+                self.l_markers[i].is_deleted):
+                rospy.loginfo('Will delete step ' + str(i + 1))
+                self.r_markers[i].is_deleted = False
+                self.l_markers[i].is_deleted = False
+                to_delete = i
+                # NOTE(max): This only deletes at most a single marker, but the
+                # method name and comment implies it should delete all that have
+                # been requested for deletion. Is the method name or
+                # implementation wrong?
+                break
+        if (to_delete is not None):
+            self.delete_step(to_delete)
+
+        if (to_delete is not None):
+            self.update_viz()
+            self._update_markers()
+        return to_delete
+
+    def delete_step(self, to_delete):
+        """Deletes a step from the action"""
+        if (len(self.r_links) > 0):
+            self.r_links[self.r_links.keys()[-1]].action = Marker.DELETE
+            self.l_links[self.l_links.keys()[-1]].action = Marker.DELETE
+            self.r_links.pop(self.r_links.keys()[-1])
+            self.l_links.pop(self.l_links.keys()[-1])
+
+        self.r_markers[-1].destroy()
+        self.l_markers[-1].destroy()
+        for i in range(to_delete + 1, self.total_n_markers):
+            self.r_markers[i].decrease_id()
+            self.l_markers[i].decrease_id()
+        self.r_markers.pop(to_delete)
+        self.l_markers.pop(to_delete)
+        self.set_total_n_markers(len(self.r_markers))
+
+    def change_requested_steps(self, r_arm, l_arm):
+        """Change an arm step to the current end effector
+        pose if requested through the interactive marker menu"""
+        for i in range(len(self.r_markers)):
+            if (self.r_markers[i].is_edited):
+                self.r_markers[i].set_target(r_arm)
+        for i in range(len(self.l_markers)):
+            if (self.l_markers[i].is_edited):
+                self.l_markers[i].set_target(l_arm)
+
+    def get_requested_targets(self, arm_index):
+        """Get arm steps that might have been requested from
+        the interactive marker menus"""
+        pose = None
+        if (arm_index == 0):
+            for i in range(len(self.r_markers)):
+                if (self.r_markers[i].is_requested):
+                    pose = self.r_markers[i].get_target()
+        else:
+            for i in range(len(self.l_markers)):
+                if (self.l_markers[i].is_requested):
+                    pose = self.l_markers[i].get_target()
+        return pose

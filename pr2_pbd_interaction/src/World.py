@@ -113,7 +113,6 @@ class World:
                          AlvarMarkers, self.receive_ar_markers)
         self.is_looking_for_markers = False
         self.marker_dims = Vector3(0.04, 0.04, 0.01)
-        World.world = self
 
     @staticmethod
     def get_world():

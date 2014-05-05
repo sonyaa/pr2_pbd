@@ -62,11 +62,7 @@ class RobotSpeech:
     STOPPED_RECORDING_MOTION = 'Stopped recording motion.'
     MOTION_NOT_RECORDING = 'Not currently recording motion.'
     STOPPING_EXECUTION = 'Execution stopped.'
-    ERROR_WRONG_NUMBER_OF_POSES = 'The number of poses is inconsistent across actions'
-    POSE_DISTRIBUTIONS_CALCULATED = 'Calculated pose distributions'
-    CONDITION_ERROR = 'The grippers are not in the same state as in the demonstration. Say, continue execution, or stop execution.'
-    CONTINUING_EXECUTION = 'Execution continued.'
-    ERROR_NO_CONDITION_ERROR = 'There is no condition error to correct.'
+    EXECUTION_ERROR_OBSTRUCTED = 'Cannot reach the target.'
 
     def __init__(self):
         #self.speech_publisher = rospy.Publisher('robotsound', SoundRequest)

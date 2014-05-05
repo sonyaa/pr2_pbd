@@ -11,7 +11,7 @@ import rospy
 import time
 import threading
 from pr2_pbd_interaction.msg import ArmState, GripperState
-from pr2_pbd_interaction.msg import ActionStep, Side
+from pr2_pbd_interaction.msg import ArmStep, Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
 from geometry_msgs.msg import Pose, Point, PoseStamped, Quaternion
@@ -23,6 +23,7 @@ from move_base_msgs.msg import MoveBaseActionGoal
 from move_base_msgs.msg import MoveBaseGoal
 from pr2_common_action_msgs.msg import TuckArmsAction, TuckArmsGoal
 from pr2_pbd_interaction.msg import ArmTarget, Object
+
 
 class Robot:
     '''
@@ -36,6 +37,7 @@ class Robot:
         l_arm = Arm(Side.LEFT)
         Robot.arms = [r_arm, l_arm]
         self.attended_arm = -1
+        self.manipulation_step = None
         self.action = None
         self.preempt = False
         self.is_continue_execution = False
@@ -52,14 +54,13 @@ class Robot:
         self.status = ExecutionStatus.NOT_EXECUTING
 
         self.nav_action_client = SimpleActionClient(
-                       'move_base', MoveBaseAction)
+            'move_base', MoveBaseAction)
         self.nav_action_client.wait_for_server()
         rospy.loginfo('Got response from move base action server.')
 
         self.tuck_arms_client = SimpleActionClient('tuck_arms', TuckArmsAction)
         self.tuck_arms_client.wait_for_server()
         rospy.loginfo('Got response from tuck arms action server.')
-        Robot.robot = self
 
     @staticmethod
     def get_robot():
@@ -91,22 +92,27 @@ class Robot:
         return True
 
     def is_executing(self):
-        '''Whether or not there is an ongoing action execution'''
+        '''Whether or not there is an ongoing execution'''
         return (self.status == ExecutionStatus.EXECUTING)
 
     def is_condition_error(self):
-        '''Whether or not there is an ongoing action execution'''
+        '''Whether or not there is an ongoing execution'''
         return (self.status == ExecutionStatus.CONDITION_ERROR)
 
     def start_execution(self, action, z_offset=0):
         ''' Starts execution of an action'''
         # This will take long, create a thread
-        self.action = action.copy()
         self.preempt = False
-	self.z_offset = z_offset
+        self.z_offset = z_offset
+        self.action = action.copy()
         thread = threading.Thread(group=None, target=self.execute_action,
                                   name='skill_execution_thread')
         thread.start()
+
+    def execute_action(self):
+        self.status = ExecutionStatus.EXECUTING
+        rospy.loginfo("Starting execution of action " + self.action.get_name())
+        self.action.execute()
 
     def continue_execution(self):
         self.is_continue_execution = True
@@ -115,62 +121,66 @@ class Robot:
         '''Preempts an ongoing execution'''
         self.preempt = True
 
-    def solve_ik_for_action(self):
+    def solve_ik_for_manipulation_step(self):
         '''Computes joint positions for all end-effector poses
-        in an action'''
+        in an manipulation_step'''
 
-        # Go over steps of the action
-        for i in range(self.action.n_frames()):
+        # Go over steps of the manipulation_step
+        for i in range(self.manipulation_step.n_frames()):
             # For each step check step type
             # If arm target action
-            if (self.action.seq.seq[i].type == ActionStep.ARM_TARGET):
+            if (self.manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):
                 # Find frames that are relative and convert to absolute
 
                 r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                                        self.action.seq.seq[i].armTarget.rArm,
-					self.z_offset)
+                                                               self.manipulation_step.arm_steps[i].armTarget.rArm,
+                                                               self.z_offset)
                 l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                                        self.action.seq.seq[i].armTarget.lArm,
-					self.z_offset)
+                                                               self.manipulation_step.arm_steps[i].armTarget.lArm,
+                                                               self.z_offset)
 
-                self.action.seq.seq[i].armTarget.rArm = r_arm
-                self.action.seq.seq[i].armTarget.lArm = l_arm
+                self.manipulation_step.arm_steps[i].armTarget.rArm = r_arm
+                self.manipulation_step.arm_steps[i].armTarget.lArm = l_arm
                 if (not has_solution_r) or (not has_solution_l):
                     return False
 
-            if (self.action.seq.seq[i].type == ActionStep.ARM_TRAJECTORY):
-                n_frames = len(self.action.seq.seq[i].armTrajectory.timing)
+            if (self.manipulation_step.arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
+                n_frames = len(self.manipulation_step.arm_steps[i].armTrajectory.timing)
                 for j in range(n_frames):
                     r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                            self.action.seq.seq[i].armTrajectory.r_arm[j],
-			    self.z_offset)
+                                                                   self.manipulation_step.arm_steps[
+                                                                       i].armTrajectory.r_arm[j],
+                                                                   self.z_offset)
                     l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                            self.action.seq.seq[i].armTrajectory.l_arm[j],
-			    self.z_offset)
-                    self.action.seq.seq[i].armTrajectory.r_arm[j] = r_arm
-                    self.action.seq.seq[i].armTrajectory.l_arm[j] = l_arm
+                                                                   self.manipulation_step.arm_steps[
+                                                                       i].armTrajectory.l_arm[j],
+                                                                   self.z_offset)
+                    self.manipulation_step.arm_steps[i].armTrajectory.r_arm[j] = r_arm
+                    self.manipulation_step.arm_steps[i].armTrajectory.l_arm[j] = l_arm
                     if (not has_solution_r) or (not has_solution_l):
                         return False
         return True
 
     @staticmethod
-    def is_action_reachable(action):
-        '''Checks if all steps in an action are reachable.'''
-        for i in range(action.n_frames()):
-            if (action.seq.seq[i].type == ActionStep.ARM_TARGET):
+    def is_manipulation_step_reachable(manipulation_step):
+        '''Checks if all steps in an manipulation_step are reachable.'''
+        for i in range(manipulation_step.n_frames()):
+            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):
                 r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                                        action.seq.seq[i].armTarget.rArm)
+                                                               manipulation_step.arm_steps[i].armTarget.rArm)
                 l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                                        action.seq.seq[i].armTarget.lArm)
+                                                               manipulation_step.arm_steps[i].armTarget.lArm)
                 if (not has_solution_r) or (not has_solution_l):
                     return False
-            if (action.seq.seq[i].type == ActionStep.ARM_TRAJECTORY):
-                n_frames = len(action.seq.seq[i].armTrajectory.timing)
+            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
+                n_frames = len(manipulation_step.arm_steps[i].armTrajectory.timing)
                 for j in range(n_frames):
                     r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                            action.seq.seq[i].armTrajectory.r_arm[j])
+                                                                   manipulation_step.arm_steps[i].armTrajectory.r_arm[
+                                                                       j])
                     l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                            action.seq.seq[i].armTrajectory.l_arm[j])
+                                                                   manipulation_step.arm_steps[i].armTrajectory.l_arm[
+                                                                       j])
                     if (not has_solution_r) or (not has_solution_l):
                         return False
         return True
@@ -180,15 +190,15 @@ class Robot:
         '''Finds an  IK solution for a particular arm pose'''
         # We need to find IK only if the frame is relative to an object
         if (arm_state.refFrame == ArmState.OBJECT):
-	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is relative')
+            #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is relative')
             solution = ArmState()
             target_pose = World.transform(arm_state.ee_pose,
-                            arm_state.refFrameObject.name, 'base_link')
+                                          arm_state.refFrameObject.name, 'base_link')
 
-	    target_pose.position.z = target_pose.position.z + z_offset
+            target_pose.position.z = target_pose.position.z + z_offset
 
             target_joints = Robot.arms[arm_index].get_ik_for_ee(target_pose,
-                                            arm_state.joint_pose)
+                                                                arm_state.joint_pose)
             if (target_joints == None):
                 rospy.logerr('No IK for relative end-effector pose.')
                 return solution, False
@@ -199,12 +209,12 @@ class Robot:
                 solution.joint_pose = target_joints
                 return solution, True
         elif (arm_state.refFrame == ArmState.ROBOT_BASE):
-	    #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
-	    pos = arm_state.ee_pose.position
-	    target_position = Point(pos.x, pos.y, pos.z + z_offset)
-	    target_pose = Pose(target_position, arm_state.ee_pose.orientation)
+            #rospy.loginfo('solve_ik_for_arm: Arm ' + str(arm_index) + ' is absolute')
+            pos = arm_state.ee_pose.position
+            target_position = Point(pos.x, pos.y, pos.z + z_offset)
+            target_pose = Pose(target_position, arm_state.ee_pose.orientation)
             target_joints = Robot.arms[arm_index].get_ik_for_ee(target_pose,
-                                                    arm_state.joint_pose)
+                                                                arm_state.joint_pose)
             if (target_joints == None):
                 rospy.logerr('No IK for absolute end-effector pose.')
                 return arm_state, False
@@ -218,26 +228,15 @@ class Robot:
         else:
             return arm_state, True
 
-    @staticmethod
-    def is_condition_met(condition):
-        ''' Checks if the given precondition is currently met'''
-        if condition.rGripperPosition is None or condition.lGripperPosition is None:
-            return True
-        threshold = 0.015
-        if ((abs(condition.rGripperPosition - Robot.get_gripper_position(0)) > threshold)
-            or (abs(condition.lGripperPosition - Robot.get_gripper_position(1)) > threshold)):
-            return False
-        return True
-
-    def start_move_to_pose(self, arm_state, arm_index):
+    def start_move_arm_to_pose(self, arm_state, arm_index):
         '''Creates a thread for moving to a target pose'''
         self.preempt = False
-        thread = threading.Thread(group=None, target=self.move_to_pose,
-                    args=(arm_state, arm_index,),
-                    name='move_to_arm_state_thread')
+        thread = threading.Thread(group=None, target=self.move_arm_to_pose,
+                                  args=(arm_state, arm_index,),
+                                  name='move_to_arm_state_thread')
         thread.start()
 
-    def move_to_pose(self, arm_state, arm_index):
+    def move_arm_to_pose(self, arm_state, arm_index):
         '''The thread function that makes the arm move to
         a target end-effector pose'''
         rospy.loginfo('Started thread to move arm ' + str(arm_index))
@@ -257,267 +256,203 @@ class Robot:
         else:
             self.status = ExecutionStatus.NO_IK
 
-    def execute_action(self):
-        ''' Function to replay the demonstrated two-arm action
-        of type ProgrammedAction'''
-        self.status = ExecutionStatus.EXECUTING
-        # Check if the very first precondition is met
-        action_step = self.action.get_step(0)
-        # if (not Robot.is_condition_met(action_step.preCond)):
-        #     rospy.logwarn('First precond is not met, first make sure ' +
-        #                   'the robot is ready to execute action ' +
-        #                   '(hand object or free hands). Waiting for user response.')
-        #     self.status = ExecutionStatus.CONDITION_ERROR
-        #     while not (self.preempt or self.is_continue_execution):
-        #         time.sleep(0.1)
-        #     if self.preempt:
-        #         rospy.loginfo('Aborting execution.')
-        #         self.status = ExecutionStatus.PREEMPTED
-        #     else:
-        #         rospy.loginfo('Continuing execution.')
-        #         self.status = ExecutionStatus.EXECUTING
-        #         self.is_continue_execution = False
+    def execute_manipulation_step(self):
+        ''' Function to replay the demonstrated two-arm manipulation step'''
+        # Check that all parts of the manipulation_step are reachable
+        if (not self.solve_ik_for_manipulation_step()):
+            rospy.logwarn('Problems in finding IK solutions...')
+            self.status = ExecutionStatus.NO_IK
+        else:
+            Robot.set_arm_mode(0, ArmMode.HOLD)
+            Robot.set_arm_mode(1, ArmMode.HOLD)
+            self._loop_through_arm_steps()
+
+        Robot.arms[0].reset_movement_history()
+        Robot.arms[1].reset_movement_history()
+
         if self.status == ExecutionStatus.EXECUTING:
-            # Copy action in case we need to revert it later, because solve_ik_for_action() overwrites action.
-            original_action = self.action.copy()
-            # Check that all parts of the action are reachable
-            if (not self.solve_ik_for_action()):
-                # Try to reverse hands and see if it helps.
-                rospy.loginfo('Trying to reverse the arms to see if that makes the poses reachable.')
-                reversed_action = original_action.get_action_for_reversed_hands()
-                self.action = reversed_action
-                if (not self.solve_ik_for_action()):
-                    rospy.logwarn('Problems in finding IK solutions...')
-                    self.status = ExecutionStatus.NO_IK
-                else:
-                    rospy.loginfo('Reversed the arms to execute the action.')
-                    Robot.set_arm_mode(0, ArmMode.HOLD)
-                    Robot.set_arm_mode(1, ArmMode.HOLD)
-                    self._loop_through_action_steps()
-                # Return to the original action.
-                self.action = original_action
-            else:
-                Robot.set_arm_mode(0, ArmMode.HOLD)
-                Robot.set_arm_mode(1, ArmMode.HOLD)
-                self._loop_through_action_steps()
+            self.status = ExecutionStatus.SUCCEEDED
+            rospy.loginfo('Manipulation step execution has succeeded.')
 
-            Robot.arms[0].reset_movement_history()
-            Robot.arms[1].reset_movement_history()
+    def _loop_through_arm_steps(self):
+        ''' Goes through the steps of the current manipulation_step'''
 
-            if self.status == ExecutionStatus.EXECUTING:
-                self.status = ExecutionStatus.SUCCEEDED
-                rospy.loginfo('Skill execution has succeeded.')
-
-    def _loop_through_action_steps(self):
-        ''' Goes through the steps of the current action'''
-
-        # Go over steps of the action
-        for i in range(self.action.n_frames()):
+        # Go over steps of the manipulation_step
+        for i in range(self.manipulation_step.n_frames()):
             rospy.loginfo('Executing step ' + str(i))
-            action_step = self.action.get_step(i)
+            arm_step = self.manipulation_step.get_step(i)
 
-            # Check that preconditions are met
-            # if (not Robot.is_condition_met(action_step.preCond)):
-            #     rospy.logwarn('Preconditions of action step ' + str(i) +
-            #                   ' are not satisfied. Will wait for user response.')
-            #     self.status = ExecutionStatus.CONDITION_ERROR
-            #     while not (self.preempt or self.is_continue_execution):
-            #         time.sleep(0.1)
-            #     if self.preempt:
-            #         rospy.loginfo('Aborting execution.')
-            #         break
-            #     else:
-            #         rospy.loginfo('Continuing execution.')
-            #         self.status = ExecutionStatus.EXECUTING
-            #         self.is_continue_execution = False
             if self.status == ExecutionStatus.EXECUTING:
-                if (not self._execute_action_step(action_step)):
+                if (not self._execute_arm_step(arm_step)):
                     break
-
-                # Check that postconditions are met
-                # if (Robot.is_condition_met(action_step.postCond)):
-                #     rospy.loginfo('Post-conditions of the action are met.')
-                # else:
-                #     rospy.logwarn('Post-conditions of action step ' +
-                #                   str(i) + ' are not satisfied. Will wait for user response.')
-                #     self.status = ExecutionStatus.CONDITION_ERROR
-                #     while not (self.preempt or self.is_continue_execution):
-                #         time.sleep(0.1)
-                #     if self.preempt:
-                #         rospy.loginfo('Aborting execution.')
-                #         break
-                #     else:
-                #         rospy.loginfo('Continuing execution.')
-                #         self.status = ExecutionStatus.EXECUTING
-                #         self.is_continue_execution = False
 
             if (self.preempt):
                 rospy.logwarn('Execution preempted by user.')
                 self.status = ExecutionStatus.PREEMPTED
                 break
 
-            rospy.loginfo('Step ' + str(i) + ' of action is complete.')
+            rospy.loginfo('Step ' + str(i) + ' of manipulation_step is complete.')
 
     def get_base_state(self):
-       try:
-           ref_frame = "/map"
-           time = World.tf_listener.getLatestCommonTime(ref_frame,
-                                                        "/base_link")
-           (position, orientation) = World.tf_listener.lookupTransform(
-                                               ref_frame, "/base_link", time)
-           base_pose = Pose()
-           base_pose.position = Point(position[0], position[1], position[2])
-           base_pose.orientation = Quaternion(orientation[0], orientation[1],
-                                            orientation[2], orientation[3])
-           rospy.loginfo('Current base pose:')
-           rospy.loginfo(base_pose)
-           return base_pose
-       except (tf.LookupException, tf.ConnectivityException,
-               tf.ExtrapolationException):
-           rospy.logwarn('Something wrong with transform request for base state.')
-           return None
+        try:
+            ref_frame = "/map"
+            time = World.tf_listener.getLatestCommonTime(ref_frame,
+                                                         "/base_link")
+            (position, orientation) = World.tf_listener.lookupTransform(
+                ref_frame, "/base_link", time)
+            base_pose = Pose()
+            base_pose.position = Point(position[0], position[1], position[2])
+            base_pose.orientation = Quaternion(orientation[0], orientation[1],
+                                               orientation[2], orientation[3])
+            rospy.loginfo('Current base pose:')
+            rospy.loginfo(base_pose)
+            return base_pose
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            rospy.logwarn('Something wrong with transform request for base state.')
+            return None
 
     def _get_absolute_arm_states(self):
         abs_ee_poses = [Robot.get_ee_state(0),
-                      Robot.get_ee_state(1)]
+                        Robot.get_ee_state(1)]
         joint_poses = [Robot.get_joint_state(0),
-                      Robot.get_joint_state(1)]
+                       Robot.get_joint_state(1)]
         states = [None, None]
         for arm_index in [0, 1]:
             states[arm_index] = ArmState(ArmState.ROBOT_BASE,
-                    abs_ee_poses[arm_index], joint_poses[arm_index], Object())
+                                         abs_ee_poses[arm_index], joint_poses[arm_index], Object())
         return states
 
     def move_base(self, base_pose):
-       '''Moves the base to the desired position'''
-       # Setup the goal
-       #nav_goal = MoveBaseActionGoal()
-       #nav_goal.header.stamp = (rospy.Time.now() +
-       #                                     rospy.Duration(0.1))
-       #nav_goal.goal_id.stamp = nav_goal.header.stamp
-       #nav_goal.goal_id.id = 1
-       current_pose = self.get_base_state()
-       rospy.loginfo('Current base pose:')
-       rospy.loginfo(current_pose)
-       rospy.loginfo('Sending base to pose:')
-       rospy.loginfo(base_pose)
-       if World.pose_distance(current_pose, base_pose) < 0.2:
-           rospy.loginfo("Don't need to move the base, we're already there.")
-           return True
+        '''Moves the base to the desired position'''
+        # Setup the goal
+        #nav_goal = MoveBaseActionGoal()
+        #nav_goal.header.stamp = (rospy.Time.now() +
+        #                                     rospy.Duration(0.1))
+        #nav_goal.goal_id.stamp = nav_goal.header.stamp
+        #nav_goal.goal_id.id = 1
+        current_pose = self.get_base_state()
+        rospy.loginfo('Current base pose:')
+        rospy.loginfo(current_pose)
+        rospy.loginfo('Sending base to pose:')
+        rospy.loginfo(base_pose)
+        if World.pose_distance(current_pose, base_pose) < 0.2:
+            rospy.loginfo("Don't need to move the base, we're already there.")
+            return True
 
-       #Remember arm states and tuck arms
-       states = self._get_absolute_arm_states()
-       armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
-       arms_status = self.status
-       # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
-       self.status = ExecutionStatus.EXECUTING
-       rospy.loginfo("Tucking arms for navigation.")
-       goal = TuckArmsGoal()
-       goal.tuck_left = True
-       goal.tuck_right = True
-       self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+        #Remember arm states and tuck arms
+        states = self._get_absolute_arm_states()
+        armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
+        arms_status = self.status
+        # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
+        self.status = ExecutionStatus.EXECUTING
+        rospy.loginfo("Tucking arms for navigation.")
+        goal = TuckArmsGoal()
+        goal.tuck_left = True
+        goal.tuck_right = True
+        self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
 
-       pose_stamped = PoseStamped()
-       pose_stamped.header.stamp = rospy.Time.now()
-       pose_stamped.header.frame_id = "/map"
-       pose_stamped.pose = base_pose
-       #nav_goal.goal = MoveBaseGoal()
-       #nav_goal.goal.target_pose = pose_stamped
-       #rospy.loginfo(nav_goal)
-       nav_goal = MoveBaseGoal()
-       nav_goal.target_pose = pose_stamped
-       # Client sends the goal to the Server
-       self.nav_action_client.send_goal(nav_goal)
-       while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
+        pose_stamped = PoseStamped()
+        pose_stamped.header.stamp = rospy.Time.now()
+        pose_stamped.header.frame_id = "/map"
+        pose_stamped.pose = base_pose
+        #nav_goal.goal = MoveBaseGoal()
+        #nav_goal.goal.target_pose = pose_stamped
+        #rospy.loginfo(nav_goal)
+        nav_goal = MoveBaseGoal()
+        nav_goal.target_pose = pose_stamped
+        # Client sends the goal to the Server
+        self.nav_action_client.send_goal(nav_goal)
+        while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
                or self.nav_action_client.get_state() == GoalStatus.PENDING):
-           time.sleep(0.01)
-       rospy.loginfo('Done with base navigation.')
+            time.sleep(0.01)
+        rospy.loginfo('Done with base navigation.')
 
-       # Untuck arms and move to where they were.
-       rospy.loginfo("Untucking arms and moving them back after navigation.")
-       goal = TuckArmsGoal()
-       goal.tuck_left = False
-       goal.tuck_right = False
-       self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
-       # Return to remembered pose.
-       self.status = arms_status
-       self.move_to_joints(armTarget.rArm, armTarget.lArm)
+        # Untuck arms and move to where they were.
+        rospy.loginfo("Untucking arms and moving them back after navigation.")
+        goal = TuckArmsGoal()
+        goal.tuck_left = False
+        goal.tuck_right = False
+        self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+        # Return to remembered pose.
+        self.status = arms_status
+        self.move_to_joints(armTarget.rArm, armTarget.lArm)
 
-       # Verify that base succeeded
-       if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
-           rospy.logwarn('Aborting because base failed to move to pose.')
-           return False
-       else:
-           return True
+        # Verify that base succeeded
+        if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logwarn('Aborting because base failed to move to pose.')
+            return False
+        else:
+            return True
 
-    def _execute_action_step(self, action_step):
-        '''Executes the motion part of an action step'''
+    def _execute_arm_step(self, arm_step):
+        '''Executes the motion part of an arm step'''
 
         # For each step check step type
         # If arm target action
-        if (action_step.type == ActionStep.ARM_TARGET):
+        if (arm_step.type == ArmStep.ARM_TARGET):
             rospy.loginfo('Will perform arm target action step.')
 
-            if (not self.move_to_joints(action_step.armTarget.rArm,
-                                        action_step.armTarget.lArm)):
+            if (not self.move_to_joints(arm_step.armTarget.rArm,
+                                        arm_step.armTarget.lArm)):
                 self.status = ExecutionStatus.OBSTRUCTED
                 return False
 
         # If arm trajectory action
-        elif (action_step.type == ActionStep.ARM_TRAJECTORY):
+        elif (arm_step.type == ArmStep.ARM_TRAJECTORY):
 
             rospy.loginfo('Will perform arm trajectory action step.')
 
             # First move to the start frame
-            if (not self.move_to_joints(action_step.armTrajectory.r_arm[0],
-                                        action_step.armTrajectory.l_arm[0])):
+            if (not self.move_to_joints(arm_step.armTrajectory.r_arm[0],
+                                        arm_step.armTrajectory.l_arm[0])):
                 self.status = ExecutionStatus.OBSTRUCTED
                 return False
 
             #  Then execute the trajectory
-            Robot.arms[0].exectute_joint_traj(action_step.armTrajectory.r_arm,
-                                             action_step.armTrajectory.timing)
-            Robot.arms[1].exectute_joint_traj(action_step.armTrajectory.l_arm,
-                                             action_step.armTrajectory.timing)
+            Robot.arms[0].exectute_joint_traj(arm_step.armTrajectory.r_arm,
+                                              arm_step.armTrajectory.timing)
+            Robot.arms[1].exectute_joint_traj(arm_step.armTrajectory.l_arm,
+                                              arm_step.armTrajectory.timing)
 
             # Wait until both arms complete the trajectory
-            while((Robot.arms[0].is_executing() or Robot.arms[1].is_executing())
-                  and not self.preempt):
+            while ((Robot.arms[0].is_executing() or Robot.arms[1].is_executing())
+                   and not self.preempt):
                 time.sleep(0.01)
             rospy.loginfo('Trajectory complete.')
 
             # Verify that both arms succeeded
             if ((not Robot.arms[0].is_successful()) or
-                (not Robot.arms[1].is_successful())):
+                    (not Robot.arms[1].is_successful())):
                 rospy.logwarn('Aborting execution; ' +
                               'arms failed to follow trajectory.')
                 self.status = ExecutionStatus.OBSTRUCTED
                 return False
 
         # If hand action do it for both sides
-        if (action_step.gripperAction.rGripper !=
-                            Robot.arms[0].get_gripper_state()):
+        if (arm_step.gripperAction.rGripper !=
+                Robot.arms[0].get_gripper_state()):
             rospy.loginfo('Will perform right gripper action ' +
-                          str(action_step.gripperAction.rGripper))
-            Robot.arms[0].set_gripper(action_step.gripperAction.rGripper)
+                          str(arm_step.gripperAction.rGripper))
+            Robot.arms[0].set_gripper(arm_step.gripperAction.rGripper)
             Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
 
-        if (action_step.gripperAction.lGripper !=
-                            Robot.arms[1].get_gripper_state()):
+        if (arm_step.gripperAction.lGripper !=
+                Robot.arms[1].get_gripper_state()):
             rospy.loginfo('Will perform LEFT gripper action ' +
-                          str(action_step.gripperAction.lGripper))
-            Robot.arms[1].set_gripper(action_step.gripperAction.lGripper)
+                          str(arm_step.gripperAction.lGripper))
+            Robot.arms[1].set_gripper(arm_step.gripperAction.lGripper)
             Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
 
         # Wait for grippers to be done
-        while(Robot.arms[0].is_gripper_moving() or
-              Robot.arms[1].is_gripper_moving()):
+        while (Robot.arms[0].is_gripper_moving() or
+                   Robot.arms[1].is_gripper_moving()):
             time.sleep(0.01)
         rospy.loginfo('Hands done moving.')
 
         # Verify that both grippers succeeded
         if ((not Robot.arms[0].is_gripper_at_goal()) or
-            (not Robot.arms[1].is_gripper_at_goal())):
+                (not Robot.arms[1].is_gripper_at_goal())):
             rospy.logwarn('Hand(s) did not fully close or open!')
 
         return True
@@ -530,8 +465,8 @@ class Robot:
             return None
         else:
             time_to_pose = Robot._get_time_bw_poses(
-                            Robot.arms[arm_index].get_ee_state(),
-                            pose.ee_pose)
+                Robot.arms[arm_index].get_ee_state(),
+                pose.ee_pose)
             rospy.loginfo('Duration until next frame for arm ' +
                           str(arm_index) + ': ' + str(time_to_pose))
             return time_to_pose
@@ -563,14 +498,14 @@ class Robot:
             Robot.arms[1].move_to_joints(l_arm.joint_pose, time_to_l_pose)
 
         # Wait until both arms complete the trajectory
-        while((Robot.arms[0].is_executing() or
-               Robot.arms[1].is_executing()) and not self.preempt):
+        while ((Robot.arms[0].is_executing() or
+                    Robot.arms[1].is_executing()) and not self.preempt):
             time.sleep(0.01)
         rospy.loginfo('Arms reached target.')
 
         # Verify that both arms succeeded
         if ((not Robot.arms[0].is_successful() and is_r_moving) or
-            (not Robot.arms[1].is_successful() and is_l_moving)):
+                (not Robot.arms[1].is_successful() and is_l_moving)):
             rospy.logwarn('Aborting because arms failed to move to pose.')
             return False
         else:
@@ -582,7 +517,7 @@ class Robot:
         in the recent past'''
         threshold = 0.02
         if (Robot.arms[0].get_movement() < threshold and
-            Robot.arms[1].get_movement() < threshold):
+                    Robot.arms[1].get_movement() < threshold):
             return -1
         elif (Robot.arms[0].get_movement() < threshold):
             return 1

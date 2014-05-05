@@ -18,8 +18,8 @@ import numpy as np
 # ROS Libraries
 import rospy
 import rosbag
-from pr2_pbd_interaction.msg import ArmState, ActionStepSequence
-from pr2_pbd_interaction.msg import ActionStep, ArmTarget
+from pr2_pbd_interaction.msg import ArmState, ArmStepSequence
+from pr2_pbd_interaction.msg import ArmStep, ArmTarget
 from pr2_pbd_interaction.msg import GripperAction, ArmTrajectory
 from ArmStepMarker import ArmStepMarker
 from std_msgs.msg import Header, ColorRGBA
@@ -32,7 +32,7 @@ class Action(Step):
     _marker_publisher = None
 
     def __init__(self, action_index, step_click_cb):
-        self.seq = ActionStepSequence()
+        self.seq = ArmStepSequence()
         self.action_index = action_index
         self.step_click_cb = step_click_cb
         self.r_markers = []
@@ -57,8 +57,8 @@ class Action(Step):
         self.lock.acquire()
         self.seq.seq.append(self._copy_action_step(step))
         ArmStepMarker.set_total_n_markers(len(self.seq.seq))
-        if (step.type == ActionStep.ARM_TARGET
-            or step.type == ActionStep.ARM_TRAJECTORY):
+        if (step.type == ArmStep.ARM_TARGET
+            or step.type == ArmStep.ARM_TRAJECTORY):
             last_step = self.seq.seq[len(self.seq.seq) - 1]
             r_marker = ArmStepMarker(self.n_frames(), 0,
                         last_step, self.marker_click_cb)
@@ -240,7 +240,7 @@ class Action(Step):
         '''Clear the action'''
         self.reset_viz()
         self.lock.acquire()
-        self.seq = ActionStepSequence()
+        self.seq = ArmStepSequence()
         self.r_markers = []
         self.l_markers = []
         self.r_links = dict()
@@ -372,8 +372,8 @@ class Action(Step):
         ArmStepMarker.set_total_n_markers(len(self.seq.seq))
         for i in range(len(self.seq.seq)):
             step = self.seq.seq[i]
-            if (step.type == ActionStep.ARM_TARGET or
-                step.type == ActionStep.ARM_TRAJECTORY):
+            if (step.type == ArmStep.ARM_TARGET or
+                step.type == ArmStep.ARM_TRAJECTORY):
                 r_marker = ArmStepMarker(i + 1, 0, step,
                                             self.marker_click_cb)
                 l_marker = ArmStepMarker(i + 1, 1, step,
@@ -454,10 +454,10 @@ class Action(Step):
         is_required = False
         self.lock.acquire()
         for i in range(len(self.seq.seq)):
-            if ((self.seq.seq[i].type == ActionStep.ARM_TARGET and
+            if ((self.seq.seq[i].type == ArmStep.ARM_TARGET and
             (self.seq.seq[i].armTarget.rArm.refFrame == ArmState.OBJECT or
             self.seq.seq[i].armTarget.lArm.refFrame == ArmState.OBJECT)) or
-            (self.seq.seq[i].type == ActionStep.ARM_TRAJECTORY and
+            (self.seq.seq[i].type == ArmStep.ARM_TRAJECTORY and
             (self.seq.seq[i].armTrajectory.rRefFrame == ArmState.OBJECT or
             self.seq.seq[i].armTrajectory.lRefFrame == ArmState.OBJECT))):
                 is_required = True
@@ -492,7 +492,7 @@ class Action(Step):
     def copy(self):
         '''Makes a copy of the instance'''
         action = Action(self.action_index, self.step_click_cb)
-        action.seq = ActionStepSequence()
+        action.seq = ArmStepSequence()
         for i in range(len(self.seq.seq)):
             action_step = self.seq.seq[i]
             copy = Action._copy_action_step(action_step)
@@ -502,10 +502,10 @@ class Action(Step):
     @staticmethod
     def _copy_action_step(action_step):
         '''Makes a copy of an action step'''
-        copy = ActionStep()
+        copy = ArmStep()
         copy.type = int(action_step.type)
         copy.baseTarget = action_step.baseTarget
-        if (copy.type == ActionStep.ARM_TARGET):
+        if (copy.type == ArmStep.ARM_TARGET):
             copy.armTarget = ArmTarget()
             copy.armTarget.rArmVelocity = float(
                                     action_step.armTarget.rArmVelocity)
@@ -515,7 +515,7 @@ class Action(Step):
                                                 action_step.armTarget.rArm)
             copy.armTarget.lArm = Action._copy_arm_state(
                                                 action_step.armTarget.lArm)
-        elif (copy.type == ActionStep.ARM_TRAJECTORY):
+        elif (copy.type == ArmStep.ARM_TRAJECTORY):
             copy.armTrajectory = ArmTrajectory()
             copy.armTrajectory.timing = action_step.armTrajectory.timing[:]
             for j in range(len(action_step.armTrajectory.timing)):

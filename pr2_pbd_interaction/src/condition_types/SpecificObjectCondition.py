@@ -16,6 +16,9 @@ class SpecificObjectCondition:
     def add_object(self, obj):
         self.objects.append(obj)
 
+    def delete_last_object(self):
+        self.objects.pop()
+
     def is_empty(self):
         return len(self.objects) == 0
 
