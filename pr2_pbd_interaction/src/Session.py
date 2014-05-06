@@ -244,6 +244,17 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
+    def add_action_step_action(self, act_name):
+        act = next((act for act in self.actions
+                if act.name == act_name), None)
+        if (act != None):
+            self.actions[self.current_action_index].add_step(act)
+            self._update_experiment_state()
+            return True
+        else:
+            rospy.logwarn("Action " + act_name + " not found")
+            return False
+
     def delete_last_step(self):
         '''Removes the last step of the action'''
         if (self.n_actions() > 0):
@@ -264,13 +275,13 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
-    def switch_to_action(self, action_number, object_list):
+    def switch_to_action(self, action_number):
         '''Switches to indicated action'''
         if (self.n_actions() > 0):
             if (action_number <= self.n_actions() and action_number > 0):
                 self.get_current_action().reset_viz()
                 self.current_action_index = action_number
-                self.get_current_action().initialize_viz(object_list)
+                self.get_current_action().initialize_viz()
                 success = True
             else:
                 rospy.logwarn('Cannot switch to action '
@@ -281,6 +292,15 @@ class Session:
             success = False
         self._update_experiment_state()
         return success
+
+    def switch_to_action_by_name(self, action_name):
+        return self.switch_to_action(next((i for i, act in enumerate(self.actions)
+                                           if act.name == action_name), -1))
+
+    def name_action(self, new_name):
+        if len(self.actions) > 0:
+            self.actions[self.current_action_index].name = new_name
+            self._update_experiment_state()
 
     def next_action(self, object_list):
         '''Switches to next action'''

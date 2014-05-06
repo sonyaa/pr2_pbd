@@ -456,21 +456,44 @@ class Interaction:
                     rospy.logwarn('Ignoring speech command during execution: '
                                   + command.command)
         else:
-            switch_command = 'SWITCH_TO_ACTION'
+            switch_command = "switch-to-action "
+            name_command = "name-action "
+            add_action_command = "add-action-step "
             if (switch_command in command.command):
-                action_no = command.command[
-                            len(switch_command):len(command.command)]
-                action_no = int(action_no)
+                action_name = command.command[
+                                len(switch_command):len(command.command)]
                 if (self.session.n_actions() > 0):
-                    self.session.switch_to_action(action_no,
-                                                  self.world.get_frame_list())
+                    self.session.switch_to_action_by_name(action_name)
                     response = Response(Interaction.empty_response,
-                                        [RobotSpeech.SWITCH_SKILL + str(action_no),
-                                         GazeGoal.NOD])
+                        [RobotSpeech.SWITCH_SKILL + action_name,
+                         GazeGoal.NOD])
                 else:
                     response = Response(Interaction.empty_response,
-                                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
+                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
                 response.respond()
+            elif (name_command in command.command):
+                action_name = command.command[
+                                len(name_command):len(command.command)]
+
+                if (len(action_name) > 1):
+                    self.session.name_action(action_name)
+                    Response(Interaction.empty_response,
+                            [RobotSpeech.SWITCH_SKILL + action_name,
+                            GazeGoal.NOD]).respond()
+                else:
+                    Response(Interaction.empty_response,
+                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
+            elif (add_action_command in command.command):
+                action_name = command.command[
+                                len(add_action_command):len(command.command)]
+                if (self.session.add_action_step_action(action_name)):
+                    Response(Interaction.empty_response,
+                            [RobotSpeech.SWITCH_SKILL + action_name,
+                            GazeGoal.NOD]).respond()
+                else:
+                    Response(Interaction.empty_response,
+                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
+
             else:
                 rospy.logwarn('\033[32m This command (' + command.command
                               + ') is unknown. \033[0m')
@@ -478,12 +501,11 @@ class Interaction:
     def gui_command_cb(self, command):
         '''Callback for when a GUI command is received'''
 
-        if (not self.robot.is_executing() and not self.robot.is_condition_error()):
+        if not self.robot.is_executing():
             if (self.session.n_actions() > 0):
                 if (command.command == GuiCommand.SWITCH_TO_ACTION):
                     action_no = command.param
-                    self.session.switch_to_action(action_no,
-                                                  self.world.get_frame_list())
+                    self.session.switch_to_action(action_no)
                     response = Response(Interaction.empty_response,
                                         [RobotSpeech.SWITCH_SKILL + str(action_no),
                                          GazeGoal.NOD])
@@ -512,11 +534,7 @@ class Interaction:
         self.robot.update()
 
         if (self.robot.status != ExecutionStatus.NOT_EXECUTING):
-            if (self.robot.status == ExecutionStatus.CONDITION_ERROR):
-                Response.say(RobotSpeech.CONDITION_ERROR)
-                self.robot.status = ExecutionStatus.EXECUTING
-                Response.perform_gaze_action(GazeGoal.SHAKE)
-            elif (self.robot.status != ExecutionStatus.EXECUTING):
+            if (self.robot.status != ExecutionStatus.EXECUTING):
                 self._end_execution()
         if (Interaction._is_recording_motion):
             self._save_arm_to_trajectory()

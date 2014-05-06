@@ -22,8 +22,8 @@ string SAVE_POSE = save-pose
 string SAVE_BASE_POSE = save-base-pose
 string START_RECORDING_MOTION = start-recording-motion
 string STOP_RECORDING_MOTION = stop-recording-motion
-string EXECUTE_GENERATED_ACTION = execute-generated-action
-string CALCULATE_POSE_DISTRIBUTION = calculate-pose-distribution
-string CONTINUE_EXECUTION = continue-execution
+string ADD_ACTION_STEP = add-action-step
+string CHANGE_ACTION_NAME = name-action
+string SWITCH_TO_ACTION = switch-to-action
 string UNRECOGNIZED = unrecognized
 string command

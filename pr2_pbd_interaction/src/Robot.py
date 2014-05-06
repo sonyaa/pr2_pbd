@@ -95,10 +95,6 @@ class Robot:
         '''Whether or not there is an ongoing execution'''
         return (self.status == ExecutionStatus.EXECUTING)
 
-    def is_condition_error(self):
-        '''Whether or not there is an ongoing execution'''
-        return (self.status == ExecutionStatus.CONDITION_ERROR)
-
     def start_execution(self, action, z_offset=0):
         ''' Starts execution of an action'''
         # This will take long, create a thread
