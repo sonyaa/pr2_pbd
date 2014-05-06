@@ -19,6 +19,7 @@ previous-action
 save-action
 edit-action
 save-pose
+save-base-pose
 start-recording-motion
 stop-recording-motion
 execute-generated-action

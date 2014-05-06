@@ -19,6 +19,7 @@ string PREV_ACTION = previous-action
 string SAVE_ACTION = save-action
 string EDIT_ACTION = edit-action
 string SAVE_POSE = save-pose
+string SAVE_BASE_POSE = save-base-pose
 string START_RECORDING_MOTION = start-recording-motion
 string STOP_RECORDING_MOTION = stop-recording-motion
 string EXECUTE_GENERATED_ACTION = execute-generated-action
