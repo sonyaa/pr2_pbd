@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from Exceptions import NoObjectError
 from World import World
-from step_types import Step
+from step_types.Step import Step
 
 
 class ObjectDetectionStep(Step):

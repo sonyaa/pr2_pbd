@@ -17,23 +17,20 @@ class ManipulationStep(Step):
     """ Sequence of ArmSteps.
     """
 
-
-    def __init__(self, step_click_cb):
+    def __init__(self, *args, **kwargs):
+        Step.__init__(self, *args, **kwargs)
         self.arm_steps = []
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
-        self.step_click_cb = step_click_cb
-
+        self.step_click_cb = args[0]
         if Step.marker_publisher is None:
             Step.marker_publisher = rospy.Publisher(
                 'visualization_marker_array', MarkerArray)
-
         if Step.interactive_marker_server is None:
             im_server = InteractiveMarkerServer('programmed_actions')
             Step.interactive_marker_server = im_server
-
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
-                                                     step_click_cb)
+                                                     self.step_click_cb)
 
     def execute(self):
         for condition in self.conditions:

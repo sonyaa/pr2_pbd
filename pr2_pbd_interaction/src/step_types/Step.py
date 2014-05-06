@@ -8,6 +8,9 @@ class Step:
     marker_publisher = None
     interactive_marker_server = None
 
+    def __init__(self, *args, **kwargs):
+        pass
+
     def execute(self):
         pass
 

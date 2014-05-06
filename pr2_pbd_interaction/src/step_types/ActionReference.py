@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from step_types import Step
+from step_types.Step import Step
 
 #functional code
 from functools import partial
@@ -17,10 +17,10 @@ class ActionReference(Step):
     ACTION_DIRECTORY = "~/pbd_actions/"
     FILE_EXTENSION = ".yaml"
 
-
-    def __init__(self, id=None, name=None):
-        self.name = name
-        self.id = id
+    def __init__(self, *args, **kwargs): #(self, id=None, name=None):
+        Step.__init__(self, *args, **kwargs)
+        self.name = kwargs.get('name')
+        self.id = kwargs.get('id')
         self.steps = []
         self.selected_step_id = None
         self.conditions = []
