@@ -189,16 +189,26 @@ class Session:
         self._update_experiment_state()
 
     def n_actions(self):
-        '''Returns the number of actions programmed so far'''
+        """Returns the number of actions programmed so far"""
         return len(self.actions)
 
     def get_current_action(self):
-        '''Returns the current action'''
+        """Returns the current action"""
         return self.actions[self.current_action_index]
 
     def get_current_step(self):
-        '''Returns the current action'''
+        """Returns the current action step"""
         return self.actions[self.current_action_index].get_selected_step()
+
+    def get_last_arm_step(self):
+        """ Returns the last arm step if the last action step is ManipulationStep
+        and there are arm steps in it, or None otherwise.
+        """
+        if self.n_actions() > 0:
+            last_step = self.get_current_action().get_last_step()
+            if last_step is not None and isinstance(last_step, ManipulationStep):
+                return last_step.get_last_step()
+        return None
 
     #     def get_current_action_name(self):
     #         return self.actions[self.current_action_index].get_name()

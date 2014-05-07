@@ -4,6 +4,8 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 import roslib
 import tf
 from Exceptions import *
+from condition_types.GripperCondition import GripperCondition
+from step_types.ArmStep import ArmStep
 from step_types.BaseStep import BaseStep
 from step_types.ObjectDetectionStep import ObjectDetectionStep
 
@@ -22,10 +24,9 @@ from Response import Response
 from Robot import Robot
 from Arm import ArmMode
 from pr2_pbd_interaction.msg import ArmState, GripperState
-from pr2_pbd_interaction.msg import ArmStep, ArmTarget, Object
+from pr2_pbd_interaction.msg import ArmTarget, Object
 from pr2_pbd_interaction.msg import GripperAction, ArmTrajectory
 from pr2_pbd_interaction.msg import ExecutionStatus, GuiCommand
-from pr2_pbd_interaction.msg import Condition
 from pr2_pbd_speech_recognition.msg import Command
 from pr2_social_gaze.msg import GazeGoal
 
@@ -41,8 +42,7 @@ class Interaction:
     def __init__(self):
         self.robot = Robot.get_robot()
         self.world = World()
-        self.session = Session(object_list=self.world.get_frame_list(),
-                               is_debug=True)
+        self.session = Session(object_list=self.world.get_frame_list())
         self._viz_publisher = rospy.Publisher('visualization_marker_array',
                                               MarkerArray)
 
@@ -82,10 +82,12 @@ class Interaction:
 
     def open_hand(self, arm_index):
         '''Opens gripper on the indicated side'''
+        initial_condition = GripperCondition(self.robot.get_gripper_position(0),
+                                             self.robot.get_gripper_position(1))
         if self.robot.set_gripper_state(arm_index, GripperState.OPEN):
             speech_response = Response.open_responses[arm_index]
             if (Interaction._is_programming and self.session.n_actions() > 0):
-                self.save_gripper_step(arm_index, GripperState.OPEN)
+                self.save_gripper_step(arm_index, GripperState.OPEN, initial_condition)
                 speech_response = (speech_response + ' ' +
                                    RobotSpeech.STEP_RECORDED)
             return [speech_response, Response.glance_actions[arm_index]]
@@ -95,8 +97,8 @@ class Interaction:
 
     def close_hand(self, arm_index):
         '''Closes gripper on the indicated side'''
-        initial_condition = Condition(self.robot.get_gripper_position(0),
-                                      self.robot.get_gripper_position(1))
+        initial_condition = GripperCondition(self.robot.get_gripper_position(0),
+                                             self.robot.get_gripper_position(1))
         if Robot.set_gripper_state(arm_index, GripperState.CLOSED):
             speech_response = Response.close_responses[arm_index]
             if (Interaction._is_programming and self.session.n_actions() > 0):
@@ -216,7 +218,7 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_EXECUTION, GazeGoal.SHAKE]
 
-    def save_gripper_step(self, arm_index, gripper_state):
+    def save_gripper_step(self, arm_index, gripper_state, initial_condition):
         '''Saves an action step that involves a gripper state change'''
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
@@ -228,7 +230,10 @@ class Interaction:
                            self.robot.get_gripper_state(1)]
                 actions[arm_index] = gripper_state
                 step.gripperAction = GripperAction(actions[0], actions[1])
-                step.baseTarget.pose = self.robot.get_base_state()
+                prev_step = self.session.get_last_arm_step()
+                step.set_gripper_condition(initial_condition if prev_step is None else prev_step.postCond)
+                step.postCond = GripperCondition(self.robot.get_gripper_position(0),
+                                                 self.robot.get_gripper_position(1))
                 self.session.add_step_to_action(step)
 
     def start_recording(self, dummy=None):
@@ -340,6 +345,14 @@ class Interaction:
                 step.gripperAction = GripperAction(
                     self.robot.get_gripper_state(0),
                     self.robot.get_gripper_state(1))
+                prev_step = self.session.get_last_arm_step()
+                if prev_step is None:
+                    step.set_gripper_condition(GripperCondition(self.robot.get_gripper_position(0),
+                                                                self.robot.get_gripper_position(1)))
+                else:
+                    step.set_gripper_condition(prev_step.postCond)
+                step.postCond = GripperCondition(self.robot.get_gripper_position(0),
+                                                 self.robot.get_gripper_position(1))
                 self.session.add_step_to_action(step)
                 return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
             else:
@@ -461,38 +474,38 @@ class Interaction:
             add_action_command = "add-action-step "
             if (switch_command in command.command):
                 action_name = command.command[
-                                len(switch_command):len(command.command)]
+                              len(switch_command):len(command.command)]
                 if (self.session.n_actions() > 0):
                     self.session.switch_to_action_by_name(action_name)
                     response = Response(Interaction.empty_response,
-                        [RobotSpeech.SWITCH_SKILL + action_name,
-                         GazeGoal.NOD])
+                                        [RobotSpeech.SWITCH_SKILL + action_name,
+                                         GazeGoal.NOD])
                 else:
                     response = Response(Interaction.empty_response,
-                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
+                                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
                 response.respond()
             elif (name_command in command.command):
                 action_name = command.command[
-                                len(name_command):len(command.command)]
+                              len(name_command):len(command.command)]
 
                 if (len(action_name) > 1):
                     self.session.name_action(action_name)
                     Response(Interaction.empty_response,
-                            [RobotSpeech.SWITCH_SKILL + action_name,
-                            GazeGoal.NOD]).respond()
+                             [RobotSpeech.SWITCH_SKILL + action_name,
+                              GazeGoal.NOD]).respond()
                 else:
                     Response(Interaction.empty_response,
-                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
+                             [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
             elif (add_action_command in command.command):
                 action_name = command.command[
-                                len(add_action_command):len(command.command)]
+                              len(add_action_command):len(command.command)]
                 if (self.session.add_action_step_action(action_name)):
                     Response(Interaction.empty_response,
-                            [RobotSpeech.SWITCH_SKILL + action_name,
-                            GazeGoal.NOD]).respond()
+                             [RobotSpeech.SWITCH_SKILL + action_name,
+                              GazeGoal.NOD]).respond()
                 else:
                     Response(Interaction.empty_response,
-                        [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
+                             [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
 
             else:
                 rospy.logwarn('\033[32m This command (' + command.command

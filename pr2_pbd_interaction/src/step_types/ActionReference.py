@@ -40,9 +40,10 @@ class ActionReference(Step):
         self.select_step(len(self.steps)-1)
 
     def delete_last_step(self):
-        if self.selected_step_id == len(self.steps)-1:
-            self.reset_viz()
-        self.steps.pop()
+        if len(self.steps) > 0:
+            if self.selected_step_id == len(self.steps)-1:
+                self.reset_viz()
+            self.steps.pop()
 
     def select_step(self, step_id):
         if self.selected_step_id != step_id:
@@ -54,6 +55,11 @@ class ActionReference(Step):
 
     def get_selected_step(self):
         return self.selected_step_id
+
+    def get_last_step(self):
+        if len(self.steps) == 0:
+            return None
+        return self.steps[len(self.steps)-1]
 
     def initialize_viz(self):
         if self.selected_step_id is not None:

@@ -23,12 +23,12 @@ class ArmStepMarkerSequence:
         self.l_links = dict()
         self.step_click_cb = step_click_cb
 
-    def add_arm_step(self, arm_step, last_step, world_objects):
+    def add_arm_step(self, arm_step, world_objects):
         r_marker = ArmStepMarker(self.total_n_markers, 0,
-                                 last_step, self.marker_click_cb, self)
+                                 arm_step, self.marker_click_cb, self)
         r_marker.update_ref_frames(world_objects, arm_step.armTarget.rArm.refFrameObject)
         l_marker = ArmStepMarker(self.total_n_markers, 1,
-                                 last_step, self.marker_click_cb, self)
+                                 arm_step, self.marker_click_cb, self)
         l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
         self.r_markers.append(r_marker)
         self.l_markers.append(l_marker)

@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 from Exceptions import NoObjectError
 from World import World
+from condition_types.Condition import Condition
 
 
-class SpecificObjectCondition:
+class SpecificObjectCondition(Condition):
     '''
     Checks that the objects present are similar enough to the specified ones.
     '''
-    def __init__(self, object_list=None):
-        if object_list is None:
-            self.objects = []
-        else:
-            self.objects = object_list
+
+    def __init__(self, *args, **kwargs):
+        Condition.__init__(self, *args, **kwargs)
+        self.objects = []
 
     def add_object(self, obj):
         self.objects.append(obj)
