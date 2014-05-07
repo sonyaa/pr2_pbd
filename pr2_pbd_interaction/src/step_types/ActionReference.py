@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from Exceptions import ConditionError
+from Exceptions import ConditionError, StoppedByUserError
 from Robot import Robot
 from pr2_pbd_interaction.msg import ExecutionStatus
 from step_types.Step import Step
@@ -35,9 +35,16 @@ class ActionReference(Step):
                 if self.strategy == Step.STRATEGY_FAILFAST:
                     robot.status = ExecutionStatus.CONDITION_FAILED
                     raise ConditionError()
-        for step in self.steps:
+        for (i, step) in enumerate(self.steps):
             try:
-                step.execute()
+                if robot.status == ExecutionStatus.EXECUTING:
+                    step.execute()
+                if robot.preempt:
+                    robot.preempt = False
+                    robot.status = ExecutionStatus.PREEMPTED
+                    rospy.logerr('Execution of action step failed, execution preempted by user.')
+                    raise StoppedByUserError()
+                rospy.loginfo('Step ' + str(i) + ' of action step is complete.')
             except:
                 rospy.logerr("Execution of an action failed")
                 raise

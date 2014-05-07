@@ -3,13 +3,13 @@ import threading
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import MarkerArray
 from ArmStepMarkerSequence import ArmStepMarkerSequence
-from Exceptions import ConditionError
+from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
 from Robot import Robot
 from World import World
 from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 import rospy
-from pr2_pbd_interaction.msg import ArmState, ExecutionStatus
+from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode
 from step_types.Step import Step
 
 
@@ -42,12 +42,30 @@ class ManipulationStep(Step):
                     robot.status = ExecutionStatus.CONDITION_FAILED
                     raise ConditionError()
         self.update_objects()
-        for step in self.arm_steps:
-            try:
-                step.execute()
-            except:
-                rospy.logerr("Execution of a manipulation step failed")
-                raise
+        if not robot.solve_ik_for_manipulation_step(self):
+            rospy.logwarn('Problems in finding IK solutions...')
+            robot.status = ExecutionStatus.NO_IK
+            rospy.logerr("Execution of a manipulation step failed, unreachable poses.")
+            raise UnreachablePoseError()
+        else:
+            Robot.set_arm_mode(0, ArmMode.HOLD)
+            Robot.set_arm_mode(1, ArmMode.HOLD)
+            for (i, step) in enumerate(self.arm_steps):
+                try:
+                    if robot.status == ExecutionStatus.EXECUTING:
+                        step.execute()
+                    if robot.preempt:
+                        robot.preempt = False
+                        robot.status = ExecutionStatus.PREEMPTED
+                        rospy.logerr('Execution of manipulation step failed, execution preempted by user.')
+                        raise StoppedByUserError()
+                    rospy.loginfo('Step ' + str(i) + ' of manipulation step is complete.')
+                except:
+                    rospy.logerr("Execution of a manipulation step failed")
+                    raise
+
+        Robot.arms[0].reset_movement_history()
+        Robot.arms[1].reset_movement_history()
 
     def add_arm_step(self, arm_step):
         self.lock.acquire()

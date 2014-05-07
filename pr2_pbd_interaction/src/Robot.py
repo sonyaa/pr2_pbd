@@ -37,7 +37,6 @@ class Robot:
         l_arm = Arm(Side.LEFT)
         Robot.arms = [r_arm, l_arm]
         self.attended_arm = -1
-        self.manipulation_step = None
         self.action = None
         self.preempt = False
         self.is_continue_execution = False
@@ -122,42 +121,42 @@ class Robot:
         '''Preempts an ongoing execution'''
         self.preempt = True
 
-    def solve_ik_for_manipulation_step(self):
+    def solve_ik_for_manipulation_step(self, manipulation_step):
         '''Computes joint positions for all end-effector poses
         in an manipulation_step'''
 
         # Go over steps of the manipulation_step
-        for i in range(self.manipulation_step.n_frames()):
+        for i in range(manipulation_step.n_frames()):
             # For each step check step type
             # If arm target action
-            if (self.manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):
+            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):
                 # Find frames that are relative and convert to absolute
 
                 r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                                                               self.manipulation_step.arm_steps[i].armTarget.rArm,
+                                                               manipulation_step.arm_steps[i].armTarget.rArm,
                                                                self.z_offset)
                 l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                                                               self.manipulation_step.arm_steps[i].armTarget.lArm,
+                                                               manipulation_step.arm_steps[i].armTarget.lArm,
                                                                self.z_offset)
 
-                self.manipulation_step.arm_steps[i].armTarget.rArm = r_arm
-                self.manipulation_step.arm_steps[i].armTarget.lArm = l_arm
+                manipulation_step.arm_steps[i].armTarget.rArm = r_arm
+                manipulation_step.arm_steps[i].armTarget.lArm = l_arm
                 if (not has_solution_r) or (not has_solution_l):
                     return False
 
-            if (self.manipulation_step.arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
-                n_frames = len(self.manipulation_step.arm_steps[i].armTrajectory.timing)
+            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
+                n_frames = len(manipulation_step.arm_steps[i].armTrajectory.timing)
                 for j in range(n_frames):
                     r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                                                                   self.manipulation_step.arm_steps[
+                                                                   manipulation_step.arm_steps[
                                                                        i].armTrajectory.r_arm[j],
                                                                    self.z_offset)
                     l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                                                                   self.manipulation_step.arm_steps[
+                                                                   manipulation_step.arm_steps[
                                                                        i].armTrajectory.l_arm[j],
                                                                    self.z_offset)
-                    self.manipulation_step.arm_steps[i].armTrajectory.r_arm[j] = r_arm
-                    self.manipulation_step.arm_steps[i].armTrajectory.l_arm[j] = l_arm
+                    manipulation_step.arm_steps[i].armTrajectory.r_arm[j] = r_arm
+                    manipulation_step.arm_steps[i].armTrajectory.l_arm[j] = l_arm
                     if (not has_solution_r) or (not has_solution_l):
                         return False
         return True
@@ -256,24 +255,6 @@ class Robot:
                 self.status = ExecutionStatus.OBSTRUCTED
         else:
             self.status = ExecutionStatus.NO_IK
-
-    def execute_manipulation_step(self):
-        ''' Function to replay the demonstrated two-arm manipulation step'''
-        # Check that all parts of the manipulation_step are reachable
-        if (not self.solve_ik_for_manipulation_step()):
-            rospy.logwarn('Problems in finding IK solutions...')
-            self.status = ExecutionStatus.NO_IK
-        else:
-            Robot.set_arm_mode(0, ArmMode.HOLD)
-            Robot.set_arm_mode(1, ArmMode.HOLD)
-            self._loop_through_arm_steps()
-
-        Robot.arms[0].reset_movement_history()
-        Robot.arms[1].reset_movement_history()
-
-        if self.status == ExecutionStatus.EXECUTING:
-            self.status = ExecutionStatus.SUCCEEDED
-            rospy.loginfo('Manipulation step execution has succeeded.')
 
     def _loop_through_arm_steps(self):
         ''' Goes through the steps of the current manipulation_step'''
