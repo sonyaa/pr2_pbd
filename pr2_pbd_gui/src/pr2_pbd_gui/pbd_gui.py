@@ -8,12 +8,12 @@ from python_qt_binding import QtGui,QtCore
 from python_qt_binding.QtGui import QWidget, QFrame
 from python_qt_binding.QtGui import QGroupBox, QIcon, QTableView, QStandardItem
 from python_qt_binding.QtCore import Slot, qDebug, QSignalMapper, QTimer, qWarning, Signal
-from pr2_pbd_speech_recognition.msg import Command
 from pr2_pbd_interaction.msg import GuiCommand
+from pr2_pbd_speech_recognition.msg import Command
 from sound_play.msg import SoundRequest
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
-from pr2_pbd_interaction.Action import Action
+from step_types.ActionReference import ActionReference
 
 
 class ClickableLabel(QtGui.QLabel):
@@ -454,7 +454,7 @@ class PbDGUI(Plugin):
                 actIcon.selected = True
                 actIcon.updateView()
         if (state.action_str != ""):
-            act = Action.from_string(state.action_str)#state['action_str'])
+            act = ActionReference.from_string(state.action_str)#state['action_str'])
             #self.l_model.clear()
             self.disp_action(act)
 
