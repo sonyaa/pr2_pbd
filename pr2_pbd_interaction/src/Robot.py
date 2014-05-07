@@ -108,7 +108,12 @@ class Robot:
     def execute_action(self):
         self.status = ExecutionStatus.EXECUTING
         rospy.loginfo("Starting execution of action " + self.action.get_name())
-        self.action.execute()
+        try:
+            self.action.execute()
+        except Exception as e:
+            rospy.logerr("Execution of an action failed: " + str(e))
+        else:
+            self.status = ExecutionStatus.SUCCEEDED
 
     def continue_execution(self):
         self.is_continue_execution = True

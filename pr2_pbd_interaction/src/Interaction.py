@@ -418,23 +418,7 @@ class Interaction:
             if (self.session.n_frames() > 1):
                 self.session.save_current_action()
                 action = self.session.get_current_action()
-                try:
-                    self.robot.start_execution(action)
-                except NoObjectError as e:
-                    rospy.logerr('Cannot execute action: ' + e.msg)
-                    return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-                except ArmObstructedError as e:
-                    rospy.logerr('Cannot execute action: ' + e.msg)
-                    return [RobotSpeech.EXECUTION_ERROR_OBSTRUCTED, GazeGoal.SHAKE]
-                except BaseObstructedError as e:
-                    rospy.logerr('Cannot execute action: ' + e.msg)
-                    return [RobotSpeech.EXECUTION_ERROR_OBSTRUCTED, GazeGoal.SHAKE]
-                except UnreachablePoseError as e:
-                    rospy.logerr('Cannot execute action: ' + e.msg)
-                    return [RobotSpeech.EXECUTION_ERROR_NOIK, GazeGoal.SHAKE]
-                except StoppedByUserError as e:
-                    rospy.logerr('Cannot execute action: ' + e.msg)
-                    return [RobotSpeech.STOPPING_EXECUTION, GazeGoal.SHAKE]
+                self.robot.start_execution(action)
                 return [RobotSpeech.START_EXECUTION + ' ' +
                         str(self.session.current_action_index), None]
             else:
@@ -450,20 +434,14 @@ class Interaction:
                           command.command + '\033[0m')
             response = self.responses[command.command]
 
-            if (self.robot.is_condition_error()):
-                if command.command == Command.STOP_EXECUTION or command.command == Command.CONTINUE_EXECUTION:
-                    response.respond()
-                else:
-                    rospy.logwarn('Ignoring speech command during condition error: '
-                                  + command.command)
-            elif (not self.robot.is_executing()):
+            if (not self.robot.is_executing()):
                 if (self._undo_function != None):
                     response.respond()
                     self._undo_function = None
                 else:
                     response.respond()
             else:
-                if command.command == Command.STOP_EXECUTION or command.command == Command.CONTINUE_EXECUTION:
+                if command.command == Command.STOP_EXECUTION:
                     response.respond()
                 else:
                     rospy.logwarn('Ignoring speech command during execution: '
@@ -584,6 +562,15 @@ class Interaction:
             Response.perform_gaze_action(GazeGoal.NOD)
         elif (self.robot.status == ExecutionStatus.PREEMPTED):
             Response.say(RobotSpeech.EXECUTION_PREEMPTED)
+            Response.perform_gaze_action(GazeGoal.SHAKE)
+        elif (self.robot.status == ExecutionStatus.CONDITION_FAILED):
+            Response.say(RobotSpeech.EXECUTION_ERROR_CONDITION_FAIL)
+            Response.perform_gaze_action(GazeGoal.SHAKE)
+        elif (self.robot.status == ExecutionStatus.OBSTRUCTED):
+            Response.say(RobotSpeech.EXECUTION_ERROR_OBSTRUCTED)
+            Response.perform_gaze_action(GazeGoal.SHAKE)
+        elif (self.robot.status == ExecutionStatus.CONDITION_FAILED):
+            Response.say(RobotSpeech.OBJECT_NOT_DETECTED)
             Response.perform_gaze_action(GazeGoal.SHAKE)
         else:
             Response.say(RobotSpeech.EXECUTION_ERROR_NOIK)

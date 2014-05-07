@@ -7,6 +7,16 @@ class ExecutionError(Exception):
     def __str__(self):
         return self.msg
 
+class ConditionError(ExecutionError):
+    """ Exception raised when the condition is not satisfied and the strategy is to fail-fast.
+    """
+
+    def __init__(self, msg="A condition was not satisfied"):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
 class NoObjectError(ExecutionError):
     """ Exception raised when no object is detected when one is needed.
     """

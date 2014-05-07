@@ -3,12 +3,13 @@ import threading
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import MarkerArray
 from ArmStepMarkerSequence import ArmStepMarkerSequence
+from Exceptions import ConditionError
 from Robot import Robot
 from World import World
 from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 import rospy
-from pr2_pbd_interaction.msg import ArmState
+from pr2_pbd_interaction.msg import ArmState, ExecutionStatus
 from step_types.Step import Step
 
 
@@ -33,15 +34,20 @@ class ManipulationStep(Step):
         self.initial_condition = GripperCondition()
 
     def execute(self):
+        robot = Robot.get_robot()
         for condition in self.conditions:
-            try:
-                condition.check()
-            except:
-                rospy.logerr("Condition failed when executing manipulation step.")
-                raise
+            if not condition.check():
+                rospy.logwarn("Condition failed when executing manipulation step.")
+                if self.strategy == Step.STRATEGY_FAILFAST:
+                    robot.status = ExecutionStatus.CONDITION_FAILED
+                    raise ConditionError()
         self.update_objects()
         for step in self.arm_steps:
-            step.execute()
+            try:
+                step.execute()
+            except:
+                rospy.logerr("Execution of a manipulation step failed")
+                raise
 
     def add_arm_step(self, arm_step):
         self.lock.acquire()
@@ -64,9 +70,6 @@ class ManipulationStep(Step):
             cur_step.postCond = GripperCondition(Robot.get_robot().get_gripper_position(0),
                                                  Robot.get_robot().get_gripper_position(1))
         self.lock.release()
-
-    def add_condition(self, condition):
-        self.conditions.append(condition)
 
     def delete_last_step_and_update_viz(self):
         self.lock.acquire()

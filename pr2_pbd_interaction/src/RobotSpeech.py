@@ -30,7 +30,7 @@ class RobotSpeech:
     EXECUTION_ENDED = 'Execution ended'
     SWITCH_SKILL = 'Switched to action'
     SKILL_EMPTY = 'Action has no poses to delete.'
-    EXECUTION_ERROR_NOIK = 'Cannot execute action'
+    EXECUTION_ERROR_NOIK = 'Unreachable poses. Cannot execute action'
     EXECUTION_ERROR_NOPOSES = 'Not enough poses in action'
     ERROR_NEXT_SKILL = 'No actions after action'
     ERROR_PREV_SKILL = 'No actions before action'
@@ -62,7 +62,8 @@ class RobotSpeech:
     STOPPED_RECORDING_MOTION = 'Stopped recording motion.'
     MOTION_NOT_RECORDING = 'Not currently recording motion.'
     STOPPING_EXECUTION = 'Execution stopped.'
-    EXECUTION_ERROR_OBSTRUCTED = 'Cannot reach the target.'
+    EXECUTION_ERROR_OBSTRUCTED = 'Cannot reach the target. Cannot execute action.'
+    EXECUTION_ERROR_CONDITION_FAIL = 'Condition was not satisfied. Cannot execute action.'
 
     def __init__(self):
         #self.speech_publisher = rospy.Publisher('robotsound', SoundRequest)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from Exceptions import NoObjectError
+import rospy
 from World import World
 from condition_types.Condition import Condition
 
@@ -42,5 +42,6 @@ class SpecificObjectCondition(Condition):
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(self.get_unique_objects(), world_objects)
         if map_of_objects_old_to_new is None:
             # didn't find similar objects
-            raise NoObjectError()
+            rospy.logwarn("Condition failure: didn't find similar objects")
+            return False
         return True

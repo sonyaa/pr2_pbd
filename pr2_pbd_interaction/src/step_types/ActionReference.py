@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from Exceptions import ConditionError
+from Robot import Robot
+from pr2_pbd_interaction.msg import ExecutionStatus
 from step_types.Step import Step
 
 #functional code
@@ -23,17 +26,21 @@ class ActionReference(Step):
         self.id = kwargs.get('id')
         self.steps = []
         self.selected_step_id = None
-        self.conditions = []
 
     def execute(self):
+        robot = Robot.get_robot()
         for condition in self.conditions:
-            try:
-                condition.check()
-            except:
-                rospy.logerr("Condition failed when executing action.")
-                raise
+            if not condition.check():
+                rospy.logwarn("Condition failed when executing action.")
+                if self.strategy == Step.STRATEGY_FAILFAST:
+                    robot.status = ExecutionStatus.CONDITION_FAILED
+                    raise ConditionError()
         for step in self.steps:
-            step.execute()
+            try:
+                step.execute()
+            except:
+                rospy.logerr("Execution of an action failed")
+                raise
 
     def add_step(self, step):
         self.steps.append(step)

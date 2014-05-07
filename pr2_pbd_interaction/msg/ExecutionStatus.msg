@@ -4,4 +4,6 @@ uint8 NO_IK = 2
 uint8 OBSTRUCTED = 3
 uint8 NOT_EXECUTING = 4
 uint8 EXECUTING = 5
+uint8 CONDITION_FAILED = 6
+uint8 OBJECT_DETECTION_FAILED = 6
 uint8 status

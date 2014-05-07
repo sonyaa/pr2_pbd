@@ -2,7 +2,7 @@
 from geometry_msgs.msg import Pose
 import rospy
 import time
-from Exceptions import ArmObstructedError
+from Exceptions import ArmObstructedError, ConditionError
 from Robot import Robot
 from condition_types.GripperCondition import GripperCondition
 from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction
@@ -23,9 +23,6 @@ class ArmStep(Step):
         self.gripperAction = None
         self.postCond = None
 
-    def add_condition(self, condition):
-        self.conditions.append(condition)
-
     def set_gripper_condition_poses(self, r_gripper, l_gripper):
         self.conditions[0].set_gripper_positions(r_gripper, l_gripper)
 
@@ -33,14 +30,14 @@ class ArmStep(Step):
         self.conditions[0] = condition
 
     def execute(self):
-        for condition in self.conditions:
-            try:
-                condition.check()
-            except:
-                rospy.logerr("Condition failed when executing arm step.")
-                raise
-        # send a request to Robot to move the arms to their respective targets
         robot = Robot.get_robot()
+        for condition in self.conditions:
+            if not condition.check():
+                rospy.logwarn("Condition failed when executing arm step.")
+                if self.strategy == Step.STRATEGY_FAILFAST:
+                    robot.status = ExecutionStatus.CONDITION_FAILED
+                    raise ConditionError()
+        # send a request to Robot to move the arms to their respective targets
         if (self.type == ArmStep.ARM_TARGET):
             rospy.loginfo('Will perform arm target action step.')
 
