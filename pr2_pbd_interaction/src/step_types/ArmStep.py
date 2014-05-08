@@ -3,9 +3,11 @@ from geometry_msgs.msg import Pose
 import rospy
 import time
 from Exceptions import ArmObstructedError, ConditionError
+from Response import Response
 from Robot import Robot
 from condition_types.GripperCondition import GripperCondition
 from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction
+from pr2_social_gaze.msg import GazeGoal
 from step_types.Step import Step
 
 
@@ -73,6 +75,33 @@ class ArmStep(Step):
                               'arms failed to follow trajectory.')
                 robot.status = ExecutionStatus.OBSTRUCTED
                 raise ArmObstructedError()
+
+        # If hand action do it for both sides
+        if (self.gripperAction.rGripper !=
+                Robot.arms[0].get_gripper_state()):
+            rospy.loginfo('Will perform right gripper action ' +
+                          str(self.gripperAction.rGripper))
+            Robot.arms[0].set_gripper(self.gripperAction.rGripper)
+            Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
+
+        if (self.gripperAction.lGripper !=
+                Robot.arms[1].get_gripper_state()):
+            rospy.loginfo('Will perform LEFT gripper action ' +
+                          str(self.gripperAction.lGripper))
+            Robot.arms[1].set_gripper(self.gripperAction.lGripper)
+            Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
+
+        # Wait for grippers to be done
+        while (Robot.arms[0].is_gripper_moving() or
+                   Robot.arms[1].is_gripper_moving()):
+            time.sleep(0.01)
+        rospy.loginfo('Hands done moving.')
+
+        # Verify that both grippers succeeded
+        if ((not Robot.arms[0].is_gripper_at_goal()) or
+                (not Robot.arms[1].is_gripper_at_goal())):
+            rospy.logwarn('Hand(s) did not fully close or open!')
+
 
     def copy(self):
         """Makes a copy of an arm step"""

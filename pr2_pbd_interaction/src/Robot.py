@@ -162,30 +162,6 @@ class Robot:
         return True
 
     @staticmethod
-    def is_manipulation_step_reachable(manipulation_step):
-        '''Checks if all steps in an manipulation_step are reachable.'''
-        for i in range(manipulation_step.n_frames()):
-            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):
-                r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                                                               manipulation_step.arm_steps[i].armTarget.rArm)
-                l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                                                               manipulation_step.arm_steps[i].armTarget.lArm)
-                if (not has_solution_r) or (not has_solution_l):
-                    return False
-            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
-                n_frames = len(manipulation_step.arm_steps[i].armTrajectory.timing)
-                for j in range(n_frames):
-                    r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
-                                                                   manipulation_step.arm_steps[i].armTrajectory.r_arm[
-                                                                       j])
-                    l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
-                                                                   manipulation_step.arm_steps[i].armTrajectory.l_arm[
-                                                                       j])
-                    if (not has_solution_r) or (not has_solution_l):
-                        return False
-        return True
-
-    @staticmethod
     def solve_ik_for_arm(arm_index, arm_state, z_offset=0):
         '''Finds an  IK solution for a particular arm pose'''
         # We need to find IK only if the frame is relative to an object
@@ -255,25 +231,6 @@ class Robot:
                 self.status = ExecutionStatus.OBSTRUCTED
         else:
             self.status = ExecutionStatus.NO_IK
-
-    def _loop_through_arm_steps(self):
-        ''' Goes through the steps of the current manipulation_step'''
-
-        # Go over steps of the manipulation_step
-        for i in range(self.manipulation_step.n_frames()):
-            rospy.loginfo('Executing step ' + str(i))
-            arm_step = self.manipulation_step.get_step(i)
-
-            if self.status == ExecutionStatus.EXECUTING:
-                if (not self._execute_arm_step(arm_step)):
-                    break
-
-            if (self.preempt):
-                rospy.logwarn('Execution preempted by user.')
-                self.status = ExecutionStatus.PREEMPTED
-                break
-
-            rospy.loginfo('Step ' + str(i) + ' of manipulation_step is complete.')
 
     def get_base_state(self):
         try:
@@ -366,78 +323,6 @@ class Robot:
             return False
         else:
             return True
-
-    def _execute_arm_step(self, arm_step):
-        '''Executes the motion part of an arm step'''
-
-        # For each step check step type
-        # If arm target action
-        if (arm_step.type == ArmStep.ARM_TARGET):
-            rospy.loginfo('Will perform arm target action step.')
-
-            if (not self.move_to_joints(arm_step.armTarget.rArm,
-                                        arm_step.armTarget.lArm)):
-                self.status = ExecutionStatus.OBSTRUCTED
-                return False
-
-        # If arm trajectory action
-        elif (arm_step.type == ArmStep.ARM_TRAJECTORY):
-
-            rospy.loginfo('Will perform arm trajectory action step.')
-
-            # First move to the start frame
-            if (not self.move_to_joints(arm_step.armTrajectory.r_arm[0],
-                                        arm_step.armTrajectory.l_arm[0])):
-                self.status = ExecutionStatus.OBSTRUCTED
-                return False
-
-            #  Then execute the trajectory
-            Robot.arms[0].exectute_joint_traj(arm_step.armTrajectory.r_arm,
-                                              arm_step.armTrajectory.timing)
-            Robot.arms[1].exectute_joint_traj(arm_step.armTrajectory.l_arm,
-                                              arm_step.armTrajectory.timing)
-
-            # Wait until both arms complete the trajectory
-            while ((Robot.arms[0].is_executing() or Robot.arms[1].is_executing())
-                   and not self.preempt):
-                time.sleep(0.01)
-            rospy.loginfo('Trajectory complete.')
-
-            # Verify that both arms succeeded
-            if ((not Robot.arms[0].is_successful()) or
-                    (not Robot.arms[1].is_successful())):
-                rospy.logwarn('Aborting execution; ' +
-                              'arms failed to follow trajectory.')
-                self.status = ExecutionStatus.OBSTRUCTED
-                return False
-
-        # If hand action do it for both sides
-        if (arm_step.gripperAction.rGripper !=
-                Robot.arms[0].get_gripper_state()):
-            rospy.loginfo('Will perform right gripper action ' +
-                          str(arm_step.gripperAction.rGripper))
-            Robot.arms[0].set_gripper(arm_step.gripperAction.rGripper)
-            Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
-
-        if (arm_step.gripperAction.lGripper !=
-                Robot.arms[1].get_gripper_state()):
-            rospy.loginfo('Will perform LEFT gripper action ' +
-                          str(arm_step.gripperAction.lGripper))
-            Robot.arms[1].set_gripper(arm_step.gripperAction.lGripper)
-            Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
-
-        # Wait for grippers to be done
-        while (Robot.arms[0].is_gripper_moving() or
-                   Robot.arms[1].is_gripper_moving()):
-            time.sleep(0.01)
-        rospy.loginfo('Hands done moving.')
-
-        # Verify that both grippers succeeded
-        if ((not Robot.arms[0].is_gripper_at_goal()) or
-                (not Robot.arms[1].is_gripper_at_goal())):
-            rospy.logwarn('Hand(s) did not fully close or open!')
-
-        return True
 
     @staticmethod
     def _get_time_to_pose(pose, arm_index):
