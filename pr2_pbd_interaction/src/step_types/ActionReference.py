@@ -29,25 +29,31 @@ class ActionReference(Step):
 
     def execute(self):
         robot = Robot.get_robot()
-        for condition in self.conditions:
-            if not condition.check():
-                rospy.logwarn("Condition failed when executing action.")
-                if self.strategy == Step.STRATEGY_FAILFAST:
-                    robot.status = ExecutionStatus.CONDITION_FAILED
-                    raise ConditionError()
-        for (i, step) in enumerate(self.steps):
-            try:
-                if robot.status == ExecutionStatus.EXECUTING:
-                    step.execute()
-                if robot.preempt:
-                    robot.preempt = False
-                    robot.status = ExecutionStatus.PREEMPTED
-                    rospy.logerr('Execution of action step failed, execution preempted by user.')
-                    raise StoppedByUserError()
-                rospy.loginfo('Step ' + str(i) + ' of action step is complete.')
-            except:
-                rospy.logerr("Execution of an action failed")
-                raise
+        # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
+        while True:
+            for condition in self.conditions:
+                if not condition.check():
+                    rospy.logwarn("Condition failed when executing action.")
+                    if self.is_while:
+                        break
+                    if self.strategy == Step.STRATEGY_FAILFAST:
+                        robot.status = ExecutionStatus.CONDITION_FAILED
+                        raise ConditionError()
+            for (i, step) in enumerate(self.steps):
+                try:
+                    if robot.status == ExecutionStatus.EXECUTING:
+                        step.execute()
+                    if robot.preempt:
+                        robot.preempt = False
+                        robot.status = ExecutionStatus.PREEMPTED
+                        rospy.logerr('Execution of action step failed, execution preempted by user.')
+                        raise StoppedByUserError()
+                    rospy.loginfo('Step ' + str(i) + ' of action step is complete.')
+                except:
+                    rospy.logerr("Execution of an action failed")
+                    raise
+            if not self.is_while:
+                break
 
     def add_step(self, step):
         self.steps.append(step)

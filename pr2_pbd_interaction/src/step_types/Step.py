@@ -13,13 +13,21 @@ class Step:
 
     def __init__(self, *args, **kwargs):
         self.strategy = Step.STRATEGY_FAILFAST
+        # If self.is_while, execute step in a loop until a condition fails. Else execute step once.
+        self.is_while = False
         self.conditions = []
+
+    def set_is_while(self, is_while):
+        self.is_while = is_while
 
     def set_strategy(self, strategy):
         self.strategy = strategy
 
     def add_condition(self, condition):
         self.conditions.append(condition)
+
+    def remove_condition(self, index):
+        self.conditions.pop(index)
 
     def execute(self):
         pass
