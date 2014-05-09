@@ -5,7 +5,7 @@ roslib.load_manifest('pr2_pbd_interaction')
 import numpy
 import rospy
 import tf
-import step_types
+from step_types.ArmStep import ArmStep
 from pr2_pbd_interaction.msg import ArmState, Object, GripperState
 from geometry_msgs.msg import Quaternion, Vector3, Point, Pose
 from std_msgs.msg import Header, ColorRGBA
@@ -136,7 +136,7 @@ class ArmStepMarker:
         frame object of the action step'''
 
         ref_name = None
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             if self.arm_index == 0:
                 ref_frame = self.action_step.armTarget.rArm.refFrame
                 ref_name = self.action_step.armTarget.rArm.refFrameObject.name
@@ -144,7 +144,7 @@ class ArmStepMarker:
                 ref_frame = self.action_step.armTarget.lArm.refFrame
                 ref_name = self.action_step.armTarget.lArm.refFrameObject.name
 
-        elif (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        elif (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             if self.arm_index == 0:
                 ref_frame = self.action_step.armTrajectory.rRefFrame
                 ref_name = self.action_step.armTrajectory.rRefFrameOject.name
@@ -169,14 +169,14 @@ class ArmStepMarker:
         else:
             new_ref_obj = Object()
 
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             if self.arm_index == 0:
                 self.action_step.armTarget.rArm = World.convert_ref_frame(
                         self.action_step.armTarget.rArm, new_ref, new_ref_obj)
             else:
                 self.action_step.armTarget.lArm = World.convert_ref_frame(
                         self.action_step.armTarget.lArm, new_ref, new_ref_obj)
-        elif (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        elif (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             for i in range(len(self.action_step.armTrajectory.timing)):
                 if self.arm_index == 0:
                     arm_old = self.action_step.armTrajectory.rArm[i]
@@ -205,7 +205,7 @@ class ArmStepMarker:
 
     def set_new_pose(self, new_pose):
         '''Changes the pose of the action step'''
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             if self.arm_index == 0:
                 pose = ArmStepMarker._offset_pose(new_pose, -1)
                 self.action_step.armTarget.rArm.ee_pose = pose
@@ -214,7 +214,7 @@ class ArmStepMarker:
                 self.action_step.armTarget.lArm.ee_pose = pose
             rospy.loginfo('Set new pose for action step.')
             self.update_viz()
-        elif (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        elif (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             rospy.logwarn('Modification of whole trajectory ' +
                           'segments is not implemented.')
 
@@ -225,13 +225,13 @@ class ArmStepMarker:
 
     def get_absolute_pose(self, is_start=True):
         '''Returns the absolute pose of the action step'''
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             if self.arm_index == 0:
                 arm_pose = self.action_step.armTarget.rArm
             else:
                 arm_pose = self.action_step.armTarget.lArm
 
-        elif (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        elif (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             if self.arm_index == 0:
                 if is_start:
                     index = len(self.action_step.armTrajectory.rArm) - 1
@@ -270,7 +270,7 @@ class ArmStepMarker:
 
     def set_target(self, target):
         '''Sets the new pose for the action step'''
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             if self.arm_index == 0:
                 self.action_step.armTarget.rArm = target
             else:
@@ -281,12 +281,12 @@ class ArmStepMarker:
 
     def get_target(self, traj_index=None):
         '''Returns the pose for the action step'''
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             if self.arm_index == 0:
                 return self.action_step.armTarget.rArm
             else:
                 return self.action_step.armTarget.lArm
-        elif (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        elif (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             if self.arm_index == 0:
                 if traj_index == None:
                     traj = self.action_step.armTrajectory.rArm
@@ -300,7 +300,7 @@ class ArmStepMarker:
 
     def _get_traj_pose(self, index):
         '''Returns a single pose for trajectory'''
-        if (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        if (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             if self.arm_index == 0:
                 target = self.action_step.armTrajectory.rArm[index]
             else:
@@ -318,10 +318,10 @@ class ArmStepMarker:
         frame_id = self._get_ref_name()
         pose = self.get_pose()
 
-        if (self.action_step.type == step_types.ArmStep.ARM_TARGET):
+        if (self.action_step.type == ArmStep.ARM_TARGET):
             menu_control = self._make_gripper_marker(menu_control,
                                                   self._is_hand_open())
-        elif (self.action_step.type == step_types.ArmStep.ARM_TRAJECTORY):
+        elif (self.action_step.type == ArmStep.ARM_TRAJECTORY):
             point_list = []
             for j in range(len(self.action_step.armTrajectory.timing)):
                 point_list.append(self._get_traj_pose(j).position)

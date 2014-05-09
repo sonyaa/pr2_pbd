@@ -10,7 +10,7 @@ import rospy
 
 import time
 import threading
-import step_types
+from step_types.ArmStep import ArmStep
 from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import Side
 from pr2_pbd_interaction.msg import ExecutionStatus
@@ -130,7 +130,7 @@ class Robot:
         for i in range(manipulation_step.n_frames()):
             # For each step check step type
             # If arm target action
-            if (manipulation_step.arm_steps[i].type == step_types.ArmStep.ARM_TARGET):
+            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):
                 # Find frames that are relative and convert to absolute
 
                 r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
@@ -145,7 +145,7 @@ class Robot:
                 if (not has_solution_r) or (not has_solution_l):
                     return False
 
-            if (manipulation_step.arm_steps[i].type == step_types.ArmStep.ARM_TRAJECTORY):
+            if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
                 n_frames = len(manipulation_step.arm_steps[i].armTrajectory.timing)
                 for j in range(n_frames):
                     r_arm, has_solution_r = Robot.solve_ik_for_arm(0,

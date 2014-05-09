@@ -4,7 +4,6 @@ import rospy
 import time
 from Exceptions import ArmObstructedError, ConditionError
 from Response import Response
-from Robot import Robot
 from condition_types.GripperCondition import GripperCondition
 from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction
 from pr2_social_gaze.msg import GazeGoal
@@ -32,6 +31,7 @@ class ArmStep(Step):
         self.conditions[0] = condition
 
     def execute(self):
+        from Robot import Robot
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
