@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import rospy
-from Robot import Robot
 from condition_types.Condition import Condition
 
 
@@ -26,6 +25,7 @@ class GripperCondition(Condition):
         self.threshold = threshold
 
     def check(self):
+        from Robot import Robot
         robot = Robot.get_robot()
         if self.r_gripper_position is not None:
             if abs(self.r_gripper_position - robot.get_gripper_position(0)) > self.threshold:

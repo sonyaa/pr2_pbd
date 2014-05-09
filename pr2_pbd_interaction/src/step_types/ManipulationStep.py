@@ -4,7 +4,6 @@ from interactive_markers.interactive_marker_server import InteractiveMarkerServe
 from visualization_msgs.msg import MarkerArray
 from ArmStepMarkerSequence import ArmStepMarkerSequence
 from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
-from Robot import Robot
 from World import World
 from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
@@ -34,6 +33,7 @@ class ManipulationStep(Step):
         self.initial_condition = GripperCondition()
 
     def execute(self):
+        from Robot import Robot
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:

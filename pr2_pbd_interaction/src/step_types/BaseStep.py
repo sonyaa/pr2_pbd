@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import rospy
 from Exceptions import BaseObstructedError, ConditionError
-from Robot import Robot
 from pr2_pbd_interaction.msg import ExecutionStatus
 from step_types.Step import Step
 
@@ -16,6 +15,7 @@ class BaseStep(Step):
 
 
     def execute(self):
+        from Robot import Robot
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:

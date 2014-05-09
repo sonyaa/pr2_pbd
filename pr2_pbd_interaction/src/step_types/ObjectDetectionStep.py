@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import rospy
 from Exceptions import NoObjectError, ConditionError
-from Robot import Robot
 from World import World
 from pr2_pbd_interaction.msg import ExecutionStatus
 from step_types.Step import Step
@@ -12,6 +11,7 @@ class ObjectDetectionStep(Step):
     """
 
     def execute(self):
+        from Robot import Robot
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
