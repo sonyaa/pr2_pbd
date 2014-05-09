@@ -25,6 +25,9 @@ class ActionReference(Step):
         self.id = kwargs.get('id')
         self.steps = []
         self.selected_step_id = None
+        # TODO: the directory stuff should probably be moved to another place - Session?
+        if not os.path.exists(ActionReference.ACTION_DIRECTORY):
+            os.makedirs(ActionReference.ACTION_DIRECTORY)
 
     def execute(self):
         from Robot import Robot
