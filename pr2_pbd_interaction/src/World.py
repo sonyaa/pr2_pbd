@@ -1,5 +1,4 @@
 '''Everything related to perception of the world'''
-from ar_track_alvar.msg import AlvarMarkers
 import roslib
 roslib.load_manifest('pr2_pbd_interaction')
 
@@ -29,6 +28,7 @@ from interactive_markers.menu_handler import MenuHandler
 from actionlib_msgs.msg import GoalStatus
 import actionlib
 from math import pi, sin, cos
+from ar_track_alvar.msg import AlvarMarkers
 
 # Local stuff
 from pr2_pbd_interaction.msg import Object, ArmState

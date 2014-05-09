@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+import roslib
+roslib.load_manifest('pr2_pbd_gui')
+
 import os
 import time
 from subprocess import call
@@ -96,7 +100,7 @@ class PbDGUI(Plugin):
         self.commands[Command.STOP_EXECUTION] = 'Stop execution'
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
-        self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
+        #self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
         self.commands[Command.SAVE_ACTION] = 'Save action'
         

@@ -2,6 +2,7 @@
 from geometry_msgs.msg import Pose, Point, Quaternion
 
 import roslib
+roslib.load_manifest('pr2_pbd_interaction')
 import tf
 from Exceptions import *
 from condition_types.GripperCondition import GripperCondition
@@ -9,7 +10,6 @@ from step_types.ArmStep import ArmStep
 from step_types.BaseStep import BaseStep
 from step_types.ObjectDetectionStep import ObjectDetectionStep
 
-roslib.load_manifest('pr2_pbd_interaction')
 
 # Generic libraries
 import rospy
