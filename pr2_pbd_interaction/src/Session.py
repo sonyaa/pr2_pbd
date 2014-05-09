@@ -7,13 +7,13 @@ import rospy
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
+from step_types import ArmStep
 from step_types.ActionReference import ActionReference
-from pr2_pbd_interaction.msg import ArmStep
 from step_types.ManipulationStep import ManipulationStep
 
 
 class Session:
-    '''This class holds and maintains experimental data: list of MasterActions'''
+    '''This class holds and maintains experimental data: list of Actions'''
 
     session = None
 
@@ -23,6 +23,9 @@ class Session:
         self._exp_number = None
         self._selected_step = 0
 
+        #TODO: read data_dir name from parameters?
+        if not os.path.exists(ActionReference.ACTION_DIRECTORY):
+            os.makedirs(ActionReference.ACTION_DIRECTORY)
         self.actions = ActionReference.get_saved_actions()
         self.current_action_index = 0 if len(self.actions) > 0 else None
 
