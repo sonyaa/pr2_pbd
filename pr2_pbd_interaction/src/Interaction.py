@@ -17,6 +17,7 @@ import time
 from visualization_msgs.msg import MarkerArray
 
 # Local stuff
+from Robot import Robot
 from World import World
 from RobotSpeech import RobotSpeech
 from Session import Session
@@ -376,7 +377,6 @@ class Interaction:
 
 
     def _get_arm_states(self):
-        from Robot import Robot
         '''Returns the current arms states in the right format'''
         abs_ee_poses = [Robot.get_ee_state(0),
                         Robot.get_ee_state(1)]
