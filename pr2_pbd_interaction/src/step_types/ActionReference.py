@@ -75,7 +75,9 @@ class ActionReference(Step):
             self.update_viz()
 
     def get_selected_step(self):
-        return self.selected_step_id
+        if len(self.steps) == 0 or self.selected_step_id is None:
+            return None
+        return self.steps[self.selected_step_id]
 
     def get_last_step(self):
         if len(self.steps) == 0:

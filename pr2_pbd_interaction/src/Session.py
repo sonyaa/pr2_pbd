@@ -355,4 +355,11 @@ class Session:
             rospy.logwarn('No skills created yet.')
             return 0
 
+    def get_requested_targets(self, arm_index):
+        if self.n_actions() > 0:
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, ManipulationStep):
+                return cur_step.get_requested_targets(arm_index)
+        return None
+
 
