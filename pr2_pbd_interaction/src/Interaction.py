@@ -144,8 +144,11 @@ class Interaction:
         '''Goes out of edit mode'''
         self.session.save_current_action()
         Interaction._is_programming = False
+        action_name = self.session.get_action_name(self.session.current_action_index)
+        if action_name is None:
+            action_name = str(self.session.current_action_index)
         return [RobotSpeech.ACTION_SAVED + ' ' +
-                str(self.session.current_action_index), GazeGoal.NOD]
+                action_name, GazeGoal.NOD]
 
     def create_action(self, dummy=None):
         '''Creates a new empty action'''
@@ -357,7 +360,10 @@ class Interaction:
                 self.session.add_step_to_action(step)
                 return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
             else:
-                return ['Action ' + str(self.session.current_action_index) +
+                action_name = self.session.get_action_name(self.session.current_action_index)
+                if action_name is None:
+                    action_name = str(self.session.current_action_index)
+                return ['Action ' + action_name +
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -371,7 +377,10 @@ class Interaction:
                 self.session.add_step_to_action(BaseStep(base_pose))
                 return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
             else:
-                return ['Action ' + str(self.session.current_action_index) +
+                action_name = self.session.get_action_name(self.session.current_action_index)
+                if action_name is None:
+                    action_name = str(self.session.current_action_index)
+                return ['Action ' + action_name +
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -416,15 +425,18 @@ class Interaction:
     def execute_action(self, dummy=None):
         '''Starts the execution of the current action'''
         if (self.session.n_actions() > 0):
+            action_name = self.session.get_action_name(self.session.current_action_index)
+            if action_name is None:
+                action_name = str(self.session.current_action_index)
             if (self.session.n_frames() > 1):
                 self.session.save_current_action()
                 action = self.session.get_current_action()
                 self.robot.start_execution(action)
                 return [RobotSpeech.START_EXECUTION + ' ' +
-                        str(self.session.current_action_index), None]
+                        action_name, None]
             else:
                 return [RobotSpeech.EXECUTION_ERROR_NOPOSES + ' ' +
-                        str(self.session.current_action_index), GazeGoal.SHAKE]
+                        action_name, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
