@@ -18,6 +18,10 @@ from sound_play.msg import SoundRequest
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from step_types.ActionReference import ActionReference
+from step_types.BaseStep import BaseStep
+from step_types.ManipulationStep import ManipulationStep
+from step_types.ObjectDetectionStep import ObjectDetectionStep
+
 
 
 class ClickableLabel(QtGui.QLabel):
@@ -82,7 +86,8 @@ class PbDGUI(Plugin):
         self.commands[Command.TEST_MICROPHONE] = 'Test microphone'
         self.commands[Command.NEXT_ACTION] = 'Next action'
         self.commands[Command.PREV_ACTION] = 'Previous action'
-        self.commands[Command.SAVE_POSE] = 'Save pose'
+        self.commands[Command.SAVE_POSE] = 'Save arm pose'
+        self.commands[Command.SAVE_BASE_POSE] = 'Save base pose'
         #adding record motion
         self.commands[Command.START_RECORDING_MOTION] = 'Record motion'
         self.commands[Command.STOP_RECORDING_MOTION] = 'Stop recording motion'
@@ -122,8 +127,8 @@ class PbDGUI(Plugin):
         actionButtonGrid = QtGui.QHBoxLayout()
         actionButtonGrid.addWidget(self.create_button(
                                         Command.CREATE_NEW_ACTION))
-        self.stepsBox = QGroupBox('No actions created yet', self._widget)
-        self.stepsGrid = QtGui.QGridLayout()
+        self.stepsGroupBox = QGroupBox('Action steps', self._widget)
+        self.stepsVBox = QtGui.QVBoxLayout()
         
         #self.l_model = QtGui.QStandardItemModel(self)
         #self.l_view = self._create_table_view(self.l_model,
@@ -143,8 +148,8 @@ class PbDGUI(Plugin):
         #self.stepsGrid.addWidget(self.r_view, 1, 2)
         
         stepsBoxLayout = QtGui.QHBoxLayout()
-        stepsBoxLayout.addLayout(self.stepsGrid)
-        self.stepsBox.setLayout(stepsBoxLayout)
+        stepsBoxLayout.addLayout(self.stepsVBox)
+        self.stepsGroupBox.setLayout(stepsBoxLayout)
 
         stepsButtonGrid = QtGui.QHBoxLayout()
         #stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
@@ -173,6 +178,8 @@ class PbDGUI(Plugin):
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
         misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
+        misc_grid.addWidget(self.create_button(Command.SAVE_BASE_POSE))
+        misc_grid.addWidget(self.create_button(Command.SAVE_POSE))
         misc_grid.addStretch(1)
         
         misc_grid2 = QtGui.QHBoxLayout()
@@ -208,7 +215,7 @@ class PbDGUI(Plugin):
         allWidgetsBox.addWidget(actionBox)
         allWidgetsBox.addLayout(actionButtonGrid)
         
-        allWidgetsBox.addWidget(self.stepsBox)
+        allWidgetsBox.addWidget(self.stepsGroupBox)
         allWidgetsBox.addLayout(stepsButtonGrid)
         allWidgetsBox.addLayout(actionNameGrid)
         #allWidgetsBox.addLayout(motionButtonGrid)
@@ -278,124 +285,182 @@ class PbDGUI(Plugin):
         return (arm_index, (index - 1))
 
     def r_row_clicked_cb(self, logicalIndex):
-        self.step_pressed(self.get_uid(0, logicalIndex))
+        self.arm_step_pressed(self.get_uid(0, logicalIndex))
 
     def l_row_clicked_cb(self, logicalIndex):
-        self.step_pressed(self.get_uid(1, logicalIndex))
+        self.arm_step_pressed(self.get_uid(1, logicalIndex))
 
     def create_button(self, command):
         btn = QtGui.QPushButton(self.commands[command], self._widget)
         btn.clicked.connect(self.command_cb)
         return btn
+
+    def view_manipulation(self):
+        pass
+
+    def edit_manipulation(self):
+        pass
+
+    def view_navigation(self):
+        pass
+
+    def edit_navigation(self):
+        pass
+
+    def view_object_detection(self):
+        pass
+
+    def edit_object_detection(self):
+        pass
+
+    def show_action(self, act_name):
+        def switch_to_action():
+            pass
+        return switch_to_action()
         
     def disp_action(self, act):
         self.act_name_box.setText(act.name)
-        while (self.stepsGrid.count() > 0):
-            wid = self.stepsGrid.itemAt(0).widget()
-            self.stepsGrid.removeWidget(wid)
-            wid.deleteLater()
-            del wid
-        btnPls = QtGui.QPushButton("+", self._widget)
-        def pls_clicked():
-            self.gui_cmd_publisher.publish(
-                    GuiCommand(GuiCommand.SELECT_ACTION_STEP, 0))
-            self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
-        btnPls.clicked.connect(pls_clicked)
-        self.stepsGrid.addWidget(btnPls, 0, 5)
-        for ind, sub_act in enumerate(act.actions):
-            def createLayout(ind, sub_act):
-                stepRow = ind + 1
-                typeBox = QtGui.QComboBox(self._widget)
-                typeBox.addItem("Action")
-                typeBox.addItem("Pose")
-                typeBox.addItem("Trajectory")
-                
-                def type_changed():
-                    setRow(3 if typeBox.currentIndex() == 2 else typeBox.currentIndex())
-                    
-                typeBox.currentIndexChanged.connect(type_changed)
-                self.stepsGrid.addWidget(typeBox, stepRow, 0)
-                
-                def setRow(act_type):
-                    for itm in [self.stepsGrid.itemAtPosition(stepRow, i) 
-                            for i in range(1, 4)]:
-                        if itm:
-                            wid = itm.widget()
-                            self.stepsGrid.removeWidget(wid)
-                            wid.deleteLater()
-                            del wid
-                    if (act_type == Action.ACTION_QUEUE):
-                        act_name = QtGui.QComboBox(self._widget)
-                        act_name.addItems(self.action_names)
-                        if (sub_act.id != None):
-                            act_name.setCurrentIndex(self.action_ids.index(sub_act.id))
-                        self.stepsGrid.addWidget(act_name, stepRow, 1)
-                        save_but = QtGui.QPushButton("Save", self._widget)
-                        def change_act():
-                            self.gui_cmd_publisher.publish(
-                                    GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                            self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
-                            self.speech_cmd_publisher.publish(Command(
-                                Command.ADD_ACTION_STEP + " " + self.action_names[
-                                    act_name.currentIndex()]))
-                        save_but.clicked.connect(change_act)
-                        self.stepsGrid.addWidget(save_but, stepRow, 2)
-                    elif (act_type == Action.POSE):
-                        rec_but = QtGui.QPushButton("Record", self._widget)
-                        def hand_rec():
-                            self.gui_cmd_publisher.publish(
-                                    GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                            self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
-                            self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
-                        rec_but.clicked.connect(hand_rec)
-                        self.stepsGrid.addWidget(rec_but, stepRow, 1)
-                    elif (act_type == Action.TRAJECTORY):
-                        rec_but = QtGui.QPushButton("Record", self._widget)
-                        def hand_rec():
-                            if (self.recording):
-                                rec_but.setText("Record")
-                                self.recording = False
-                                self.speech_cmd_publisher.publish(Command(
-                                        Command.STOP_RECORDING_MOTION))
-                                # rospy.loginfo("would have deleted at " + str(ind + 1))
-                                #self.gui_cmd_publisher.publish(
-                                        #GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                                #self.speech_cmd_publisher.publish(Command(
-                                        #Command.DELETE_LAST_STEP))
-                            elif (not (self.recording)):
-                                rec_but.setText("Stop")
-                                self.recording = True
-                                self.gui_cmd_publisher.publish(
-                                        GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                                self.speech_cmd_publisher.publish(Command(
-                                        Command.START_RECORDING_MOTION))
-                        rec_but.clicked.connect(hand_rec)
-                        self.stepsGrid.addWidget(rec_but, stepRow, 1)
-                
-                typeBox.setCurrentIndex(2 if sub_act.type == Action.TRAJECTORY else sub_act.type)
-                if (sub_act.type == 0):
-                    setRow(0)
-                
-                btnPls = QtGui.QPushButton("+", self._widget)
-                def pls_clicked():
-                    self.gui_cmd_publisher.publish(
-                            GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                    self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
-                btnPls.clicked.connect(pls_clicked)
-                self.stepsGrid.addWidget(btnPls, stepRow, 5)
-                btnMns = QtGui.QPushButton("-", self._widget)
-                def mns_clicked():
-                    self.gui_cmd_publisher.publish(
-                            GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-                    self.speech_cmd_publisher.publish(Command(
-                            Command.DELETE_LAST_STEP))
-                btnMns.clicked.connect(mns_clicked)
-                self.stepsGrid.addWidget(btnMns, stepRow, 4)
-            createLayout(ind, sub_act)
+        while self.stepsVBox.count() > 0:
+            layout = self.stepsVBox.itemAt(0).layout()
+            self.stepsVBox.removeItem(layout)
+            if layout is not None:
+                while layout.count() > 0:
+                    widget = layout.itemAt(0).widget()
+                    layout.removeWidget(widget)
+                    if widget is not None:
+                        widget.deleteLater()
+                        del widget
+                del layout
+        for ind, sub_act in enumerate(act.steps):
+            editBtn = None
+            if isinstance(sub_act, ManipulationStep):
+                typeLabel = QtGui.QLabel(self._widget)
+                typeLabel.setText("Manipulation")
+                viewBtn = QtGui.QPushButton("View", self._widget)
+                viewBtn.clicked.connect(self.view_manipulation)
+                editBtn = QtGui.QPushButton("Edit", self._widget)
+                editBtn.clicked.connect(self.edit_manipulation)
+            elif isinstance(sub_act, BaseStep):
+                typeLabel = QtGui.QLabel(self._widget)
+                typeLabel.setText("Navigation")
+                viewBtn = QtGui.QPushButton("View", self._widget)
+                viewBtn.clicked.connect(self.view_navigation)
+                editBtn = QtGui.QPushButton("Edit", self._widget)
+                editBtn.clicked.connect(self.edit_navigation)
+            elif isinstance(sub_act, ObjectDetectionStep):
+                typeLabel = QtGui.QLabel(self._widget)
+                typeLabel.setText("Object detection")
+                viewBtn = QtGui.QPushButton("View", self._widget)
+                viewBtn.clicked.connect(self.view_object_detection)
+                editBtn = QtGui.QPushButton("Edit", self._widget)
+                editBtn.clicked.connect(self.edit_object_detection)
+            elif isinstance(sub_act, ActionReference):
+                typeLabel = QtGui.QLabel(self._widget)
+                typeLabel.setText("Preprogrammed: " + sub_act.name)
+                viewBtn = QtGui.QPushButton("Show", self._widget)
+                viewBtn.clicked.connect(self.show_action(sub_act.name))
+            else:
+                rospy.logwarn("Unknown action step type " + str(type(sub_act)))
+                continue
+            stepRow = QtGui.QHBoxLayout()
+            stepRow.addWidget(typeLabel)
+            stepRow.addWidget(viewBtn)
+            if editBtn is not None:
+                stepRow.addWidget(editBtn)
+            self.stepsVBox.addLayout(stepRow)
+            # def createLayout(ind, sub_act):
+            #     stepRow = ind + 1
+            #     typeBox = QtGui.QComboBox(self._widget)
+            #     typeBox.addItem("Action")
+            #     typeBox.addItem("Pose")
+            #     typeBox.addItem("Trajectory")
+            #
+            #     def type_changed():
+            #         setRow(3 if typeBox.currentIndex() == 2 else typeBox.currentIndex())
+            #
+            #     typeBox.currentIndexChanged.connect(type_changed)
+            #     self.stepsGrid.addWidget(typeBox, stepRow, 0)
+            #
+            #     def setRow(act_type):
+            #         for itm in [self.stepsGrid.itemAtPosition(stepRow, i)
+            #                 for i in range(1, 4)]:
+            #             if itm:
+            #                 wid = itm.widget()
+            #                 self.stepsGrid.removeWidget(wid)
+            #                 wid.deleteLater()
+            #                 del wid
+            #         if (act_type == Action.ACTION_QUEUE):
+            #             act_name = QtGui.QComboBox(self._widget)
+            #             act_name.addItems(self.action_names)
+            #             if (sub_act.id != None):
+            #                 act_name.setCurrentIndex(self.action_ids.index(sub_act.id))
+            #             self.stepsGrid.addWidget(act_name, stepRow, 1)
+            #             save_but = QtGui.QPushButton("Save", self._widget)
+            #             def change_act():
+            #                 self.gui_cmd_publisher.publish(
+            #                         GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+            #                 self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
+            #                 self.speech_cmd_publisher.publish(Command(
+            #                     Command.ADD_ACTION_STEP + " " + self.action_names[
+            #                         act_name.currentIndex()]))
+            #             save_but.clicked.connect(change_act)
+            #             self.stepsGrid.addWidget(save_but, stepRow, 2)
+            #         elif (act_type == Action.POSE):
+            #             rec_but = QtGui.QPushButton("Record", self._widget)
+            #             def hand_rec():
+            #                 self.gui_cmd_publisher.publish(
+            #                         GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+            #                 self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
+            #                 self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
+            #             rec_but.clicked.connect(hand_rec)
+            #             self.stepsGrid.addWidget(rec_but, stepRow, 1)
+            #         elif (act_type == Action.TRAJECTORY):
+            #             rec_but = QtGui.QPushButton("Record", self._widget)
+            #             def hand_rec():
+            #                 if (self.recording):
+            #                     rec_but.setText("Record")
+            #                     self.recording = False
+            #                     self.speech_cmd_publisher.publish(Command(
+            #                             Command.STOP_RECORDING_MOTION))
+            #                     # rospy.loginfo("would have deleted at " + str(ind + 1))
+            #                     #self.gui_cmd_publisher.publish(
+            #                             #GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+            #                     #self.speech_cmd_publisher.publish(Command(
+            #                             #Command.DELETE_LAST_STEP))
+            #                 elif (not (self.recording)):
+            #                     rec_but.setText("Stop")
+            #                     self.recording = True
+            #                     self.gui_cmd_publisher.publish(
+            #                             GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+            #                     self.speech_cmd_publisher.publish(Command(
+            #                             Command.START_RECORDING_MOTION))
+            #             rec_but.clicked.connect(hand_rec)
+            #             self.stepsGrid.addWidget(rec_but, stepRow, 1)
+            #
+            #     typeBox.setCurrentIndex(2 if sub_act.type == Action.TRAJECTORY else sub_act.type)
+            #     if (sub_act.type == 0):
+            #         setRow(0)
+            #
+            #     btnPls = QtGui.QPushButton("+", self._widget)
+            #     def pls_clicked():
+            #         self.gui_cmd_publisher.publish(
+            #                 GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+            #         self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
+            #     btnPls.clicked.connect(pls_clicked)
+            #     self.stepsGrid.addWidget(btnPls, stepRow, 5)
+            #     btnMns = QtGui.QPushButton("-", self._widget)
+            #     def mns_clicked():
+            #         self.gui_cmd_publisher.publish(
+            #                 GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
+            #         self.speech_cmd_publisher.publish(Command(
+            #                 Command.DELETE_LAST_STEP))
+            #     btnMns.clicked.connect(mns_clicked)
+            #     self.stepsGrid.addWidget(btnMns, stepRow, 4)
+            # createLayout(ind, sub_act)
         
     def update_state(self, state):
         qWarning('Received new state')
-        
+        rospy.loginfo(state)
         #n_actions = len(self.actionIcons.keys())
         #if n_actions < state.n_actions:
             #for i in range(n_actions, state.n_actions):
@@ -470,7 +535,7 @@ class PbDGUI(Plugin):
     def n_actions(self):
         return len(self.actionIcons.keys())
 
-    def step_pressed(self, step_index):
+    def arm_step_pressed(self, step_index):
         rospy.loginfo(step_index)
         rospy.loginfo(self.selectedStepUid)
         if step_index != self.selectedStepUid:
@@ -500,7 +565,7 @@ class PbDGUI(Plugin):
         # self.currentAction = actionIndex
         # self.stepsBox.setTitle('Steps for Action ' + str(self.currentAction+1))
         if isPublish:
-            gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, actionIndex+1)
+            gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, actionIndex)
             self.gui_cmd_publisher.publish(gui_cmd)
         
     def command_cb(self):
