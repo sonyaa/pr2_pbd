@@ -69,6 +69,7 @@ class Interaction:
             Command.EXECUTE_ACTION: Response(self.execute_action, None),
             Command.NEXT_ACTION: Response(self.next_action, None),
             Command.PREV_ACTION: Response(self.previous_action, None),
+            Command.SAVE_ACTION: Response(self.save_action, None),
             Command.SAVE_POSE: Response(self.save_arm_step, None),
             Command.SAVE_BASE_POSE: Response(self.save_base_step, None),
             Command.RECORD_OBJECT_POSE: Response(
@@ -498,8 +499,11 @@ class Interaction:
                 if (command.command == GuiCommand.SWITCH_TO_ACTION):
                     action_no = command.param
                     self.session.switch_to_action(action_no)
+                    action_name = self.session.get_action_name(action_no)
+                    if action_name is None:
+                        action_name = str(action_no)
                     response = Response(Interaction.empty_response,
-                                        [RobotSpeech.SWITCH_SKILL + str(action_no),
+                                        [RobotSpeech.SWITCH_SKILL + action_name,
                                          GazeGoal.NOD])
                     response.respond()
                 elif (command.command == GuiCommand.SELECT_ACTION_STEP):

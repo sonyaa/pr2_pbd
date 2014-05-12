@@ -235,7 +235,7 @@ class Session:
     def save_current_action(self):
         '''Save current action onto hard drive'''
         if (self.n_actions() > 0):
-            self.actions[self.current_action_index].save(self._data_dir)
+            self.actions[self.current_action_index].save()
             self.save_session_state(is_save_actions=False)
         else:
             rospy.logwarn('No skills created yet.')
@@ -287,6 +287,13 @@ class Session:
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
+
+    def get_action_name(self, action_number):
+        if self.n_actions() > 0 and 0 <= action_number < self.n_actions():
+            action = self.actions[action_number]
+            if action.name is not None:
+                return action.name
+        return None
 
     def switch_to_action(self, action_number):
         '''Switches to indicated action'''
