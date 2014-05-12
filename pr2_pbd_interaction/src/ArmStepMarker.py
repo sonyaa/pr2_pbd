@@ -68,7 +68,7 @@ class ArmStepMarker:
         # There is a new list of objects
         # If the current frames are already assigned to object,
         # we need to figure out the correspondences
-        self.parent_step_sequence._ref_object_list = ref_frame_list
+        self.parent_step_sequence.ref_object_list = ref_frame_list
 
         arm_pose = self.get_target()
 

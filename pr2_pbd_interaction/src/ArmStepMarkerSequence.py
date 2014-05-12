@@ -14,7 +14,7 @@ class ArmStepMarkerSequence:
     def __init__(self, im_server, marker_publisher, step_click_cb):
         self.im_server = im_server
         self.marker_publisher = marker_publisher
-        self.ref_object_list = None
+        self.ref_object_list = []
         self.ref_names = None
         self.total_n_markers = 0
         self.r_markers = []
