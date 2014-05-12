@@ -17,10 +17,10 @@ class ActionReference(Step):
     """ Class for referencing a previously saved action by its name or id.
     """
     #TODO: the directory stuff should probably be moved to another place - Session?
-    ACTION_DIRECTORY = "~/pbd_actions/"
+    ACTION_DIRECTORY = "/home/sonyaa/pbd_actions/"
     FILE_EXTENSION = ".yaml"
 
-    def __init__(self, *args, **kwargs): #(self, id=None, name=None):
+    def __init__(self, *args, **kwargs):  #(self, id=None, name=None):
         Step.__init__(self, *args, **kwargs)
         self.name = kwargs.get('name')
         self.id = kwargs.get('id')
@@ -29,6 +29,7 @@ class ActionReference(Step):
 
     def execute(self):
         from Robot import Robot
+
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
@@ -58,11 +59,11 @@ class ActionReference(Step):
 
     def add_step(self, step):
         self.steps.append(step)
-        self.select_step(len(self.steps)-1)
+        self.select_step(len(self.steps) - 1)
 
     def delete_last_step(self):
         if len(self.steps) > 0:
-            if self.selected_step_id == len(self.steps)-1:
+            if self.selected_step_id == len(self.steps) - 1:
                 self.reset_viz()
             self.steps.pop()
 
@@ -82,7 +83,7 @@ class ActionReference(Step):
     def get_last_step(self):
         if len(self.steps) == 0:
             return None
-        return self.steps[len(self.steps)-1]
+        return self.steps[len(self.steps) - 1]
 
     def initialize_viz(self):
         if self.selected_step_id is not None:
@@ -148,3 +149,7 @@ class ActionReference(Step):
 
     def copy(self):
         return ActionReference.from_string(self.to_string())
+
+    def __repr__(self):
+        return "%s(name=%r, id=%r, steps=%r, selected_step_id=%r)" % (
+            self.__class__.__name__, self.name, self.id, self.steps, self.selected_step_id)

@@ -45,3 +45,7 @@ class SpecificObjectCondition(Condition):
             rospy.logwarn("Condition failure: didn't find similar objects")
             return False
         return True
+
+    def __repr__(self):
+        return "%s(objects=%r)" % (
+            self.__class__.__name__, self.objects)

@@ -40,3 +40,7 @@ class Step:
 
     def reset_viz(self):
         pass
+    
+    def __repr__(self):
+        return "%s(strategy=%r, is_while=%r, conditions=%r)" % (
+            self.__class__.__name__, self.strategy, self.is_while, self.conditions)

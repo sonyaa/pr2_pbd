@@ -36,3 +36,7 @@ class GripperCondition(Condition):
                 rospy.logwarn("Condition failure: left gripper is not in the same position")
                 return False
         return True
+
+    def __repr__(self):
+        return "%s(r_gripper_position=%r, l_gripper_position=%r, threshold=%r)" % (
+            self.__class__.__name__, self.r_gripper_position, self.l_gripper_position, self.threshold)

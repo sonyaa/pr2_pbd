@@ -157,3 +157,9 @@ class ArmStep(Step):
         ## WARNING: the following is not really copying
         copy.refFrameObject = arm_state.refFrameObject
         return copy
+
+    def __repr__(self):
+        return "%s(strategy=%r, is_while=%r, conditions=%r, type=%r, armTarget=%r, " \
+               "armTrajectory=%r, gripperAction=%r, postCond=%r)" % (
+            self.__class__.__name__, self.strategy, self.is_while, self.conditions, self.type, self.armTarget,
+                self.armTrajectory, self.gripperAction, self.postCond)

@@ -200,3 +200,10 @@ class ManipulationStep(Step):
         pose = self.marker_sequence.get_requested_targets(arm_index)
         self.lock.release()
         return pose
+
+    def __repr__(self):
+        return "%s(strategy=%r, is_while=%r, conditions=%r, arm_steps=%r, lock=%r, step_click_cb=%r, " \
+               "marker_publisher=%r, interactive_marker_server=%r, marker_sequence=%r, initial_condition=%r)" % (
+            self.__class__.__name__, self.strategy, self.is_while, self.conditions, self.arm_steps, self.lock,
+            self.step_click_cb, self.marker_publisher, self.interactive_marker_server, self.marker_sequence,
+            self.initial_condition)
