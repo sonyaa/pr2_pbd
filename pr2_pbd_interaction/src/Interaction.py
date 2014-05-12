@@ -543,10 +543,10 @@ class Interaction:
                 self.robot.start_move_arm_to_pose(l_target, 1)
                 action.reset_targets(1)
 
-            action.delete_requested_steps()
+            self.session.delete_requested_steps()
 
             states = self._get_arm_states()
-            action.change_requested_steps(states[0], states[1])
+            self.session.change_requested_steps(states[0], states[1])
 
             if (is_world_changed):
                 rospy.loginfo('The world has changed.')

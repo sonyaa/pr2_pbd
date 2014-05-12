@@ -362,4 +362,16 @@ class Session:
                 return cur_step.get_requested_targets(arm_index)
         return None
 
+    def delete_requested_steps(self):
+        if self.n_actions() > 0:
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, ManipulationStep):
+                cur_step.delete_requested_steps()
+
+    def change_requested_steps(self, r_state, l_state):
+        if self.n_actions() > 0:
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, ManipulationStep):
+                cur_step.change_requested_steps(r_state, l_state)
+
 
