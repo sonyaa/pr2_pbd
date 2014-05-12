@@ -116,6 +116,7 @@ class Response:
               speech_resp == RobotSpeech.ERROR_NEXT_SKILL or
               speech_resp == RobotSpeech.ERROR_NO_EXECUTION or
               speech_resp == RobotSpeech.ERROR_NO_SKILLS or
+              speech_resp == RobotSpeech.ERROR_GENERAL or
               speech_resp == RobotSpeech.ERROR_NOT_IN_EDIT or
               speech_resp == RobotSpeech.ERROR_PREV_SKILL or
               speech_resp == RobotSpeech.EXECUTION_ERROR_NOIK or

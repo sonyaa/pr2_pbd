@@ -35,6 +35,7 @@ class RobotSpeech:
     ERROR_NEXT_SKILL = 'No actions after action'
     ERROR_PREV_SKILL = 'No actions before action'
     ERROR_NO_SKILLS = 'No actions created yet.'
+    ERROR_GENERAL = 'Cannot do that.'
     ERROR_NOTHING_TO_UNDO = 'There is nothing to undo.'
     ERROR_NO_EXECUTION = 'No executions in progress.'
     EXECUTION_PREEMPTED = 'Stopping execution.'

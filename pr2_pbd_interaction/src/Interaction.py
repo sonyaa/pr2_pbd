@@ -447,9 +447,9 @@ class Interaction:
                     rospy.logwarn('Ignoring speech command during execution: '
                                   + command.command)
         else:
-            switch_command = "switch-to-action "
-            name_command = "name-action "
-            add_action_command = "add-action-step "
+            switch_command = Command.SWITCH_TO_ACTION + " "
+            name_command = Command.CHANGE_ACTION_NAME + " "
+            add_action_command = Command.ADD_ACTION_STEP + " "
             if (switch_command in command.command):
                 action_name = command.command[
                               len(switch_command):len(command.command)]
@@ -466,14 +466,15 @@ class Interaction:
                 action_name = command.command[
                               len(name_command):len(command.command)]
 
-                if (len(action_name) > 1):
+                if (len(action_name) > 0):
                     self.session.name_action(action_name)
                     Response(Interaction.empty_response,
                              [RobotSpeech.SWITCH_SKILL + action_name,
                               GazeGoal.NOD]).respond()
                 else:
+                    rospy.logwarn("New action name has zero length")
                     Response(Interaction.empty_response,
-                             [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
+                             [RobotSpeech.ERROR_GENERAL, GazeGoal.SHAKE]).respond()
             elif (add_action_command in command.command):
                 action_name = command.command[
                               len(add_action_command):len(command.command)]
@@ -483,7 +484,7 @@ class Interaction:
                               GazeGoal.NOD]).respond()
                 else:
                     Response(Interaction.empty_response,
-                             [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]).respond()
+                             [RobotSpeech.ERROR_GENERAL, GazeGoal.SHAKE]).respond()
 
             else:
                 rospy.logwarn('\033[32m This command (' + command.command
