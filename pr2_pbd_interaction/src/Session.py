@@ -33,13 +33,12 @@ class Session:
         for act in self.actions:
             new_steps = []
             for step in act.steps:
-                is_step_action = False
-                for other_act in self.actions:
-                    if other_act.id == step.id:
-                        new_steps.append(other_act)
-                        is_step_action = True
-                        break
-                if not is_step_action:
+                if isinstance(step, ActionReference):
+                    for other_act in self.actions:
+                        if other_act.id == step.id:
+                            new_steps.append(other_act)
+                            break
+                else:
                     new_steps.append(step)
             act.steps = new_steps
 
