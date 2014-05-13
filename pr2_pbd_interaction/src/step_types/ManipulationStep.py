@@ -15,7 +15,6 @@ from step_types.Step import Step
 def manipulation_step_constructor(loader, node):
     fields = loader.construct_mapping(node, deep=True)
     m_step = ManipulationStep()
-    #m_step = ManipulationStep(fields['step_click_cb'])
     m_step.strategy = fields['strategy']
     m_step.is_while = fields['is_while']
     m_step.conditions = fields['conditions']
@@ -43,8 +42,7 @@ class ManipulationStep(Step):
         self.arm_steps = []
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
-        #self.step_click_cb = args[0]
-        self.step_click_cb = Session._selected_step_cb
+        self.step_click_cb = Session.selected_step_cb
         if Step.marker_publisher is None:
             Step.marker_publisher = rospy.Publisher(
                 'visualization_marker_array', MarkerArray)
@@ -219,19 +217,11 @@ class ManipulationStep(Step):
         self.lock.release()
         return pose
 
-    def __repr__(self):
-        return "%s(strategy=%r, is_while=%r, conditions=%r, arm_steps=%r)" % (
-            self.__class__.__name__, self.strategy, self.is_while, self.conditions, self.arm_steps)
-
 
 def manipulation_step_representer(dumper, data):
     return dumper.represent_mapping(u'!ManipulationStep', {'strategy': data.strategy,
                                                            'is_while': data.is_while,
                                                            'conditions': data.conditions,
                                                            'arm_steps': data.arm_steps})
-                                   #  u'strategy=%r, is_while=%r, conditions=%r, '
-                                   #                       u'arm_steps=%r, step_click_cb=%r' % (data.strategy,
-                                   # data.is_while, data.conditions, data.arm_steps, data.step_click_cb))
-
 
 yaml.add_representer(ManipulationStep, manipulation_step_representer)

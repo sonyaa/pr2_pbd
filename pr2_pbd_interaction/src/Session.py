@@ -74,7 +74,7 @@ class Session:
     def get_session():
         return Session.session
 
-    def _selected_step_cb(self, selected_step):
+    def selected_step_cb(self, selected_step):
         '''Updates the selected step when interactive
         markers are clicked on'''
         self._selected_step = selected_step
@@ -247,7 +247,7 @@ class Session:
                 if isinstance(current_step, ManipulationStep):
                     current_step.add_arm_step(step)
                 else:
-                    new_step = ManipulationStep(self._selected_step_cb)
+                    new_step = ManipulationStep()
                     new_step.add_arm_step(step)
                     self.actions[self.current_action_index].add_step(new_step)
             else:
