@@ -41,7 +41,7 @@ class Session:
 
         n_actions = dict()
         for k in self.actions.keys():
-            n_actions[str(k)] = self.actions[k].n_frames()
+            n_actions[str(k)] = self.actions[k].n_steps()
 
         self._state_publisher = rospy.Publisher('experiment_state',
                                                 ExperimentState)
@@ -295,7 +295,7 @@ class Session:
     def n_frames(self):
         '''Returns the number of frames'''
         if (self.n_actions() > 0):
-            return self.actions[self.current_action_index].n_frames()
+            return self.actions[self.current_action_index].n_steps()
         else:
             rospy.logwarn('No skills created yet.')
             return 0
@@ -311,7 +311,7 @@ class Session:
         if self.n_actions() == 0:
             return True
         for action in self.actions.values():
-            if action.n_frames() != self.actions[1].n_frames():
+            if action.n_steps() != self.actions[1].n_steps():
                 return False
         return True
 

@@ -104,7 +104,7 @@ class Session:
         ''' Returns the reference frames for the steps of the
         current action in array format'''
         ref_frames = []
-        for i in range(self.n_frames()):
+        for i in range(self.n_steps()):
             action = self.actions[self.current_action_index]
             ref_frame = action.get_step_ref_frame(arm_index, i)
             ref_frames.append(ref_frame)
@@ -114,7 +114,7 @@ class Session:
         ''' Returns the gripper states for current action
         in array format'''
         gripper_states = []
-        for i in range(self.n_frames()):
+        for i in range(self.n_steps()):
             action = self.actions[self.current_action_index]
             gripper_state = action.get_step_gripper_state(arm_index, i)
             gripper_states.append(gripper_state)
@@ -353,10 +353,10 @@ class Session:
         self._update_experiment_state()
         return success
 
-    def n_frames(self):
+    def n_steps(self):
         '''Returns the number of frames'''
         if (self.n_actions() > 0):
-            return self.actions[self.current_action_index].n_frames()
+            return self.actions[self.current_action_index].n_steps()
         else:
             rospy.logwarn('No skills created yet.')
             return 0

@@ -111,6 +111,7 @@ class PbDGUI(Plugin):
         
         self.currentAction = -1
         self.currentStep = -1
+        self.selectedArmStepUid = -1
 
         allWidgetsBox = QtGui.QVBoxLayout()
         actionBox = QGroupBox('Actions', self._widget)
@@ -332,30 +333,27 @@ class PbDGUI(Plugin):
                         del widget
                 del layout
         for ind, sub_act in enumerate(act.steps):
+            typeLabel = QtGui.QLabel(self._widget)
             editBtn = None
+            viewBtn = QtGui.QPushButton("View", self._widget)
+            if ind == self.currentStep:
+                viewBtn.setStyleSheet('QPushButton {font-weight: bold}')
             if isinstance(sub_act, ManipulationStep):
-                typeLabel = QtGui.QLabel(self._widget)
                 typeLabel.setText("Manipulation")
-                viewBtn = QtGui.QPushButton("View", self._widget)
                 viewBtn.clicked.connect(self.view_manipulation)
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_manipulation)
             elif isinstance(sub_act, BaseStep):
-                typeLabel = QtGui.QLabel(self._widget)
                 typeLabel.setText("Navigation")
-                viewBtn = QtGui.QPushButton("View", self._widget)
                 viewBtn.clicked.connect(self.view_navigation)
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_navigation)
             elif isinstance(sub_act, ObjectDetectionStep):
-                typeLabel = QtGui.QLabel(self._widget)
                 typeLabel.setText("Object detection")
-                viewBtn = QtGui.QPushButton("View", self._widget)
                 viewBtn.clicked.connect(self.view_object_detection)
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_object_detection)
             elif isinstance(sub_act, ActionReference):
-                typeLabel = QtGui.QLabel(self._widget)
                 typeLabel.setText("Preprogrammed: " + sub_act.name)
                 viewBtn = QtGui.QPushButton("Show", self._widget)
                 viewBtn.clicked.connect(self.show_action(sub_act.name))
@@ -498,6 +496,8 @@ class PbDGUI(Plugin):
                     #self.l_view.selectRow(index)
         
         '''New code to deal with xml-ed actions'''
+        self.currentAction = state.selected_action
+        self.currentStep = state.selected_step
         self.action_ids = state.action_ids
         self.action_names = state.action_names
         nColumns = 6
@@ -523,7 +523,7 @@ class PbDGUI(Plugin):
                 actIcon.selected = True
                 actIcon.updateView()
         if (state.action_str != ""):
-            act = ActionReference.from_string(state.action_str)#state['action_str'])
+            act = ActionReference.from_string(state.action_str)  #state['action_str'])
             #self.l_model.clear()
             self.disp_action(act)
 
@@ -535,14 +535,25 @@ class PbDGUI(Plugin):
     def n_actions(self):
         return len(self.actionIcons.keys())
 
-    def arm_step_pressed(self, step_index):
+    def step_pressed(self, step_index):
         rospy.loginfo(step_index)
-        rospy.loginfo(self.selectedStepUid)
-        if step_index != self.selectedStepUid:
-            self.selectedStepUid = step_index
+        rospy.loginfo(self.currentStep)
+        if step_index != self.currentStep:
+            self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
         else:
-            self.selectedStepUid = -1
+            self.currentStep = -1
+            gui_cmd = GuiCommand(GuiCommand.DESELECT_ACTION_STEP, step_index)
+        self.gui_cmd_publisher.publish(gui_cmd)
+
+    def arm_step_pressed(self, step_index):
+        rospy.loginfo(step_index)
+        rospy.loginfo(self.selectedArmStepUid)
+        if step_index != self.selectedArmStepUid:
+            self.selectedArmStepUid = step_index
+            gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
+        else:
+            self.selectedArmStepUid = -1
             gui_cmd = GuiCommand(GuiCommand.DESELECT_ACTION_STEP, step_index)
         self.gui_cmd_publisher.publish(gui_cmd)
 

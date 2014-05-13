@@ -141,7 +141,7 @@ class ManipulationStep(Step):
             return None
         return self.arm_steps[len(self.arm_steps) - 1]
 
-    def n_frames(self):
+    def n_steps(self):
         """Returns the number of arm steps in the manipulation step"""
         return len(self.arm_steps)
 

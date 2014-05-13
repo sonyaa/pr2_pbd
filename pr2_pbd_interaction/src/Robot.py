@@ -127,7 +127,7 @@ class Robot:
         in an manipulation_step'''
 
         # Go over steps of the manipulation_step
-        for i in range(manipulation_step.n_frames()):
+        for i in range(manipulation_step.n_steps()):
             # For each step check step type
             # If arm target action
             if (manipulation_step.arm_steps[i].type == ArmStep.ARM_TARGET):

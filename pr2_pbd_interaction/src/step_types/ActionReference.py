@@ -97,6 +97,9 @@ class ActionReference(Step):
         if self.selected_step_id is not None:
             self.steps[self.selected_step_id].reset_viz()
 
+    def n_steps(self):
+        return len(self.steps)
+
     @staticmethod
     def get_saved_actions():
         return map(ActionReference.load,

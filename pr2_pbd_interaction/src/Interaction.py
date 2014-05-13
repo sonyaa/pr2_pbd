@@ -186,7 +186,7 @@ class Interaction:
         '''Deletes last step of the current action'''
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
-                if self.session.n_frames() > 0:
+                if self.session.n_steps() > 0:
                     self.session.delete_last_step()
                     self._undo_function = self._resume_last_step
                     return [RobotSpeech.LAST_POSE_DELETED, GazeGoal.NOD]
@@ -202,7 +202,7 @@ class Interaction:
         '''Deletes all steps in the current action'''
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
-                if self.session.n_frames() > 0:
+                if self.session.n_steps() > 0:
                     self.session.clear_current_action()
                     self._undo_function = self._resume_all_steps
                     return [RobotSpeech.SKILL_CLEARED, GazeGoal.NOD]
@@ -428,7 +428,7 @@ class Interaction:
             action_name = self.session.get_action_name(self.session.current_action_index)
             if action_name is None:
                 action_name = str(self.session.current_action_index)
-            if (self.session.n_frames() > 1):
+            if (self.session.n_steps() > 1):
                 self.session.save_current_action()
                 action = self.session.get_current_action()
                 self.robot.start_execution(action)
@@ -567,6 +567,7 @@ class Interaction:
 
             if (is_world_changed):
                 rospy.loginfo('The world has changed.')
+                #TODO: fix this (add check that it's a ManipulationStep or teach ActionReference to take care of it)
                 self.session.get_current_action().update_objects(
                     self.world.get_frame_list())
 
