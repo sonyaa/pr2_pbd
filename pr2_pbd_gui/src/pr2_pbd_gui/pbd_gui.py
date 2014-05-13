@@ -336,21 +336,20 @@ class PbDGUI(Plugin):
             typeLabel = QtGui.QLabel(self._widget)
             editBtn = None
             viewBtn = QtGui.QPushButton("View", self._widget)
+            viewBtn.clicked.connect(self.step_pressed(ind))
             if ind == self.currentStep:
                 viewBtn.setStyleSheet('QPushButton {font-weight: bold}')
             if isinstance(sub_act, ManipulationStep):
                 typeLabel.setText("Manipulation")
-                viewBtn.clicked.connect(self.view_manipulation)
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_manipulation)
             elif isinstance(sub_act, BaseStep):
                 typeLabel.setText("Navigation")
-                viewBtn.clicked.connect(self.view_navigation)
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_navigation)
             elif isinstance(sub_act, ObjectDetectionStep):
                 typeLabel.setText("Object detection")
-                viewBtn.clicked.connect(self.view_object_detection)
+                viewBtn = None
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_object_detection)
             elif isinstance(sub_act, ActionReference):
@@ -362,9 +361,10 @@ class PbDGUI(Plugin):
                 continue
             stepRow = QtGui.QHBoxLayout()
             stepRow.addWidget(typeLabel)
-            stepRow.addWidget(viewBtn)
             if editBtn is not None:
                 stepRow.addWidget(editBtn)
+            if viewBtn is not None:
+                stepRow.addWidget(viewBtn)
             self.stepsVBox.addLayout(stepRow)
             # def createLayout(ind, sub_act):
             #     stepRow = ind + 1

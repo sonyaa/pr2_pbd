@@ -36,9 +36,7 @@ class ManipulationStep(Step):
 
     def __init__(self, *args, **kwargs):
         from Session import Session
-        from Robot import Robot
         Step.__init__(self, *args, **kwargs)
-        Robot.get_robot()  # this initializes the robot - we will need it later for the ArmStepMarkers
         self.arm_steps = []
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
