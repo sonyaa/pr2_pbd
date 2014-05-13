@@ -32,7 +32,3 @@ class BaseStep(Step):
                 raise BaseObstructedError()
             if not self.is_while:
                 break
-
-    def __repr__(self):
-        return "%s(strategy=%r, is_while=%r, conditions=%r, end_pose=%r)" % (
-            self.__class__.__name__, self.strategy, self.is_while, self.conditions, self.end_pose)

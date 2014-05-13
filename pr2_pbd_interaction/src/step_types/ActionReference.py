@@ -149,7 +149,3 @@ class ActionReference(Step):
 
     def copy(self):
         return ActionReference.from_string(self.to_string())
-
-    def __repr__(self):
-        return "%s(name=%r, id=%r, steps=%r, selected_step_id=%r)" % (
-            self.__class__.__name__, self.name, self.id, self.steps, self.selected_step_id)
