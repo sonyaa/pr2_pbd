@@ -100,6 +100,17 @@ class ActionReference(Step):
     def n_steps(self):
         return len(self.steps)
 
+    def get_name(self):
+        if self.name is not None:
+            return self.name
+        else:
+            if self.id is None:
+                self.id = 0
+                while os.path.isfile(self.get_file(self.id)):
+                    self.id += 1
+            return 'Action ' + str(self.id)
+
+
     @staticmethod
     def get_saved_actions():
         return map(ActionReference.load,
