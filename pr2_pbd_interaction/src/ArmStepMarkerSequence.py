@@ -23,6 +23,13 @@ class ArmStepMarkerSequence:
         self.l_links = dict()
         self.step_click_cb = step_click_cb
 
+    @staticmethod
+    def construct_from_arm_steps(im_server, marker_publisher, step_click_cb, arm_steps, world_objects):
+        seq = ArmStepMarkerSequence(im_server, marker_publisher, step_click_cb)
+        for step in arm_steps:
+            seq.add_arm_step(step, world_objects)
+        return seq
+
     def add_arm_step(self, arm_step, world_objects):
         r_marker = ArmStepMarker(self.total_n_markers, 0,
                                  arm_step, self.marker_click_cb, self)
@@ -34,9 +41,9 @@ class ArmStepMarkerSequence:
         self.l_markers.append(l_marker)
         if (self.total_n_markers > 1):
             self.r_links[self.total_n_markers - 1] = self._get_link(0,
-                                                                     self.total_n_markers - 1)
+                                                                    self.total_n_markers - 1)
             self.l_links[self.total_n_markers - 1] = self._get_link(1,
-                                                                     self.total_n_markers - 1)
+                                                                    self.total_n_markers - 1)
         self._update_markers()
 
     def _get_link(self, arm_index, to_index):
@@ -224,7 +231,7 @@ class ArmStepMarkerSequence:
         to_delete = None
         for i in range(len(self.r_markers)):
             if (self.r_markers[i].is_deleted or
-                self.l_markers[i].is_deleted):
+                    self.l_markers[i].is_deleted):
                 rospy.loginfo('Will delete step ' + str(i + 1))
                 self.r_markers[i].is_deleted = False
                 self.l_markers[i].is_deleted = False

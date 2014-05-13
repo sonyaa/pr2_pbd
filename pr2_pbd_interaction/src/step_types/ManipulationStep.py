@@ -1,15 +1,34 @@
 #!/usr/bin/env python
 import threading
+import yaml
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import MarkerArray
 from ArmStepMarkerSequence import ArmStepMarkerSequence
 from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
 from World import World
-from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 import rospy
 from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode
 from step_types.Step import Step
+
+
+def manipulation_step_constructor(loader, node):
+    fields = loader.construct_mapping(node, deep=True)
+    m_step = ManipulationStep()
+    #m_step = ManipulationStep(fields['step_click_cb'])
+    m_step.strategy = fields['strategy']
+    m_step.is_while = fields['is_while']
+    m_step.conditions = fields['conditions']
+    m_step.arm_steps = fields['arm_steps']
+    world_objects = World.get_world().get_frame_list()
+    m_step.marker_sequence = ArmStepMarkerSequence.construct_from_arm_steps(m_step.interactive_marker_server,
+                                                                            m_step.marker_publisher,
+                                                                            m_step.step_click_cb, m_step.arm_steps,
+                                                                            world_objects)
+    return m_step
+
+
+yaml.add_constructor(u'!ManipulationStep', manipulation_step_constructor)
 
 
 class ManipulationStep(Step):
@@ -17,11 +36,15 @@ class ManipulationStep(Step):
     """
 
     def __init__(self, *args, **kwargs):
+        from Session import Session
+        from Robot import Robot
         Step.__init__(self, *args, **kwargs)
+        Robot.get_robot()  # this initializes the robot - we will need it later for the ArmStepMarkers
         self.arm_steps = []
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
-        self.step_click_cb = args[0]
+        #self.step_click_cb = args[0]
+        self.step_click_cb = Session._selected_step_cb
         if Step.marker_publisher is None:
             Step.marker_publisher = rospy.Publisher(
                 'visualization_marker_array', MarkerArray)
@@ -30,10 +53,10 @@ class ManipulationStep(Step):
             Step.interactive_marker_server = im_server
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
                                                      self.step_click_cb)
-        self.initial_condition = GripperCondition()
 
     def execute(self):
         from Robot import Robot
+
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
@@ -94,11 +117,6 @@ class ManipulationStep(Step):
         world_objects = World.get_world().get_frame_list()
         self.marker_sequence.add_arm_step(cur_step, world_objects)
         self.marker_sequence.set_total_n_markers(len(self.arm_steps))
-        if len(self.arm_steps) > 1:
-            prev_step = self.arm_steps[len(self.arm_steps) - 2]
-            cur_step.set_gripper_condition(self.initial_condition if prev_step is None else prev_step.postCond)
-            cur_step.postCond = GripperCondition(Robot.get_robot().get_gripper_position(0),
-                                                 Robot.get_robot().get_gripper_position(1))
         self.lock.release()
 
     def delete_last_step_and_update_viz(self):
@@ -123,7 +141,7 @@ class ManipulationStep(Step):
         """
         if len(self.arm_steps) == 0:
             return None
-        return self.arm_steps[len(self.arm_steps)-1]
+        return self.arm_steps[len(self.arm_steps) - 1]
 
     def n_frames(self):
         """Returns the number of arm steps in the manipulation step"""
@@ -202,8 +220,18 @@ class ManipulationStep(Step):
         return pose
 
     def __repr__(self):
-        return "%s(strategy=%r, is_while=%r, conditions=%r, arm_steps=%r, lock=%r, step_click_cb=%r, " \
-               "marker_publisher=%r, interactive_marker_server=%r, marker_sequence=%r, initial_condition=%r)" % (
-            self.__class__.__name__, self.strategy, self.is_while, self.conditions, self.arm_steps, self.lock,
-            self.step_click_cb, self.marker_publisher, self.interactive_marker_server, self.marker_sequence,
-            self.initial_condition)
+        return "%s(strategy=%r, is_while=%r, conditions=%r, arm_steps=%r)" % (
+            self.__class__.__name__, self.strategy, self.is_while, self.conditions, self.arm_steps)
+
+
+def manipulation_step_representer(dumper, data):
+    return dumper.represent_mapping(u'!ManipulationStep', {'strategy': data.strategy,
+                                                           'is_while': data.is_while,
+                                                           'conditions': data.conditions,
+                                                           'arm_steps': data.arm_steps})
+                                   #  u'strategy=%r, is_while=%r, conditions=%r, '
+                                   #                       u'arm_steps=%r, step_click_cb=%r' % (data.strategy,
+                                   # data.is_while, data.conditions, data.arm_steps, data.step_click_cb))
+
+
+yaml.add_representer(ManipulationStep, manipulation_step_representer)
