@@ -498,6 +498,7 @@ class PbDGUI(Plugin):
         '''New code to deal with xml-ed actions'''
         self.currentAction = state.selected_action
         self.currentStep = state.selected_step
+        self.selectedArmStepUid = state.selected_arm_step
         self.action_ids = state.action_ids
         self.action_names = state.action_names
         nColumns = 6

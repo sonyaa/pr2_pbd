@@ -21,7 +21,8 @@ class Session:
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
 
         self._exp_number = None
-        self._selected_step = -1
+        self._selected_step = None
+        self._selected_arm_step = None
 
         #TODO: read data_dir name from parameters?
         if not os.path.exists(ActionReference.ACTION_DIRECTORY):
@@ -74,10 +75,10 @@ class Session:
     def get_session():
         return Session.session
 
-    def selected_step_cb(self, selected_step):
+    def selected_arm_step_cb(self, selected_step):
         '''Updates the selected step when interactive
         markers are clicked on'''
-        self._selected_step = selected_step
+        self._selected_arm_step = selected_step
         self._update_experiment_state()
 
     def get_experiment_state_cb(self, dummy):
@@ -98,7 +99,8 @@ class Session:
             map(lambda act: act.name, self.actions),
             map(lambda act: act.id, self.actions),
             -1 if self.current_action_index is None else self.current_action_index,
-            self._selected_step)
+            self._selected_step,
+            self._selected_arm_step)
 
     def _get_ref_frames(self, arm_index):
         ''' Returns the reference frames for the steps of the
@@ -129,13 +131,13 @@ class Session:
     #     ''' Makes the interactive marker for the indicated action
     #     step selected, by showing the 6D controls'''
     #     self.actions[self.current_action_index].select_step(step_id)
-    #     self._selected_step = step_id
+    #     self._selected_arm_step = step_id
     #
     # def deselect_arm_step(self, step_id):
     #     ''' Removes the 6D controls from the interactive marker
     #     when the indicated action step is deselected'''
     #     self.actions[self.current_action_index].deselect_step(step_id)
-    #     self._selected_step = 0
+    #     self._selected_arm_step = 0
 
     def _get_participant_id(self):
         '''Gets the experiment number from the command line'''
@@ -189,7 +191,8 @@ class Session:
     def new_action(self):
         '''Creates new action'''
         self.current_action_index = len(self.actions)
-        self._selected_step = -1
+        self._selected_step = None
+        self._selected_arm_step = None
         newAct = ActionReference(name="Unnamed " + str(self.current_action_index))
         newAct.save()
         self.actions.append(newAct)

@@ -40,7 +40,7 @@ class ManipulationStep(Step):
         self.arm_steps = []
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
-        self.step_click_cb = Session.selected_step_cb
+        self.step_click_cb = Session.selected_arm_step_cb
         if Step.marker_publisher is None:
             Step.marker_publisher = rospy.Publisher(
                 'visualization_marker_array', MarkerArray)
