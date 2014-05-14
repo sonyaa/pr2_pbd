@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import functools
 import roslib
 roslib.load_manifest('pr2_pbd_gui')
 
@@ -296,19 +297,10 @@ class PbDGUI(Plugin):
         btn.clicked.connect(self.command_cb)
         return btn
 
-    def view_manipulation(self):
-        pass
-
     def edit_manipulation(self):
         pass
 
-    def view_navigation(self):
-        pass
-
     def edit_navigation(self):
-        pass
-
-    def view_object_detection(self):
         pass
 
     def edit_object_detection(self):
@@ -336,7 +328,7 @@ class PbDGUI(Plugin):
             typeLabel = QtGui.QLabel(self._widget)
             editBtn = None
             viewBtn = QtGui.QPushButton("View", self._widget)
-            viewBtn.clicked.connect(self.step_pressed(ind))
+            viewBtn.clicked.connect(functools.partial(self.step_pressed, ind))
             if ind == self.currentStep:
                 viewBtn.setStyleSheet('QPushButton {font-weight: bold}')
             if isinstance(sub_act, ManipulationStep):
@@ -349,7 +341,7 @@ class PbDGUI(Plugin):
                 editBtn.clicked.connect(self.edit_navigation)
             elif isinstance(sub_act, ObjectDetectionStep):
                 typeLabel.setText("Object detection")
-                viewBtn = None
+                viewBtn.setEnabled(False)
                 editBtn = QtGui.QPushButton("Edit", self._widget)
                 editBtn.clicked.connect(self.edit_object_detection)
             elif isinstance(sub_act, ActionReference):
@@ -361,10 +353,9 @@ class PbDGUI(Plugin):
                 continue
             stepRow = QtGui.QHBoxLayout()
             stepRow.addWidget(typeLabel)
+            stepRow.addWidget(viewBtn)
             if editBtn is not None:
                 stepRow.addWidget(editBtn)
-            if viewBtn is not None:
-                stepRow.addWidget(viewBtn)
             self.stepsVBox.addLayout(stepRow)
             # def createLayout(ind, sub_act):
             #     stepRow = ind + 1
@@ -536,13 +527,24 @@ class PbDGUI(Plugin):
     def n_actions(self):
         return len(self.actionIcons.keys())
 
+    def update_action_steps_buttons(self):
+        for ind_l in xrange(self.stepsVBox.count()):
+            layout = self.stepsVBox.itemAt(ind_l).layout()
+            for ind_w in xrange(layout.count()):
+                widget = layout.itemAt(ind_w).widget()
+                if widget is not None and isinstance(widget, QtGui.QPushButton):
+                    if widget.text() == "View":
+                        if ind_l == self.currentStep:
+                            widget.setStyleSheet('QPushButton {font-weight: bold}')
+                        else:
+                            widget.setStyleSheet('QPushButton {font-weight: normal}')
+
     def step_pressed(self, step_index):
-        rospy.loginfo(step_index)
-        rospy.loginfo(self.currentStep)
         if self.currentStep != step_index:
             self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
             self.gui_cmd_publisher.publish(gui_cmd)
+            self.update_action_steps_buttons()
 
     def arm_step_pressed(self, step_index):
         rospy.loginfo(step_index)
