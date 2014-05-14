@@ -13,17 +13,21 @@ from step_types.Step import Step
 
 
 def manipulation_step_constructor(loader, node):
+    from Robot import Robot
     fields = loader.construct_mapping(node, deep=True)
     m_step = ManipulationStep()
     m_step.strategy = fields['strategy']
     m_step.is_while = fields['is_while']
     m_step.conditions = fields['conditions']
     m_step.arm_steps = fields['arm_steps']
-    world_objects = World.get_world().get_frame_list()
-    m_step.marker_sequence = ArmStepMarkerSequence.construct_from_arm_steps(m_step.interactive_marker_server,
-                                                                            m_step.marker_publisher,
-                                                                            m_step.step_click_cb, m_step.arm_steps,
-                                                                            world_objects)
+    # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
+    # except arm steps and basic step members
+    if len(Robot.arms) == 2:  # if the robot is initialized, construct ArmStepMarkerSequence
+        world_objects = World.get_world().get_frame_list()
+        m_step.marker_sequence = ArmStepMarkerSequence.construct_from_arm_steps(m_step.interactive_marker_server,
+                                                                                m_step.marker_publisher,
+                                                                                m_step.step_click_cb, m_step.arm_steps,
+                                                                                world_objects)
     return m_step
 
 
@@ -37,10 +41,12 @@ class ManipulationStep(Step):
     def __init__(self, *args, **kwargs):
         from Session import Session
         from Robot import Robot
-        if len(Robot.arms) < 2:  # initialize the robot if it is not initialized yet
-            Robot.get_robot()
         Step.__init__(self, *args, **kwargs)
         self.arm_steps = []
+        if len(Robot.arms) < 2:
+            # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
+            # except arm steps and basic step members
+            return
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
         self.step_click_cb = Session.selected_arm_step_cb

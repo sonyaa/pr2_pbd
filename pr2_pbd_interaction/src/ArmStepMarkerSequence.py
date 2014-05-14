@@ -25,9 +25,23 @@ class ArmStepMarkerSequence:
 
     @staticmethod
     def construct_from_arm_steps(im_server, marker_publisher, step_click_cb, arm_steps, world_objects):
+        """ Create ArmStepMarkerSequence from a sequence of ArmSteps - but don't display it.
+        """
         seq = ArmStepMarkerSequence(im_server, marker_publisher, step_click_cb)
-        for step in arm_steps:
-            seq.add_arm_step(step, world_objects)
+        for arm_step in arm_steps:
+            r_marker = ArmStepMarker(seq.total_n_markers, 0,
+                                     arm_step, seq.marker_click_cb, seq)
+            r_marker.update_ref_frames(world_objects, arm_step.armTarget.rArm.refFrameObject)
+            l_marker = ArmStepMarker(seq.total_n_markers, 1,
+                                     arm_step, seq.marker_click_cb, seq)
+            l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
+            seq.r_markers.append(r_marker)
+            seq.l_markers.append(l_marker)
+            if (seq.total_n_markers > 1):
+                seq.r_links[seq.total_n_markers - 1] = seq._get_link(0,
+                                                                        seq.total_n_markers - 1)
+                seq.l_links[seq.total_n_markers - 1] = seq._get_link(1,
+                                                                        seq.total_n_markers - 1)
         return seq
 
     def add_arm_step(self, arm_step, world_objects):
