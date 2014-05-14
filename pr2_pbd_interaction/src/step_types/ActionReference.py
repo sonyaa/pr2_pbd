@@ -21,14 +21,11 @@ class ActionReference(Step):
     FILE_EXTENSION = ".yaml"
 
     def __init__(self, *args, **kwargs):  #(self, id=None, name=None):
-        from Robot import Robot
         Step.__init__(self, *args, **kwargs)
         self.name = kwargs.get('name')
         self.id = kwargs.get('id')
         self.steps = []
         self.selected_step_id = None
-        if len(Robot.arms) < 2:  # initialize the robot if it is not initialized yet
-            Robot.get_robot()
 
     def execute(self):
         from Robot import Robot

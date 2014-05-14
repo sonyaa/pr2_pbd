@@ -36,6 +36,9 @@ class ManipulationStep(Step):
 
     def __init__(self, *args, **kwargs):
         from Session import Session
+        from Robot import Robot
+        if len(Robot.arms) < 2:  # initialize the robot if it is not initialized yet
+            Robot.get_robot()
         Step.__init__(self, *args, **kwargs)
         self.arm_steps = []
         self.lock = threading.Lock()
