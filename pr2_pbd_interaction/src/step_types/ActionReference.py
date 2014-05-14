@@ -26,7 +26,7 @@ class ActionReference(Step):
         self.name = kwargs.get('name')
         self.id = kwargs.get('id')
         self.steps = []
-        self.selected_step_id = None
+        self.selected_step_id = -1
         if len(Robot.arms) < 2:  # initialize the robot if it is not initialized yet
             Robot.get_robot()
 
@@ -79,7 +79,7 @@ class ActionReference(Step):
             self.update_viz()
 
     def get_selected_step(self):
-        if len(self.steps) == 0 or self.selected_step_id is None:
+        if len(self.steps) == 0 or self.selected_step_id < 0:
             return None
         return self.steps[self.selected_step_id]
 
@@ -89,15 +89,15 @@ class ActionReference(Step):
         return self.steps[len(self.steps) - 1]
 
     def initialize_viz(self):
-        if self.selected_step_id is not None:
+        if self.selected_step_id >= 0:
             self.steps[self.selected_step_id].initialize_viz()
 
     def update_viz(self):
-        if self.selected_step_id is not None:
+        if self.selected_step_id >= 0:
             self.steps[self.selected_step_id].update_viz()
 
     def reset_viz(self):
-        if self.selected_step_id is not None:
+        if self.selected_step_id >= 0:
             self.steps[self.selected_step_id].reset_viz()
 
     def n_steps(self):

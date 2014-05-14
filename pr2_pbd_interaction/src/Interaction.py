@@ -159,9 +159,9 @@ class Interaction:
                 str(self.session.current_action_index), GazeGoal.NOD]
 
     def next_action(self, dummy=None):
-        '''Switches to next action'''
+        """Switches to next action"""
         if (self.session.n_actions() > 0):
-            if self.session.next_action(self.world.get_frame_list()):
+            if self.session.next_action():
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         str(self.session.current_action_index), GazeGoal.NOD]
             else:
@@ -171,9 +171,9 @@ class Interaction:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     def previous_action(self, dummy=None):
-        '''Switches to previous action'''
+        """Switches to previous action"""
         if (self.session.n_actions() > 0):
-            if self.session.previous_action(self.world.get_frame_list()):
+            if self.session.previous_action():
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         str(self.session.current_action_index), GazeGoal.NOD]
             else:
@@ -188,7 +188,6 @@ class Interaction:
             if (Interaction._is_programming):
                 if self.session.n_steps() > 0:
                     self.session.delete_last_step()
-                    self._undo_function = self._resume_last_step
                     return [RobotSpeech.LAST_POSE_DELETED, GazeGoal.NOD]
                 else:
                     return [RobotSpeech.SKILL_EMPTY, GazeGoal.SHAKE]
@@ -204,7 +203,6 @@ class Interaction:
             if (Interaction._is_programming):
                 if self.session.n_steps() > 0:
                     self.session.clear_current_action()
-                    self._undo_function = self._resume_all_steps
                     return [RobotSpeech.SKILL_CLEARED, GazeGoal.NOD]
                 else:
                     return [RobotSpeech.SKILL_EMPTY, None]
@@ -215,8 +213,8 @@ class Interaction:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     def stop_execution(self, dummy=None):
-        '''Stops ongoing execution'''
-        if (self.robot.is_executing() or self.robot.is_condition_error()):
+        """Stops ongoing execution"""
+        if self.robot.is_executing():
             self.robot.stop_execution()
             return [RobotSpeech.STOPPING_EXECUTION, GazeGoal.NOD]
         else:

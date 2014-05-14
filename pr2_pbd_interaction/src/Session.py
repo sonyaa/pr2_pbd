@@ -124,6 +124,7 @@ class Session:
         self.actions[self.current_action_index].select_step(step_id)
         self._selected_step = step_id
 
+    # TODO: take care of this
     # def select_arm_step(self, step_id):
     #     ''' Makes the interactive marker for the indicated action
     #     step selected, by showing the 6D controls'''
@@ -299,9 +300,10 @@ class Session:
         return None
 
     def switch_to_action(self, action_number):
-        '''Switches to indicated action'''
+        """Switches to indicated action"""
         if (self.n_actions() > 0):
             if (action_number <= self.n_actions() and action_number >= 0):
+                self.save_current_action()
                 self.get_current_action().reset_viz()
                 self.current_action_index = action_number
                 self.get_current_action().initialize_viz()
@@ -325,40 +327,16 @@ class Session:
             self.actions[self.current_action_index].name = new_name
             self._update_experiment_state()
 
-    def next_action(self, object_list):
-        '''Switches to next action'''
-        if (self.n_actions() > 0):
-            if (self.current_action_index < self.n_actions()):
-                self.get_current_action().reset_viz()
-                self.current_action_index += 1
-                self.get_current_action().initialize_viz(object_list)
-                success = True
-            else:
-                success = False
-        else:
-            rospy.logwarn('No skills created yet.')
-            success = False
-        self._update_experiment_state()
-        return success
+    def next_action(self):
+        """Switches to next action"""
+        return self.switch_to_action(self.current_action_index+1)
 
-    def previous_action(self, object_list):
-        '''Switches to previous action'''
-        if (self.n_actions() > 0):
-            if (self.current_action_index > 1):
-                self.get_current_action().reset_viz()
-                self.current_action_index -= 1
-                self.get_current_action().initialize_viz(object_list)
-                success = True
-            else:
-                success = False
-        else:
-            rospy.logwarn('No skills created yet.')
-            success = False
-        self._update_experiment_state()
-        return success
+    def previous_action(self):
+        """Switches to previous action"""
+        return self.switch_to_action(self.current_action_index-1)
 
     def n_steps(self):
-        '''Returns the number of frames'''
+        """Returns the number of steps in the current action"""
         if (self.n_actions() > 0):
             return self.actions[self.current_action_index].n_steps()
         else:

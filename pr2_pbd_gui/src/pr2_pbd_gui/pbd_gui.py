@@ -538,23 +538,20 @@ class PbDGUI(Plugin):
     def step_pressed(self, step_index):
         rospy.loginfo(step_index)
         rospy.loginfo(self.currentStep)
-        if step_index != self.currentStep:
+        if self.currentStep != step_index:
             self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
-        else:
-            self.currentStep = -1
-            gui_cmd = GuiCommand(GuiCommand.DESELECT_ACTION_STEP, step_index)
-        self.gui_cmd_publisher.publish(gui_cmd)
+            self.gui_cmd_publisher.publish(gui_cmd)
 
     def arm_step_pressed(self, step_index):
         rospy.loginfo(step_index)
         rospy.loginfo(self.selectedArmStepUid)
         if step_index != self.selectedArmStepUid:
             self.selectedArmStepUid = step_index
-            gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
+            gui_cmd = GuiCommand(GuiCommand.SELECT_ARM_STEP, step_index)
         else:
             self.selectedArmStepUid = -1
-            gui_cmd = GuiCommand(GuiCommand.DESELECT_ACTION_STEP, step_index)
+            gui_cmd = GuiCommand(GuiCommand.DESELECT_ARM_STEP, step_index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):
