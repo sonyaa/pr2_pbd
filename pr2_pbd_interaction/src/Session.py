@@ -281,17 +281,15 @@ class Session:
         """
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].delete_step(step_id)
+            if self._selected_step == step_id:
+                self._selected_step = None
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
     def delete_last_step(self):
         """Removes the last step of the action"""
-        if (self.n_actions() > 0):
-            self.actions[self.current_action_index].delete_last_step()
-        else:
-            rospy.logwarn('No skills created yet.')
-        self._update_experiment_state()
+        self.delete_action_step(self.n_steps()-1)
 
     def delete_last_arm_step(self):
         """Removes the last arm step of the action"""

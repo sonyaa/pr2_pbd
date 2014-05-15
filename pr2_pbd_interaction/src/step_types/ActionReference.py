@@ -68,6 +68,7 @@ class ActionReference(Step):
         if len(self.steps) > 0 and index < len(self.steps):
             if self.selected_step_id == index:
                 self.reset_viz()
+                self.selected_step_id = None
             self.steps.pop(index)
 
     def select_step(self, step_id):

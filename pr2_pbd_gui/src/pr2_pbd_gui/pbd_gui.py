@@ -383,6 +383,8 @@ class PbDGUI(Plugin):
                     #self.l_view.selectRow(index)
         
         '''New code to deal with xml-ed actions'''
+        # By default, only display editing area after an explicit click on the Edit button.
+        self.is_edit = False
         self.currentAction = state.selected_action
         self.currentStep = state.selected_step
         self.selectedArmStepUid = state.selected_arm_step
