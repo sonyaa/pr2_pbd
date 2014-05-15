@@ -114,12 +114,10 @@ class PbDGUI(Plugin):
         self.currentStep = -1
         self.selectedArmStepUid = -1
         self.action = None
+        self.is_edit = False
 
-        allWidgetsAndEditingBox = QtGui.QHBoxLayout()
         self.editingBox = QtGui.QVBoxLayout()
         allWidgetsBox = QtGui.QVBoxLayout()
-        allWidgetsAndEditingBox.addLayout(allWidgetsBox)
-        allWidgetsAndEditingBox.addLayout(self.editingBox)
         actionBox = QGroupBox('Actions', self._widget)
         self.actionGrid = QtGui.QGridLayout()
         self.actionGrid.setHorizontalSpacing(0)
@@ -246,6 +244,7 @@ class PbDGUI(Plugin):
         vAllBox.addStretch(1)
         hAllBox = QtGui.QHBoxLayout()
         hAllBox.addLayout(vAllBox)
+        hAllBox.addLayout(self.editingBox)
         hAllBox.addStretch(1)
 
         self._widget.setObjectName('PbDGUI')
@@ -331,150 +330,42 @@ class PbDGUI(Plugin):
                 del layout
         for ind, sub_act in enumerate(act.steps):
             typeLabel = QtGui.QLabel(self._widget)
-            editBtn = None
+            has_edit = True
             viewBtn = QtGui.QPushButton("View", self._widget)
             viewBtn.clicked.connect(functools.partial(self.step_pressed, ind))
             if ind == self.currentStep:
                 viewBtn.setStyleSheet('QPushButton {font-weight: bold}')
             if isinstance(sub_act, ManipulationStep):
                 typeLabel.setText("Manipulation")
-                editBtn = QtGui.QPushButton("Edit", self._widget)
-                editBtn.clicked.connect(self.edit_manipulation)
             elif isinstance(sub_act, BaseStep):
                 typeLabel.setText("Navigation")
-                editBtn = QtGui.QPushButton("Edit", self._widget)
-                editBtn.clicked.connect(self.edit_navigation)
             elif isinstance(sub_act, ObjectDetectionStep):
                 typeLabel.setText("Object detection")
                 viewBtn.setEnabled(False)
-                editBtn = QtGui.QPushButton("Edit", self._widget)
-                editBtn.clicked.connect(self.edit_object_detection)
             elif isinstance(sub_act, ActionReference):
                 typeLabel.setText("Preprogrammed: " + sub_act.name)
                 viewBtn = QtGui.QPushButton("Show", self._widget)
                 viewBtn.clicked.connect(self.show_action(sub_act.name))
+                has_edit = False
             else:
                 rospy.logwarn("Unknown action step type " + str(type(sub_act)))
                 continue
             stepRow = QtGui.QHBoxLayout()
             stepRow.addWidget(typeLabel)
             stepRow.addWidget(viewBtn)
-            if editBtn is not None:
+            if has_edit:
+                editBtn = QtGui.QPushButton("Edit", self._widget)
+                editBtn.clicked.connect(functools.partial(self.edit_button_pressed, ind))
                 stepRow.addWidget(editBtn)
             self.stepsVBox.addLayout(stepRow)
-            # def createLayout(ind, sub_act):
-            #     stepRow = ind + 1
-            #     typeBox = QtGui.QComboBox(self._widget)
-            #     typeBox.addItem("Action")
-            #     typeBox.addItem("Pose")
-            #     typeBox.addItem("Trajectory")
-            #
-            #     def type_changed():
-            #         setRow(3 if typeBox.currentIndex() == 2 else typeBox.currentIndex())
-            #
-            #     typeBox.currentIndexChanged.connect(type_changed)
-            #     self.stepsGrid.addWidget(typeBox, stepRow, 0)
-            #
-            #     def setRow(act_type):
-            #         for itm in [self.stepsGrid.itemAtPosition(stepRow, i)
-            #                 for i in range(1, 4)]:
-            #             if itm:
-            #                 wid = itm.widget()
-            #                 self.stepsGrid.removeWidget(wid)
-            #                 wid.deleteLater()
-            #                 del wid
-            #         if (act_type == Action.ACTION_QUEUE):
-            #             act_name = QtGui.QComboBox(self._widget)
-            #             act_name.addItems(self.action_names)
-            #             if (sub_act.id != None):
-            #                 act_name.setCurrentIndex(self.action_ids.index(sub_act.id))
-            #             self.stepsGrid.addWidget(act_name, stepRow, 1)
-            #             save_but = QtGui.QPushButton("Save", self._widget)
-            #             def change_act():
-            #                 self.gui_cmd_publisher.publish(
-            #                         GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-            #                 self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
-            #                 self.speech_cmd_publisher.publish(Command(
-            #                     Command.ADD_ACTION_STEP + " " + self.action_names[
-            #                         act_name.currentIndex()]))
-            #             save_but.clicked.connect(change_act)
-            #             self.stepsGrid.addWidget(save_but, stepRow, 2)
-            #         elif (act_type == Action.POSE):
-            #             rec_but = QtGui.QPushButton("Record", self._widget)
-            #             def hand_rec():
-            #                 self.gui_cmd_publisher.publish(
-            #                         GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-            #                 self.speech_cmd_publisher.publish(Command(Command.DELETE_LAST_STEP))
-            #                 self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
-            #             rec_but.clicked.connect(hand_rec)
-            #             self.stepsGrid.addWidget(rec_but, stepRow, 1)
-            #         elif (act_type == Action.TRAJECTORY):
-            #             rec_but = QtGui.QPushButton("Record", self._widget)
-            #             def hand_rec():
-            #                 if (self.recording):
-            #                     rec_but.setText("Record")
-            #                     self.recording = False
-            #                     self.speech_cmd_publisher.publish(Command(
-            #                             Command.STOP_RECORDING_MOTION))
-            #                     # rospy.loginfo("would have deleted at " + str(ind + 1))
-            #                     #self.gui_cmd_publisher.publish(
-            #                             #GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-            #                     #self.speech_cmd_publisher.publish(Command(
-            #                             #Command.DELETE_LAST_STEP))
-            #                 elif (not (self.recording)):
-            #                     rec_but.setText("Stop")
-            #                     self.recording = True
-            #                     self.gui_cmd_publisher.publish(
-            #                             GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-            #                     self.speech_cmd_publisher.publish(Command(
-            #                             Command.START_RECORDING_MOTION))
-            #             rec_but.clicked.connect(hand_rec)
-            #             self.stepsGrid.addWidget(rec_but, stepRow, 1)
-            #
-            #     typeBox.setCurrentIndex(2 if sub_act.type == Action.TRAJECTORY else sub_act.type)
-            #     if (sub_act.type == 0):
-            #         setRow(0)
-            #
-            #     btnPls = QtGui.QPushButton("+", self._widget)
-            #     def pls_clicked():
-            #         self.gui_cmd_publisher.publish(
-            #                 GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-            #         self.speech_cmd_publisher.publish(Command(Command.SAVE_POSE))
-            #     btnPls.clicked.connect(pls_clicked)
-            #     self.stepsGrid.addWidget(btnPls, stepRow, 5)
-            #     btnMns = QtGui.QPushButton("-", self._widget)
-            #     def mns_clicked():
-            #         self.gui_cmd_publisher.publish(
-            #                 GuiCommand(GuiCommand.SELECT_ACTION_STEP, ind + 1))
-            #         self.speech_cmd_publisher.publish(Command(
-            #                 Command.DELETE_LAST_STEP))
-            #     btnMns.clicked.connect(mns_clicked)
-            #     self.stepsGrid.addWidget(btnMns, stepRow, 4)
-            # createLayout(ind, sub_act)
+        if self.is_edit:
+            self.display_editing_area()
+        else:
+            self.clear_editing_area()
         
     def update_state(self, state):
         qWarning('Received new state')
         rospy.loginfo(state)
-        #n_actions = len(self.actionIcons.keys())
-        #if n_actions < state.n_actions:
-            #for i in range(n_actions, state.n_actions):
-                #self.new_action()
-
-        #if (self.currentAction != (state.i_current_action - 1)):
-            #self.delete_all_steps()
-            #self.action_pressed(state.i_current_action - 1, False)
-
-        #n_steps = self.n_steps()
-        #if (n_steps < state.n_steps):
-            #for i in range(n_steps, state.n_steps):
-                #self.save_pose(frameType=ord(state.frame_types[i]))
-        #elif (n_steps > state.n_steps):
-            #n_to_remove = n_steps - state.n_steps
-            #self.r_model.invisibleRootItem().removeRows(state.n_steps,
-                                                      #n_to_remove)
-            #self.l_model.invisibleRootItem().removeRows(state.n_steps,
-                                                      #n_to_remove)
-        
         ## TODO: DEAL with the following arrays!!!
         #state.r_gripper_states
         #state.l_gripper_states
@@ -544,10 +435,20 @@ class PbDGUI(Plugin):
                             widget.setStyleSheet('QPushButton {font-weight: bold}')
                         else:
                             widget.setStyleSheet('QPushButton {font-weight: normal}')
+                    if widget.text() == "Edit":
+                        if self.is_edit and ind_l == self.currentStep:
+                            widget.setStyleSheet('QPushButton {font-weight: bold}')
+                        else:
+                            widget.setStyleSheet('QPushButton {font-weight: normal}')
 
     def display_editing_area(self):
+        while self.editingBox.count() > 0:
+            widget = self.editingBox.itemAt(0).widget()
+            self.editingBox.removeWidget(widget)
+            widget.deleteLater()
+            del widget
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
-            step = self.action[self.currentStep]
+            step = self.action.steps[self.currentStep]
             typeLabel = QtGui.QLabel(self._widget)
             header_text = "Editing %s step"
             if isinstance(step, ManipulationStep):
@@ -564,13 +465,33 @@ class PbDGUI(Plugin):
             self.editingBox.addWidget(typeLabel)
             self.editingBox.addWidget(delete_button)
 
+    def clear_editing_area(self):
+        while self.editingBox.count() > 0:
+            widget = self.editingBox.itemAt(0).widget()
+            self.editingBox.removeWidget(widget)
+            widget.deleteLater()
+            del widget
+
+    def edit_button_pressed(self, step_index):
+        if self.currentStep == step_index:
+            if self.is_edit:
+                self.is_edit = False
+                self.clear_editing_area()
+            else:
+                self.is_edit = True
+                self.display_editing_area()
+            self.update_action_steps_buttons()
+        else:
+            self.is_edit = True
+            self.step_pressed(step_index)
+            self.display_editing_area()
+
     def step_pressed(self, step_index):
         if self.currentStep != step_index:
             self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
             self.gui_cmd_publisher.publish(gui_cmd)
             self.update_action_steps_buttons()
-            self.display_editing_area()
 
     def delete_step(self, index):
         gui_cmd = GuiCommand(GuiCommand.DELETE_STEP, index)
