@@ -63,6 +63,7 @@ class Interaction:
             Command.STOP_EXECUTION: Response(self.stop_execution, None),
             Command.DELETE_ALL_STEPS: Response(self.delete_all_steps, None),
             Command.DELETE_LAST_STEP: Response(self.delete_last_step, None),
+            Command.DELETE_LAST_ARM_STEP: Response(self.delete_last_arm_step, None),
             Command.FREEZE_RIGHT_ARM: Response(self.freeze_arm, 0),
             Command.FREEZE_LEFT_ARM: Response(self.freeze_arm, 1),
             Command.CREATE_NEW_ACTION: Response(self.create_action, None),
@@ -182,13 +183,32 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
+    def delete_last_arm_step(self, dummy=None):
+        """Deletes last arm step of the current action"""
+        if (self.session.n_actions() > 0):
+            if (Interaction._is_programming):
+                if self.session.n_steps() > 0:
+                    if self.session.is_in_manipulation():
+                        self.session.delete_last_arm_step()
+                        return [RobotSpeech.LAST_ARM_STEP_DELETED, GazeGoal.NOD]
+                    else:
+                        rospy.logwarn("Cannot delete last arm step when not in manipulation.")
+                        return [RobotSpeech.ERROR_GENERAL, GazeGoal.SHAKE]
+                else:
+                    return [RobotSpeech.SKILL_EMPTY, GazeGoal.SHAKE]
+            else:
+                return ['Action ' + str(self.session.current_action_index) +
+                        RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
+        else:
+            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
+
     def delete_last_step(self, dummy=None):
-        '''Deletes last step of the current action'''
+        """Deletes last arm step of the current action"""
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
                 if self.session.n_steps() > 0:
                     self.session.delete_last_step()
-                    return [RobotSpeech.LAST_POSE_DELETED, GazeGoal.NOD]
+                    return [RobotSpeech.LAST_STEP_DELETED, GazeGoal.NOD]
                 else:
                     return [RobotSpeech.SKILL_EMPTY, GazeGoal.SHAKE]
             else:
@@ -520,6 +540,10 @@ class Interaction:
                     step_no = command.param
                     self.session.select_action_step(step_no)
                     rospy.loginfo('Selected action step ' + str(step_no))
+                elif (command.command == GuiCommand.DELETE_STEP):
+                    step_no = command.param
+                    self.session.delete_action_step(step_no)
+                    rospy.loginfo('Deleted action step ' + str(step_no))
                 else:
                     rospy.logwarn('\033[32m This command (' + command.command
                                   + ') is unknown. \033[0m')

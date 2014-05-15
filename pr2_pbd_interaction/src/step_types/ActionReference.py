@@ -62,10 +62,13 @@ class ActionReference(Step):
         self.select_step(len(self.steps) - 1)
 
     def delete_last_step(self):
-        if len(self.steps) > 0:
-            if self.selected_step_id == len(self.steps) - 1:
+        self.delete_step(len(self.steps) - 1)
+
+    def delete_step(self, index):
+        if len(self.steps) > 0 and index < len(self.steps):
+            if self.selected_step_id == index:
                 self.reset_viz()
-            self.steps.pop()
+            self.steps.pop(index)
 
     def select_step(self, step_id):
         if self.selected_step_id != step_id:

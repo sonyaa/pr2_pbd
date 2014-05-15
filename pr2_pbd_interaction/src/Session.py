@@ -126,6 +126,7 @@ class Session:
         self.actions[self.current_action_index].select_step(step_id)
         self._selected_step = step_id
 
+
     # TODO: take care of this
     # def select_arm_step(self, step_id):
     #     ''' Makes the interactive marker for the indicated action
@@ -275,17 +276,41 @@ class Session:
             rospy.logwarn("Action " + act_name + " not found")
             return False
 
+    def delete_action_step(self, step_id):
+        """ Removes the specified step of the action.
+        """
+        if (self.n_actions() > 0):
+            self.actions[self.current_action_index].delete_step(step_id)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def delete_last_step(self):
-        '''Removes the last step of the action'''
+        """Removes the last step of the action"""
+        if (self.n_actions() > 0):
+            self.actions[self.current_action_index].delete_last_step()
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
+    def delete_last_arm_step(self):
+        """Removes the last arm step of the action"""
         if (self.n_actions() > 0):
             current_step = self.get_current_step()
             if isinstance(current_step, ManipulationStep):
                 current_step.delete_last_step_and_update_viz()
-            else:
-                self.actions[self.current_action_index].delete_last_step()
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
+
+    def is_in_manipulation(self):
+        """ Returns True if the current step is ManipulationStep.
+        """
+        if (self.n_actions() > 0):
+            current_step = self.get_current_step()
+            if isinstance(current_step, ManipulationStep):
+                return True
+        return False
 
     def resume_deleted_step(self):
         '''Resumes the deleted step'''

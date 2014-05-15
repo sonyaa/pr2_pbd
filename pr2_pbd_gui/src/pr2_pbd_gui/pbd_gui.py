@@ -105,7 +105,7 @@ class PbDGUI(Plugin):
         self.commands[Command.EXECUTE_ACTION] = 'Execute action'
         self.commands[Command.STOP_EXECUTION] = 'Stop execution'
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
-        self.commands[Command.DELETE_LAST_STEP] = 'Delete last'
+        self.commands[Command.DELETE_LAST_ARM_STEP] = 'Delete last'
         #self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
         self.commands[Command.SAVE_ACTION] = 'Save action'
@@ -113,8 +113,13 @@ class PbDGUI(Plugin):
         self.currentAction = -1
         self.currentStep = -1
         self.selectedArmStepUid = -1
+        self.action = None
 
+        allWidgetsAndEditingBox = QtGui.QHBoxLayout()
+        self.editingBox = QtGui.QVBoxLayout()
         allWidgetsBox = QtGui.QVBoxLayout()
+        allWidgetsAndEditingBox.addLayout(allWidgetsBox)
+        allWidgetsAndEditingBox.addLayout(self.editingBox)
         actionBox = QGroupBox('Actions', self._widget)
         self.actionGrid = QtGui.QGridLayout()
         self.actionGrid.setHorizontalSpacing(0)
@@ -515,9 +520,9 @@ class PbDGUI(Plugin):
                 actIcon.selected = True
                 actIcon.updateView()
         if (state.action_str != ""):
-            act = ActionReference.from_string(state.action_str)  #state['action_str'])
+            self.action = ActionReference.from_string(state.action_str)  #state['action_str'])
             #self.l_model.clear()
-            self.disp_action(act)
+            self.disp_action(self.action)
 
     def get_frame_type(self, fr_type):
         if (fr_type > 1):
@@ -528,6 +533,7 @@ class PbDGUI(Plugin):
         return len(self.actionIcons.keys())
 
     def update_action_steps_buttons(self):
+        # Make text on buttons for the current step bold.
         for ind_l in xrange(self.stepsVBox.count()):
             layout = self.stepsVBox.itemAt(ind_l).layout()
             for ind_w in xrange(layout.count()):
@@ -539,12 +545,36 @@ class PbDGUI(Plugin):
                         else:
                             widget.setStyleSheet('QPushButton {font-weight: normal}')
 
+    def display_editing_area(self):
+        if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
+            step = self.action[self.currentStep]
+            typeLabel = QtGui.QLabel(self._widget)
+            header_text = "Editing %s step"
+            if isinstance(step, ManipulationStep):
+                typeLabel.setText(header_text % "Manipulation")
+            elif isinstance(step, BaseStep):
+                typeLabel.setText(header_text % "Navigation")
+            elif isinstance(step, ObjectDetectionStep):
+                typeLabel.setText(header_text % "Object detection")
+            else:
+                rospy.logwarn("Unknown action step type " + str(type(step)))
+                return
+            delete_button = QtGui.QPushButton("Delete step", self._widget)
+            delete_button.clicked.connect(functools.partial(self.delete_step, self.currentStep))
+            self.editingBox.addWidget(typeLabel)
+            self.editingBox.addWidget(delete_button)
+
     def step_pressed(self, step_index):
         if self.currentStep != step_index:
             self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
             self.gui_cmd_publisher.publish(gui_cmd)
             self.update_action_steps_buttons()
+            self.display_editing_area()
+
+    def delete_step(self, index):
+        gui_cmd = GuiCommand(GuiCommand.DELETE_STEP, index)
+        self.gui_cmd_publisher.publish(gui_cmd)
 
     def arm_step_pressed(self, step_index):
         rospy.loginfo(step_index)
