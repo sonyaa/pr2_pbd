@@ -326,6 +326,7 @@ class PbDGUI(Plugin):
             self.display_editing_area()
         else:
             self.clear_editing_area()
+        self.update_action_steps_buttons()
 
     def update_state(self, state):
         qWarning('Received new state')
@@ -403,17 +404,7 @@ class PbDGUI(Plugin):
                             widget.setStyleSheet('QPushButton {font-weight: normal}')
 
     def display_editing_area(self):
-        while self.editingBox.count() > 0:
-            layout = self.editingBox.itemAt(0).layout()
-            self.editingBox.removeItem(layout)
-            if layout is not None:
-                while layout.count() > 0:
-                    widget = layout.itemAt(0).widget()
-                    layout.removeWidget(widget)
-                    if widget is not None:
-                        widget.deleteLater()
-                        del widget
-                del layout
+        self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
             header_layout = QtGui.QHBoxLayout()
@@ -434,9 +425,9 @@ class PbDGUI(Plugin):
                     abs_string_l = 'Relative' if arm_step.is_relative(1) else 'Absolute'
                     del_pose_button = QtGui.QPushButton('Delete', self._widget)
                     del_pose_button.clicked.connect(functools.partial(self.delete_arm_step, ind))
-                    view_r_button = QtGui.QPushButton('View', self._widget)
+                    view_r_button = QtGui.QPushButton('Select', self._widget)
                     view_r_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(0, ind)))
-                    view_l_button = QtGui.QPushButton('View', self._widget)
+                    view_l_button = QtGui.QPushButton('Select', self._widget)
                     view_l_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(1, ind)))
                     arm_steps_grid.addWidget(QtGui.QLabel('Right arm step ' + str(ind + 1), self._widget), ind, 0)
                     arm_steps_grid.addWidget(QtGui.QLabel(abs_string_r, self._widget), ind, 1)
@@ -472,11 +463,14 @@ class PbDGUI(Plugin):
             conditions_layout.addWidget(conditions_edit_btn)
             self.editingBox.addLayout(conditions_layout)
             strategy_layout = QtGui.QHBoxLayout()
-            strategy_layout.addWidget(QtGui.QLabel("If condition fails:"), self._widget)
+            strategy_layout.addWidget(QtGui.QLabel("If condition fails:", self._widget))
             strategy_selector = QtGui.QComboBox(self._widget)
             strategy_selector.addItem("Fail-fast")
             strategy_selector.addItem("Continue")
-            strategy_selector.setCurrentIndex(0)
+            if step.strategy == Strategy.FAIL_FAST:
+                strategy_selector.setCurrentIndex(0)
+            elif step.strategy == Strategy.CONTINUE:
+                strategy_selector.setCurrentIndex(1)
             strategy_selector.currentIndexChanged.connect(self.change_strategy)
             strategy_layout.addWidget(strategy_selector)
             self.editingBox.addLayout(strategy_layout)
@@ -490,10 +484,16 @@ class PbDGUI(Plugin):
 
     def clear_editing_area(self):
         while self.editingBox.count() > 0:
-            widget = self.editingBox.itemAt(0).widget()
-            self.editingBox.removeWidget(widget)
-            widget.deleteLater()
-            del widget
+            layout = self.editingBox.itemAt(0).layout()
+            self.editingBox.removeItem(layout)
+            if layout is not None:
+                while layout.count() > 0:
+                    widget = layout.itemAt(0).widget()
+                    layout.removeWidget(widget)
+                    if widget is not None:
+                        widget.deleteLater()
+                        del widget
+                del layout
 
     def edit_conditions(self):
         pass
@@ -507,10 +507,9 @@ class PbDGUI(Plugin):
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def change_strategy(self, index):
-        rospy.loginfo(index)
-        if index == 0 or index == "Fail-fast":
+        if index == 0:
             param = Strategy.FAIL_FAST
-        elif index == 1 or index == "Continue":
+        elif index == 1:
             param = Strategy.CONTINUE
         else:
             rospy.logwarn('Unknown strategy selector index ' + str(index))
@@ -519,6 +518,7 @@ class PbDGUI(Plugin):
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def edit_button_pressed(self, step_index):
+        self.step_pressed(step_index)
         if self.currentStep == step_index:
             if self.is_edit:
                 self.is_edit = False
@@ -529,11 +529,12 @@ class PbDGUI(Plugin):
             self.update_action_steps_buttons()
         else:
             self.is_edit = True
-            self.step_pressed(step_index)
             self.display_editing_area()
 
     def step_pressed(self, step_index):
         if self.currentStep != step_index:
+            self.is_edit = False
+            self.clear_editing_area()
             self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
             self.gui_cmd_publisher.publish(gui_cmd)
@@ -548,8 +549,6 @@ class PbDGUI(Plugin):
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def arm_step_pressed(self, step_index):
-        rospy.loginfo(step_index)
-        rospy.loginfo(self.selectedArmStepUid)
         if step_index != self.selectedArmStepUid:
             self.selectedArmStepUid = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ARM_STEP, step_index)
