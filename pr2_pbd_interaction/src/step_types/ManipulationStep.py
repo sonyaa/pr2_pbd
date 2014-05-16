@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import functools
 import threading
 import yaml
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
@@ -49,7 +50,7 @@ class ManipulationStep(Step):
             return
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
-        self.step_click_cb = Session.selected_arm_step_cb
+        self.step_click_cb = functools.partial(Session.selected_arm_step_cb, Session.get_session())
         if Step.marker_publisher is None:
             Step.marker_publisher = rospy.Publisher(
                 'visualization_marker_array', MarkerArray)
@@ -124,15 +125,6 @@ class ManipulationStep(Step):
         self.marker_sequence.set_total_n_markers(len(self.arm_steps))
         self.lock.release()
 
-    def delete_last_step_and_update_viz(self):
-        self.lock.acquire()
-        self.marker_sequence.delete_step(len(self.arm_steps) - 1)
-        self.arm_steps.pop()
-        # Deleting two last objects that correspond to rArm and lArm for last step.
-        self.conditions[0].delete_last_object()
-        self.conditions[0].delete_last_object()
-        self.lock.release()
-
 
     def get_step(self, index):
         '''Returns a step of the manipulation'''
@@ -203,11 +195,22 @@ class ManipulationStep(Step):
         self.lock.acquire()
         to_delete = self.marker_sequence.delete_requested_steps()
         if to_delete is not None:
-            self.delete_arm_step(to_delete)
+            self.arm_steps.pop(to_delete)
         self.lock.release()
 
-    def delete_arm_step(self, to_delete):
-        self.arm_steps.pop(to_delete)
+    def delete_arm_step(self, step_id):
+        """ Delete specified step and update visualization.
+        """
+        self.lock.acquire()
+        self.marker_sequence.delete_step(step_id)
+        self.arm_steps.pop(step_id)
+        # Deleting two objects that correspond to rArm and lArm for specified step.
+        self.conditions[0].objects.pop(2*step_id)
+        self.conditions[0].objects.pop(2*step_id+1)
+        self.lock.release()
+
+    def delete_last_step_and_update_viz(self):
+        self.delete_arm_step(len(self.arm_steps) - 1)
 
     def change_requested_steps(self, r_arm, l_arm):
         """Change an arm step to the current end effector

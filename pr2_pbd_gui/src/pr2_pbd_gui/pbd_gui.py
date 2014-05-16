@@ -379,7 +379,6 @@ class PbDGUI(Plugin):
                 actIcon.updateView()
         if (state.action_str != ""):
             self.action = ActionReference.from_string(state.action_str)  #state['action_str'])
-            self.arm_step_model.clear()
             self.disp_action(self.action)
 
     def n_actions(self):
@@ -405,12 +404,20 @@ class PbDGUI(Plugin):
 
     def display_editing_area(self):
         while self.editingBox.count() > 0:
-            widget = self.editingBox.itemAt(0).widget()
-            self.editingBox.removeWidget(widget)
-            widget.deleteLater()
-            del widget
+            layout = self.editingBox.itemAt(0).layout()
+            self.editingBox.removeItem(layout)
+            if layout is not None:
+                while layout.count() > 0:
+                    widget = layout.itemAt(0).widget()
+                    layout.removeWidget(widget)
+                    if widget is not None:
+                        widget.deleteLater()
+                        del widget
+                del layout
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
+            header_layout = QtGui.QHBoxLayout()
+            self.editingBox.addLayout(header_layout)
             typeLabel = QtGui.QLabel(self._widget)
             header_text = "Editing %s step"
             if isinstance(step, ManipulationStep):
@@ -428,18 +435,20 @@ class PbDGUI(Plugin):
                     del_pose_button = QtGui.QPushButton('Delete', self._widget)
                     del_pose_button.clicked.connect(functools.partial(self.delete_arm_step, ind))
                     view_r_button = QtGui.QPushButton('View', self._widget)
-                    view_r_button.clicked.connect(self.arm_step_pressed(self.get_uid(0, ind)))
+                    view_r_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(0, ind)))
                     view_l_button = QtGui.QPushButton('View', self._widget)
-                    view_l_button.clicked.connect(self.arm_step_pressed(self.get_uid(1, ind)))
-                    arm_steps_grid.addItem(QtGui.QStandardItem('Right arm step ' + str(ind + 1)), ind, 0)
-                    arm_steps_grid.addItem(QtGui.QStandardItem(abs_string_r), ind, 1)
-                    arm_steps_grid.addItem(view_r_button, ind, 2)
+                    view_l_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(1, ind)))
+                    arm_steps_grid.addWidget(QtGui.QLabel('Right arm step ' + str(ind + 1), self._widget), ind, 0)
+                    arm_steps_grid.addWidget(QtGui.QLabel(abs_string_r, self._widget), ind, 1)
+                    arm_steps_grid.addWidget(view_r_button, ind, 2)
                     arm_steps_grid.addItem(QtGui.QSpacerItem(10, 10), ind, 3)
-                    arm_steps_grid.addItem(QtGui.QStandardItem('Left arm step ' + str(ind + 1)), ind, 4)
-                    arm_steps_grid.addItem(QtGui.QStandardItem(abs_string_l), ind, 5)
-                    arm_steps_grid.addItem(view_l_button, ind, 6)
+                    arm_steps_grid.addWidget(QtGui.QLabel('Left arm step ' + str(ind + 1), self._widget), ind, 4)
+                    arm_steps_grid.addWidget(QtGui.QLabel(abs_string_l, self._widget), ind, 5)
+                    arm_steps_grid.addWidget(view_l_button, ind, 6)
                     arm_steps_grid.addItem(QtGui.QSpacerItem(10, 10), ind, 7)
-                    arm_steps_grid.addItem(del_pose_button, ind, 8)
+                    arm_steps_grid.addWidget(del_pose_button, ind, 8)
+                    # TODO: add editing conditions for arm steps
+                    self.editingBox.addLayout(arm_steps_grid)
                 # arm_step_view = self._create_table_view(arm_step_model)
                 # arm_step_view.setColumnWidth(0, 50)
                 # arm_step_view.setColumnWidth(1, 100)
@@ -454,8 +463,8 @@ class PbDGUI(Plugin):
                 return
             delete_button = QtGui.QPushButton("Delete step", self._widget)
             delete_button.clicked.connect(functools.partial(self.delete_step, self.currentStep))
-            self.editingBox.addWidget(typeLabel)
-            self.editingBox.addWidget(delete_button)
+            header_layout.addWidget(typeLabel)
+            header_layout.addWidget(delete_button)
 
     def clear_editing_area(self):
         while self.editingBox.count() > 0:
