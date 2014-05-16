@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from Exceptions import ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus
+from pr2_pbd_interaction.msg._Strategy import Strategy
 from step_types.ManipulationStep import ManipulationStep
 from step_types.Step import Step
 
@@ -39,7 +40,7 @@ class ActionReference(Step):
                     rospy.logwarn("Condition failed when executing action.")
                     if self.is_while:
                         break
-                    if self.strategy == Step.STRATEGY_FAILFAST:
+                    if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             for (i, step) in enumerate(self.steps):
@@ -71,6 +72,10 @@ class ActionReference(Step):
                 self.reset_viz()
                 self.selected_step_id = None
             self.steps.pop(index)
+
+    def set_loop_step(self, index, is_loop):
+        if len(self.steps) > 0 and index < len(self.steps):
+            self.steps[index].is_while = is_loop
 
     def select_step(self, step_id):
         if self.selected_step_id != step_id:

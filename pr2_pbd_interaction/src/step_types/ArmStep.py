@@ -5,7 +5,7 @@ import time
 from Exceptions import ArmObstructedError, ConditionError
 from Response import Response
 from condition_types.GripperCondition import GripperCondition
-from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction
+from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction, Strategy
 from pr2_social_gaze.msg import GazeGoal
 from step_types.Step import Step
 
@@ -40,7 +40,7 @@ class ArmStep(Step):
                     rospy.logwarn("Condition failed when executing arm step.")
                     if self.is_while:
                         break
-                    if self.strategy == Step.STRATEGY_FAILFAST:
+                    if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             # send a request to Robot to move the arms to their respective targets

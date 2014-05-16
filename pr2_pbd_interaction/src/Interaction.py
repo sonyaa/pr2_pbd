@@ -556,6 +556,17 @@ class Interaction:
                     step_no = command.param
                     self.session.deselect_arm_step(step_no)
                     rospy.loginfo('Deselected arm step ' + str(step_no))
+                elif (command.command == GuiCommand.SET_LOOP_STEP):
+                    step_no = command.param
+                    self.session.set_loop_step(step_no, True)
+                    rospy.loginfo('Made step ' + str(step_no) + ' into a while loop')
+                elif (command.command == GuiCommand.SET_NO_LOOP_STEP):
+                    step_no = command.param
+                    self.session.set_loop_step(step_no, False)
+                elif (command.command == GuiCommand.SET_STRATEGY):
+                    strategy = command.param
+                    self.session.set_current_step_strategy(strategy)
+                    rospy.loginfo('Changed condition failure strategy for the current step')
                 else:
                     rospy.logwarn('\033[32m This command (' + command.command
                                   + ') is unknown. \033[0m')

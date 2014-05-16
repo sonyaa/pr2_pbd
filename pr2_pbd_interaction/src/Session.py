@@ -275,6 +275,25 @@ class Session:
             rospy.logwarn("Action " + act_name + " not found")
             return False
 
+    def set_loop_step(self, step_id, is_loop):
+        """ Controls if the specified step is a while loop.
+        """
+        if (self.n_actions() > 0):
+            self.actions[self.current_action_index].set_loop_step(step_id, is_loop)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
+    def set_current_step_strategy(self, strategy):
+        """ Sets the condition failure strategy for the current step.
+        """
+        if (self.n_actions() > 0):
+            current_step = self.get_current_step()
+            current_step.set_strategy(strategy)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def delete_action_step(self, step_id):
         """ Removes the specified step of the action.
         """

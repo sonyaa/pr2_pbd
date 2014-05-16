@@ -9,7 +9,7 @@ from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
 from World import World
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 import rospy
-from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode
+from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode, Strategy
 from step_types.Step import Step
 
 
@@ -71,7 +71,7 @@ class ManipulationStep(Step):
                     rospy.logwarn("Condition failed when executing manipulation step.")
                     if self.is_while:
                         break
-                    if self.strategy == Step.STRATEGY_FAILFAST:
+                    if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             self.update_objects()

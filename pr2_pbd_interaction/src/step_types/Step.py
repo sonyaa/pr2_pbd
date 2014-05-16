@@ -1,18 +1,16 @@
 #!/usr/bin/env python
+from pr2_pbd_interaction.msg import Strategy
 
 
 class Step:
     """ General step of an action
     """
 
-    STRATEGY_FAILFAST = 0   # If any condition is not satisfied, fail immediately.
-    STRATEGY_CONTINUE = 1   # If any condition is not satisfied, continue.
-
     marker_publisher = None
     interactive_marker_server = None
 
     def __init__(self, *args, **kwargs):
-        self.strategy = Step.STRATEGY_FAILFAST
+        self.strategy = Strategy.FAIL_FAST
         # If self.is_while, execute step in a loop until a condition fails. Else execute step once.
         self.is_while = False
         self.conditions = []

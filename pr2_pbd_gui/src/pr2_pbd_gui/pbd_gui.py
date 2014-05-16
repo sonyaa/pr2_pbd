@@ -13,7 +13,7 @@ from python_qt_binding import QtGui,QtCore
 from python_qt_binding.QtGui import QWidget, QFrame
 from python_qt_binding.QtGui import QGroupBox, QIcon, QTableView, QStandardItem
 from python_qt_binding.QtCore import Slot, qDebug, QSignalMapper, QTimer, qWarning, Signal
-from pr2_pbd_interaction.msg import GuiCommand
+from pr2_pbd_interaction.msg import GuiCommand, Strategy
 from pr2_pbd_speech_recognition.msg import Command
 from sound_play.msg import SoundRequest
 from pr2_pbd_interaction.msg import ExperimentState
@@ -465,6 +465,28 @@ class PbDGUI(Plugin):
             delete_button.clicked.connect(functools.partial(self.delete_step, self.currentStep))
             header_layout.addWidget(typeLabel)
             header_layout.addWidget(delete_button)
+            conditions_layout = QtGui.QHBoxLayout()
+            conditions_layout.addWidget(QtGui.QLabel("Step has " + str(len(step.conditions)) + " conditions."))
+            conditions_edit_btn = QtGui.QPushButton('Edit conditions', self._widget)
+            conditions_edit_btn.clicked.connect(self.edit_conditions)
+            conditions_layout.addWidget(conditions_edit_btn)
+            self.editingBox.addLayout(conditions_layout)
+            strategy_layout = QtGui.QHBoxLayout()
+            strategy_layout.addWidget(QtGui.QLabel("If condition fails:"), self._widget)
+            strategy_selector = QtGui.QComboBox(self._widget)
+            strategy_selector.addItem("Fail-fast")
+            strategy_selector.addItem("Continue")
+            strategy_selector.setCurrentIndex(0)
+            strategy_selector.currentIndexChanged.connect(self.change_strategy)
+            strategy_layout.addWidget(strategy_selector)
+            self.editingBox.addLayout(strategy_layout)
+            while_layout = QtGui.QHBoxLayout()
+            is_loop_checkbox = QtGui.QCheckBox("Make this a 'while' loop", self._widget)
+            if step.is_while:
+                is_loop_checkbox.setChecked(True)
+            is_loop_checkbox.clicked.connect(self.set_loop)
+            while_layout.addWidget(is_loop_checkbox)
+            self.editingBox.addLayout(while_layout)
 
     def clear_editing_area(self):
         while self.editingBox.count() > 0:
@@ -472,6 +494,29 @@ class PbDGUI(Plugin):
             self.editingBox.removeWidget(widget)
             widget.deleteLater()
             del widget
+
+    def edit_conditions(self):
+        pass
+
+    def set_loop(self, is_checked):
+        if is_checked:
+            gui_cmd = GuiCommand(GuiCommand.SET_LOOP_STEP, self.currentStep)
+            self.gui_cmd_publisher.publish(gui_cmd)
+        else:
+            gui_cmd = GuiCommand(GuiCommand.SET_NO_LOOP_STEP, self.currentStep)
+            self.gui_cmd_publisher.publish(gui_cmd)
+
+    def change_strategy(self, index):
+        rospy.loginfo(index)
+        if index == 0 or index == "Fail-fast":
+            param = Strategy.FAIL_FAST
+        elif index == 1 or index == "Continue":
+            param = Strategy.CONTINUE
+        else:
+            rospy.logwarn('Unknown strategy selector index ' + str(index))
+            return
+        gui_cmd = GuiCommand(GuiCommand.SET_STRATEGY, param)
+        self.gui_cmd_publisher.publish(gui_cmd)
 
     def edit_button_pressed(self, step_index):
         if self.currentStep == step_index:

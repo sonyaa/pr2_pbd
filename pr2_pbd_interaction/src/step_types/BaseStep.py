@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from Exceptions import BaseObstructedError, ConditionError
-from pr2_pbd_interaction.msg import ExecutionStatus
+from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from step_types.Step import Step
 
 
@@ -24,7 +24,7 @@ class BaseStep(Step):
                     rospy.logwarn("Condition failed when executing base step.")
                     if self.is_while:
                         break
-                    if self.strategy == Step.STRATEGY_FAILFAST:
+                    if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             # send a request to Robot to move to end_pose
