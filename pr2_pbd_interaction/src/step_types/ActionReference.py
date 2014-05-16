@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from Exceptions import ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus
+from step_types.ManipulationStep import ManipulationStep
 from step_types.Step import Step
 
 #functional code
@@ -83,6 +84,22 @@ class ActionReference(Step):
         if len(self.steps) == 0 or self.selected_step_id is None:
             return None
         return self.steps[self.selected_step_id]
+
+    def select_arm_step(self, step_id):
+        """ Makes the interactive marker for the indicated arm
+        step selected, by showing the 6D controls.
+        Only works if the current step is manipulation."""
+        current_step = self.get_selected_step()
+        if current_step is not None and isinstance(current_step, ManipulationStep):
+            current_step.select_step(step_id)
+
+    def deselect_arm_step(self, step_id):
+        """ Makes the interactive marker for the indicated arm
+        step deselected, by removing the 6D controls.
+        Only works if the current step is manipulation."""
+        current_step = self.get_selected_step()
+        if current_step is not None and isinstance(current_step, ManipulationStep):
+            current_step.deselect_step(step_id)
 
     def get_last_step(self):
         if len(self.steps) == 0:

@@ -127,18 +127,17 @@ class Session:
         self._selected_step = step_id
 
 
-    # TODO: take care of this
-    # def select_arm_step(self, step_id):
-    #     ''' Makes the interactive marker for the indicated action
-    #     step selected, by showing the 6D controls'''
-    #     self.actions[self.current_action_index].select_step(step_id)
-    #     self._selected_arm_step = step_id
-    #
-    # def deselect_arm_step(self, step_id):
-    #     ''' Removes the 6D controls from the interactive marker
-    #     when the indicated action step is deselected'''
-    #     self.actions[self.current_action_index].deselect_step(step_id)
-    #     self._selected_arm_step = 0
+    def select_arm_step(self, step_id):
+        ''' Makes the interactive marker for the indicated action
+        step selected, by showing the 6D controls'''
+        self.actions[self.current_action_index].select_arm_step(step_id)
+        self._selected_arm_step = step_id
+
+    def deselect_arm_step(self, step_id):
+        ''' Removes the 6D controls from the interactive marker
+        when the indicated action step is deselected'''
+        self.actions[self.current_action_index].deselect_arm_step(step_id)
+        self._selected_arm_step = 0
 
     def _get_participant_id(self):
         '''Gets the experiment number from the command line'''

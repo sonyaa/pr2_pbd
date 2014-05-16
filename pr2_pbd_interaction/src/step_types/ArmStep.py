@@ -157,3 +157,14 @@ class ArmStep(Step):
         ## WARNING: the following is not really copying
         copy.refFrameObject = arm_state.refFrameObject
         return copy
+
+    def is_relative(self, arm_index):
+        if self.type == ArmStep.ARM_TARGET:
+            if arm_index == 0 and self.armTarget.rArm.refFrame == ArmState.OBJECT:
+                    return True
+            if arm_index == 1 and self.armTarget.lArm.refFrame == ArmState.OBJECT:
+                    return True
+        elif self.type == ArmStep.ARM_TRAJECTORY:
+            ## TODO
+            pass
+        return False

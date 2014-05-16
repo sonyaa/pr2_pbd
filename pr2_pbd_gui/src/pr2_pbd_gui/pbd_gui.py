@@ -134,23 +134,7 @@ class PbDGUI(Plugin):
                                         Command.CREATE_NEW_ACTION))
         self.stepsGroupBox = QGroupBox('Action steps', self._widget)
         self.stepsVBox = QtGui.QVBoxLayout()
-        
-        #self.l_model = QtGui.QStandardItemModel(self)
-        #self.l_view = self._create_table_view(self.l_model,
-                                              #self.l_row_clicked_cb)
-        #self.r_model = QtGui.QStandardItemModel(self)
-        #self.r_view = self._create_table_view(self.r_model,
-                                              #self.r_row_clicked_cb)
 
-        #self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 0, 2, 3)
-        #self.stepsGrid.addItem(QtGui.QSpacerItem(10, 10), 0, 1, 2, 3)
-        #self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 2, 2, 3)
-        
-        #self.stepsGrid.addWidget(QtGui.QLabel('Left Arm'), 0, 0)
-        #self.stepsGrid.addWidget(QtGui.QLabel('Right Arm'), 0, 2)
-
-        #self.stepsGrid.addWidget(self.l_view, 1, 0)
-        #self.stepsGrid.addWidget(self.r_view, 1, 2)
         
         stepsBoxLayout = QtGui.QHBoxLayout()
         stepsBoxLayout.addLayout(self.stepsVBox)
@@ -163,11 +147,6 @@ class PbDGUI(Plugin):
         #stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
         #stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
         #stepsButtonGrid.addWidget(self.create_button(Command.REPEAT_LAST_STEP))
-        
-        #motionButtonGrid = QtGui.QHBoxLayout()
-        #motionButtonGrid.addWidget(self.create_button(Command.START_RECORDING_MOTION))
-        #motionButtonGrid.addWidget(self.create_button(Command.START_RECORDING_RELATIVE_MOTION))
-        #motionButtonGrid.addWidget(self.create_button(Command.STOP_RECORDING_MOTION))
         
         actionNameGrid = QtGui.QHBoxLayout()
         actionNameGrid.addWidget(QtGui.QLabel("Action name:", self._widget))
@@ -258,7 +237,6 @@ class PbDGUI(Plugin):
         rospy.loginfo('Got response from the experiment state service...')
 
         response = exp_state_srv()
-        #response =  { "action_str" : '<action id="None" inline="True" type="0"><name>Action 1</name><actions><action inline="True" type="1"><name /><pose><arms><arm index="0"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm><arm index="1"><position><x>10.0</x><y>2.0</y><z>5.0</z></position><orientation><x>1.0</x><y>1.0</y><z>5.0</z><w>9.0</w></orientation></arm></arms></pose><target><type_id>1</type_id></target></action></actions></action>' }
         self.update_state(response.state)
         
     @staticmethod
@@ -268,12 +246,13 @@ class PbDGUI(Plugin):
             if widget is not None:
                 widget.setEnabled(enable)
 
-    def _create_table_view(self, model, row_click_cb):
+    def _create_table_view(self, model, row_click_cb=None):
         proxy = QtGui.QSortFilterProxyModel(self)
         proxy.setSourceModel(model)
         view = QtGui.QTableView(self._widget)
-        verticalHeader = view.verticalHeader()
-        verticalHeader.sectionClicked.connect(row_click_cb)
+        if row_click_cb is not None:
+            verticalHeader = view.verticalHeader()
+            verticalHeader.sectionClicked.connect(row_click_cb)
         view.setModel(proxy)
         view.setMaximumWidth(250)
         view.setSortingEnabled(False)
@@ -290,25 +269,10 @@ class PbDGUI(Plugin):
         index = (uid - arm_index) / 2
         return (arm_index, (index - 1))
 
-    def r_row_clicked_cb(self, logicalIndex):
-        self.arm_step_pressed(self.get_uid(0, logicalIndex))
-
-    def l_row_clicked_cb(self, logicalIndex):
-        self.arm_step_pressed(self.get_uid(1, logicalIndex))
-
     def create_button(self, command):
         btn = QtGui.QPushButton(self.commands[command], self._widget)
         btn.clicked.connect(self.command_cb)
         return btn
-
-    def edit_manipulation(self):
-        pass
-
-    def edit_navigation(self):
-        pass
-
-    def edit_object_detection(self):
-        pass
 
     def show_action(self, act_name):
         def switch_to_action():
@@ -362,7 +326,7 @@ class PbDGUI(Plugin):
             self.display_editing_area()
         else:
             self.clear_editing_area()
-        
+
     def update_state(self, state):
         qWarning('Received new state')
         rospy.loginfo(state)
@@ -381,17 +345,18 @@ class PbDGUI(Plugin):
                     #self.r_view.selectRow(index)
                 #else:
                     #self.l_view.selectRow(index)
-        
-        '''New code to deal with xml-ed actions'''
-        # By default, only display editing area after an explicit click on the Edit button.
-        self.is_edit = False
+
+        # If the state changed a substep of the current action, leave is_edit as is.
+        # Otherwise, only display editing area after an explicit click on the Edit button.
+        if self.currentAction != state.selected_action:
+            self.is_edit = False
         self.currentAction = state.selected_action
         self.currentStep = state.selected_step
         self.selectedArmStepUid = state.selected_arm_step
         self.action_ids = state.action_ids
         self.action_names = state.action_names
         nColumns = 6
-        '''delete previous action icons'''
+        # Delete previous action icons
         for icon in self.actionIcons.values():
             while icon.count():
                 item = icon.takeAt(0)
@@ -414,13 +379,8 @@ class PbDGUI(Plugin):
                 actIcon.updateView()
         if (state.action_str != ""):
             self.action = ActionReference.from_string(state.action_str)  #state['action_str'])
-            #self.l_model.clear()
+            self.arm_step_model.clear()
             self.disp_action(self.action)
-
-    def get_frame_type(self, fr_type):
-        if (fr_type > 1):
-            rospy.logwarn("Invalid frame type @ save_pose -> get_frame_type: " + str(fr_type))
-        return ["Go to pose", "Maneuver"][fr_type]
 
     def n_actions(self):
         return len(self.actionIcons.keys())
@@ -455,6 +415,36 @@ class PbDGUI(Plugin):
             header_text = "Editing %s step"
             if isinstance(step, ManipulationStep):
                 typeLabel.setText(header_text % "Manipulation")
+                arm_steps_grid = QtGui.QGridLayout()
+                # arm_steps_grid.addItem(QtGui.QLabel('Right Arm'), 0, 1)
+                # arm_steps_grid.addItem(QtGui.QLabel('Left Arm'), 0, 0)
+        #
+        # self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 0, 2, 3)
+        # self.stepsGrid.addItem(QtGui.QSpacerItem(10, 10), 0, 1, 2, 3)
+        # self.stepsGrid.addItem(QtGui.QSpacerItem(280, 10), 0, 2, 2, 3)
+                for ind, arm_step in enumerate(step.arm_steps):
+                    abs_string_r = 'Relative' if arm_step.is_relative(0) else 'Absolute'
+                    abs_string_l = 'Relative' if arm_step.is_relative(1) else 'Absolute'
+                    del_pose_button = QtGui.QPushButton('Delete', self._widget)
+                    del_pose_button.clicked.connect(functools.partial(self.delete_arm_step, ind))
+                    view_r_button = QtGui.QPushButton('View', self._widget)
+                    view_r_button.clicked.connect(self.arm_step_pressed(self.get_uid(0, ind)))
+                    view_l_button = QtGui.QPushButton('View', self._widget)
+                    view_l_button.clicked.connect(self.arm_step_pressed(self.get_uid(1, ind)))
+                    arm_steps_grid.addItem(QtGui.QStandardItem('Right arm step ' + str(ind + 1)), ind, 0)
+                    arm_steps_grid.addItem(QtGui.QStandardItem(abs_string_r), ind, 1)
+                    arm_steps_grid.addItem(view_r_button, ind, 2)
+                    arm_steps_grid.addItem(QtGui.QSpacerItem(10, 10), ind, 3)
+                    arm_steps_grid.addItem(QtGui.QStandardItem('Left arm step ' + str(ind + 1)), ind, 4)
+                    arm_steps_grid.addItem(QtGui.QStandardItem(abs_string_l), ind, 5)
+                    arm_steps_grid.addItem(view_l_button, ind, 6)
+                    arm_steps_grid.addItem(QtGui.QSpacerItem(10, 10), ind, 7)
+                    arm_steps_grid.addItem(del_pose_button, ind, 8)
+                # arm_step_view = self._create_table_view(arm_step_model)
+                # arm_step_view.setColumnWidth(0, 50)
+                # arm_step_view.setColumnWidth(1, 100)
+                # arm_step_view.setColumnWidth(2, 70)
+                # arm_steps_grid.addItem(arm_step_view, 1, 0)
             elif isinstance(step, BaseStep):
                 typeLabel.setText(header_text % "Navigation")
             elif isinstance(step, ObjectDetectionStep):
@@ -499,6 +489,10 @@ class PbDGUI(Plugin):
         gui_cmd = GuiCommand(GuiCommand.DELETE_STEP, index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
+    def delete_arm_step(self, index):
+        gui_cmd = GuiCommand(GuiCommand.DELETE_ARM_STEP, index)
+        self.gui_cmd_publisher.publish(gui_cmd)
+
     def arm_step_pressed(self, step_index):
         rospy.loginfo(step_index)
         rospy.loginfo(self.selectedArmStepUid)
@@ -511,23 +505,6 @@ class PbDGUI(Plugin):
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):
-        # if actionIndex == -1:
-        #     self._set_enabled_widgets_in_layout(self.stepsButtonGrid, False)
-        #     self._set_enabled_widgets_in_layout(self.stepsButtonGrid2, False)
-        #     self._set_enabled_widgets_in_layout(self.prev_next_buttons, False)
-        # else:
-        #     self._set_enabled_widgets_in_layout(self.stepsButtonGrid, True)
-        #     self._set_enabled_widgets_in_layout(self.stepsButtonGrid2, True)
-        #     self._set_enabled_widgets_in_layout(self.prev_next_buttons, True)
-        # for i in range(len(self.actionIcons.keys())):
-        #     key = self.actionIcons.keys()[i]
-        #     if key == actionIndex:
-        #          self.actionIcons[key].selected = True
-        #     else:
-        #          self.actionIcons[key].selected = False
-        #     self.actionIcons[key].updateView()
-        # self.currentAction = actionIndex
-        # self.stepsBox.setTitle('Steps for Action ' + str(self.currentAction+1))
         if isPublish:
             gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, actionIndex)
             self.gui_cmd_publisher.publish(gui_cmd)
