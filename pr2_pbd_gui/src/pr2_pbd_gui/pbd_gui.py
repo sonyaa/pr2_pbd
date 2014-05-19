@@ -315,7 +315,8 @@ class PbDGUI(Plugin):
         self.action_selector = QtGui.QComboBox(self._widget)
         add_action_row.addWidget(QtGui.QLabel("Add action step:"))
         for name in self.action_names:
-            self.action_selector.addItem(name)
+            if name != act.name:
+                self.action_selector.addItem(name)
         add_action_row.addWidget(self.action_selector)
         add_btn = QtGui.QPushButton("Add step", self._widget)
         add_btn.clicked.connect(self.add_action_step)
