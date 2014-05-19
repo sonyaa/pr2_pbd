@@ -446,7 +446,7 @@ class Interaction:
             action_name = self.session.get_action_name(self.session.current_action_index)
             if action_name is None:
                 action_name = str(self.session.current_action_index)
-            if (self.session.n_steps() > 1):
+            if (self.session.n_steps() > 0):
                 self.session.save_current_action()
                 action = self.session.get_current_action()
                 self.robot.start_execution(action)
@@ -489,6 +489,7 @@ class Interaction:
                     response = Response(Interaction.empty_response,
                                         [RobotSpeech.SWITCH_SKILL + action_name,
                                          GazeGoal.NOD])
+                    rospy.loginfo('Switched to action ' + action_name)
                 else:
                     response = Response(Interaction.empty_response,
                                         [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE])
@@ -500,8 +501,9 @@ class Interaction:
                 if (len(action_name) > 0):
                     self.session.name_action(action_name)
                     Response(Interaction.empty_response,
-                             [RobotSpeech.SWITCH_SKILL + action_name,
+                             [RobotSpeech.RENAMED_ACTION + action_name,
                               GazeGoal.NOD]).respond()
+                    rospy.loginfo('New name for action: ' + action_name)
                 else:
                     rospy.logwarn("New action name has zero length")
                     Response(Interaction.empty_response,
@@ -511,8 +513,9 @@ class Interaction:
                               len(add_action_command):len(command.command)]
                 if (self.session.add_action_step_action(action_name)):
                     Response(Interaction.empty_response,
-                             [RobotSpeech.SWITCH_SKILL + action_name,
+                             [RobotSpeech.ACTION_STEP_ADDED + action_name,
                               GazeGoal.NOD]).respond()
+                    rospy.loginfo('Added an action step to current action: ' + action_name)
                 else:
                     Response(Interaction.empty_response,
                              [RobotSpeech.ERROR_GENERAL, GazeGoal.SHAKE]).respond()
