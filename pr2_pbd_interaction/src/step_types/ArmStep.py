@@ -144,6 +144,9 @@ class ArmStep(Step):
             copy.armTrajectory.lRefFrameObject = l_obj
         copy.gripperAction = GripperAction(self.gripperAction.rGripper,
                                            self.gripperAction.lGripper)
+        ## WARNING: the following is not really copying
+        copy.conditions = self.conditions[:]
+        copy.postCond = self.postCond
         return copy
 
     @staticmethod
