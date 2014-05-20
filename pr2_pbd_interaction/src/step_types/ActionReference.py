@@ -113,14 +113,20 @@ class ActionReference(Step):
 
     def initialize_viz(self):
         if self.selected_step_id is not None:
+            if isinstance(self.steps[self.selected_step_id], ActionReference):
+                return
             self.steps[self.selected_step_id].initialize_viz()
 
     def update_viz(self):
         if self.selected_step_id is not None:
+            if isinstance(self.steps[self.selected_step_id], ActionReference):
+                return
             self.steps[self.selected_step_id].update_viz()
 
     def reset_viz(self):
         if self.selected_step_id is not None:
+            if isinstance(self.steps[self.selected_step_id], ActionReference):
+                return
             self.steps[self.selected_step_id].reset_viz()
 
     def n_steps(self):
