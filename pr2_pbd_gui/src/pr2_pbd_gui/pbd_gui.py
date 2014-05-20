@@ -283,7 +283,6 @@ class PbDGUI(Plugin):
                 del layout
         for ind, sub_act in enumerate(act.steps):
             typeLabel = QtGui.QLabel(self._widget)
-            has_edit = True
             viewBtn = QtGui.QPushButton("View", self._widget)
             viewBtn.clicked.connect(functools.partial(self.step_pressed, ind))
             if ind == self.currentStep:
@@ -297,19 +296,17 @@ class PbDGUI(Plugin):
                 viewBtn.setEnabled(False)
             elif isinstance(sub_act, ActionReference):
                 typeLabel.setText("Preprogrammed: " + sub_act.name)
-                viewBtn = QtGui.QPushButton("Show", self._widget)
+                viewBtn.setText("Switch to action")
                 viewBtn.clicked.connect(functools.partial(self.show_action, sub_act.name))
-                has_edit = False
             else:
                 rospy.logwarn("Unknown action step type " + str(type(sub_act)))
                 continue
             stepRow = QtGui.QHBoxLayout()
             stepRow.addWidget(typeLabel)
             stepRow.addWidget(viewBtn)
-            if has_edit:
-                editBtn = QtGui.QPushButton("Edit", self._widget)
-                editBtn.clicked.connect(functools.partial(self.edit_button_pressed, ind))
-                stepRow.addWidget(editBtn)
+            editBtn = QtGui.QPushButton("Edit", self._widget)
+            editBtn.clicked.connect(functools.partial(self.edit_button_pressed, ind))
+            stepRow.addWidget(editBtn)
             self.stepsVBox.addLayout(stepRow)
         add_action_row = QtGui.QHBoxLayout()
         self.action_selector = QtGui.QComboBox(self._widget)
@@ -342,9 +339,9 @@ class PbDGUI(Plugin):
         #state.l_ref_frames
         #state.objects
 
-        # If the state changed a substep of the current action, leave is_edit as is.
+        # If the state changed an arm step of the current action, leave is_edit as is.
         # Otherwise, only display editing area after an explicit click on the Edit button.
-        if self.currentAction != state.selected_action:
+        if self.currentAction != state.selected_action or self.currentStep != state.selected_step:
             self.is_edit = False
         self.currentAction = state.selected_action
         self.currentStep = state.selected_step
@@ -440,6 +437,8 @@ class PbDGUI(Plugin):
                 typeLabel.setText(header_text % "Navigation")
             elif isinstance(step, ObjectDetectionStep):
                 typeLabel.setText(header_text % "Object detection")
+            elif isinstance(step, ActionReference):
+                typeLabel.setText(header_text % "Action")
             else:
                 rospy.logwarn("Unknown action step type " + str(type(step)))
                 return
