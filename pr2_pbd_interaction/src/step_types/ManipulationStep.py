@@ -51,12 +51,6 @@ class ManipulationStep(Step):
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
         self.step_click_cb = functools.partial(Session.selected_arm_step_cb, Session.get_session())
-        if Step.marker_publisher is None:
-            Step.marker_publisher = rospy.Publisher(
-                'visualization_marker_array', MarkerArray)
-        if Step.interactive_marker_server is None:
-            im_server = InteractiveMarkerServer('programmed_actions')
-            Step.interactive_marker_server = im_server
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
                                                      self.step_click_cb)
 

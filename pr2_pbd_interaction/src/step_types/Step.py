@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+import rospy
+from visualization_msgs.msg import MarkerArray
 from pr2_pbd_interaction.msg import Strategy
 
 
@@ -14,6 +17,12 @@ class Step:
         # If self.is_while, execute step in a loop until a condition fails. Else execute step once.
         self.is_while = False
         self.conditions = []
+        if Step.interactive_marker_server is None:
+            im_server = InteractiveMarkerServer('programmed_actions')
+            Step.interactive_marker_server = im_server
+        if Step.marker_publisher is None:
+            Step.marker_publisher = rospy.Publisher(
+                'visualization_marker_array', MarkerArray)
 
     def set_is_while(self, is_while):
         self.is_while = is_while

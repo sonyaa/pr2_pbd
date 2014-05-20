@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from Exceptions import ConditionError, StoppedByUserError
+from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_pbd_interaction.msg._Strategy import Strategy
 from step_types.ManipulationStep import ManipulationStep
@@ -68,9 +69,8 @@ class ActionReference(Step):
 
     def delete_step(self, index):
         if len(self.steps) > 0 and index < len(self.steps):
-            if self.selected_step_id == index:
-                self.reset_viz()
-                self.selected_step_id = None
+            self.reset_viz()
+            self.selected_step_id = None
             self.steps.pop(index)
 
     def set_loop_step(self, index, is_loop):
@@ -125,9 +125,10 @@ class ActionReference(Step):
 
     def reset_viz(self):
         if self.selected_step_id is not None:
-            if isinstance(self.steps[self.selected_step_id], ActionReference):
-                return
-            self.steps[self.selected_step_id].reset_viz()
+            if not isinstance(self.steps[self.selected_step_id], ActionReference):
+                self.steps[self.selected_step_id].reset_viz()
+        self.interactive_marker_server.clear()
+        self.interactive_marker_server.applyChanges()
 
     def n_steps(self):
         return len(self.steps)
