@@ -675,7 +675,7 @@ class World:
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
                Response.gaze_client.get_state() == GoalStatus.ACTIVE):
             time.sleep(0.1)
-        rospy.loginfo("Goal status: " + Response.gaze_client.get_state())
+        rospy.loginfo("Goal status: " + str(Response.gaze_client.get_state()))
 
         if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
             rospy.logerr('Could not look down to take table snapshot')
