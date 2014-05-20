@@ -113,6 +113,7 @@ class World:
                          AlvarMarkers, self.receive_ar_markers)
         self.is_looking_for_markers = False
         self.marker_dims = Vector3(0.04, 0.04, 0.01)
+        World.world = self
 
     @staticmethod
     def get_world():
@@ -674,7 +675,7 @@ class World:
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
                Response.gaze_client.get_state() == GoalStatus.ACTIVE):
             time.sleep(0.1)
-        rospy.loginfo(Response.gaze_client.get_state())
+        rospy.loginfo("Goal status: " + Response.gaze_client.get_state())
 
         if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
             rospy.logerr('Could not look down to take table snapshot')

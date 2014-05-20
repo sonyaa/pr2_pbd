@@ -4,6 +4,7 @@ from Exceptions import NoObjectError, ConditionError
 from World import World
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from step_types.Step import Step
+import time
 
 
 class ObjectDetectionStep(Step):
@@ -27,7 +28,8 @@ class ObjectDetectionStep(Step):
             world = World.get_world()
             if not world.update_object_pose():
                 rospy.logwarn("Object detection failed.")
-                robot.status = ExecutionStatus.OBSTRUCTED
+                robot.status = ExecutionStatus.OBJECT_DETECTION_FAILED
                 raise NoObjectError()
+            time.sleep(1)
             if not self.is_while:
                 break

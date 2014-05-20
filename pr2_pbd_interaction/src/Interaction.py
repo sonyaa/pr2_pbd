@@ -142,14 +142,23 @@ class Interaction:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     def save_action(self, dummy=None):
-        '''Goes out of edit mode'''
+        """Saves action to disk"""
         self.session.save_current_action()
-        Interaction._is_programming = False
         action_name = self.session.get_action_name(self.session.current_action_index)
         if action_name is None:
             action_name = str(self.session.current_action_index)
         return [RobotSpeech.ACTION_SAVED + ' ' +
                 action_name, GazeGoal.NOD]
+    #
+    # def save_action(self, dummy=None):
+    #     '''Goes out of edit mode'''
+    #     self.session.save_current_action()
+    #     Interaction._is_programming = False
+    #     action_name = self.session.get_action_name(self.session.current_action_index)
+    #     if action_name is None:
+    #         action_name = str(self.session.current_action_index)
+    #     return [RobotSpeech.ACTION_SAVED + ' ' +
+    #             action_name, GazeGoal.NOD]
 
     def create_action(self, dummy=None):
         '''Creates a new empty action'''
