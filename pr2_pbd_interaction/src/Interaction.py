@@ -652,11 +652,12 @@ class Interaction:
     def record_object_pose(self, dummy=None):
         """Makes the robot look for a table and objects"""
         if self.session.n_actions() > 0:
-            if self.world.update_object_pose():
-                self.session.add_step_to_action(ObjectDetectionStep())
-                return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
-            else:
-                return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
+            if (Interaction._is_programming):
+                if self.world.update_object_pose():
+                    self.session.add_step_to_action(ObjectDetectionStep())
+                    return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
+                else:
+                    return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 

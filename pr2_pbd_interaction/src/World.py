@@ -711,6 +711,7 @@ class World:
 
         if (self._object_action_client.get_state() != GoalStatus.SUCCEEDED):
             rospy.logerr('Could not segment.')
+            self.is_looking_for_markers = False
             return False
 
         # Do recognition
@@ -740,6 +741,7 @@ class World:
                 return True
         else:
             rospy.logerr('Could not recognize.')
+            self.is_looking_for_markers = False
             return False
 
     def clear_all_objects(self):
