@@ -25,9 +25,13 @@ class ArmStep(Step):
         self.postCond = None
 
     def set_gripper_condition_poses(self, r_gripper, l_gripper):
+        if len(self.conditions) == 0:
+            self.conditions.append(GripperCondition())
         self.conditions[0].set_gripper_positions(r_gripper, l_gripper)
 
     def set_gripper_condition(self, condition):
+        if len(self.conditions) == 0:
+            self.conditions.append(GripperCondition())
         self.conditions[0] = condition
 
     def execute(self):

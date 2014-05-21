@@ -111,8 +111,9 @@ class ManipulationStep(Step):
             r_object = arm_step.armTarget.rArm.refFrameObject
         if arm_step.armTarget.lArm.refFrame == ArmState.OBJECT:
             l_object = arm_step.armTarget.lArm.refFrameObject
-        self.conditions[0].add_object(r_object)
-        self.conditions[0].add_object(l_object)
+        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+            self.conditions[0].add_object(r_object)
+            self.conditions[0].add_object(l_object)
         cur_step = self.arm_steps[len(self.arm_steps) - 1]
         world_objects = World.get_world().get_frame_list()
         self.marker_sequence.add_arm_step(cur_step, world_objects)
@@ -141,19 +142,25 @@ class ManipulationStep(Step):
     def update_objects(self):
         """Updates the object list for all arm steps"""
         self.lock.acquire()
-        action_objects = self.conditions[0].get_objects()
-        unique_action_objects = self.conditions[0].get_unique_objects()
         world_objects = World.get_world().get_frame_list()
-        map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+        action_objects = None
+        map_of_objects_old_to_new = None
+        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+            action_objects = self.conditions[0].get_objects()
+            unique_action_objects = self.conditions[0].get_unique_objects()
+            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
         self.marker_sequence.update_objects(action_objects, world_objects, map_of_objects_old_to_new)
         self.lock.release()
 
     def initialize_viz(self):
         self.lock.acquire()
-        action_objects = self.conditions[0].get_objects()
-        unique_action_objects = self.conditions[0].get_unique_objects()
         world_objects = World.get_world().get_frame_list()
-        map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+        action_objects = None
+        map_of_objects_old_to_new = None
+        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+            action_objects = self.conditions[0].get_objects()
+            unique_action_objects = self.conditions[0].get_unique_objects()
+            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
         self.marker_sequence.initialize_viz(self.arm_steps, action_objects, world_objects, map_of_objects_old_to_new)
         self.lock.release()
 
@@ -199,8 +206,9 @@ class ManipulationStep(Step):
         self.marker_sequence.delete_step(step_id)
         self.arm_steps.pop(step_id)
         # Deleting two objects that correspond to rArm and lArm for specified step.
-        self.conditions[0].objects.pop(2*step_id+1)
-        self.conditions[0].objects.pop(2*step_id)
+        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+            self.conditions[0].objects.pop(2*step_id+1)
+            self.conditions[0].objects.pop(2*step_id)
         self.lock.release()
 
     def delete_last_step_and_update_viz(self):
