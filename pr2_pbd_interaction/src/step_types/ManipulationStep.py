@@ -199,8 +199,8 @@ class ManipulationStep(Step):
         self.marker_sequence.delete_step(step_id)
         self.arm_steps.pop(step_id)
         # Deleting two objects that correspond to rArm and lArm for specified step.
-        self.conditions[0].objects.pop(2*step_id)
         self.conditions[0].objects.pop(2*step_id+1)
+        self.conditions[0].objects.pop(2*step_id)
         self.lock.release()
 
     def delete_last_step_and_update_viz(self):
