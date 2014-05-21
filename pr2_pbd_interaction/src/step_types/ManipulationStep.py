@@ -56,20 +56,20 @@ class ManipulationStep(Step):
 
     def execute(self):
         from Robot import Robot
-
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
-            for condition in self.conditions:
+            step_to_execute = self.copy()
+            for condition in step_to_execute.conditions:
                 if not condition.check():
                     rospy.logwarn("Condition failed when executing manipulation step.")
-                    if self.is_while:
+                    if step_to_execute.is_while:
                         break
-                    if self.strategy == Strategy.FAIL_FAST:
+                    if step_to_execute.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             self.update_objects()
-            if not robot.solve_ik_for_manipulation_step(self):
+            if not robot.solve_ik_for_manipulation_step(step_to_execute):
                 rospy.logwarn('Problems in finding IK solutions...')
                 robot.status = ExecutionStatus.NO_IK
                 rospy.logerr("Execution of a manipulation step failed, unreachable poses.")
@@ -77,7 +77,7 @@ class ManipulationStep(Step):
             else:
                 Robot.set_arm_mode(0, ArmMode.HOLD)
                 Robot.set_arm_mode(1, ArmMode.HOLD)
-                for (i, step) in enumerate(self.arm_steps):
+                for (i, step) in enumerate(step_to_execute.arm_steps):
                     try:
                         if robot.status == ExecutionStatus.EXECUTING:
                             step.execute()
@@ -93,10 +93,10 @@ class ManipulationStep(Step):
 
             Robot.arms[0].reset_movement_history()
             Robot.arms[1].reset_movement_history()
-            if not self.is_while:
+            if not step_to_execute.is_while:
                 break
             # If the manipulation step needs objects and we're in a while loop, look for objects again.
-            elif len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+            elif len(step_to_execute.conditions) > 0 and isinstance(step_to_execute.conditions[0], SpecificObjectCondition):
                 world = World.get_world()
                 if not world.update_object_pose():
                     rospy.logwarn("Object detection failed.")
@@ -220,6 +220,15 @@ class ManipulationStep(Step):
         pose = self.marker_sequence.get_requested_targets(arm_index)
         self.lock.release()
         return pose
+
+    def copy(self):
+        copy = ManipulationStep()
+        copy.conditions = self.conditions
+        copy.strategy = self.strategy
+        copy.is_while = self.is_while
+        for step in self.arm_steps:
+            copy.arm_steps.append(step.copy())
+        return copy
 
 
 def manipulation_step_representer(dumper, data):
