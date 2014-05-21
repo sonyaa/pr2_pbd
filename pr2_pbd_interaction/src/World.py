@@ -159,13 +159,11 @@ class World:
         '''Callback function to receive marker info'''
         self._lock.acquire()
         if self.is_looking_for_markers:
-            rospy.loginfo('Received marker list.')
             if len(data.markers) > 0:
+                rospy.loginfo('Received non-empty marker list.')
                 for i in range(len(data.markers)):
                     marker = data.markers[i]
                     self._add_new_object(marker.pose.pose, self.marker_dims, False, id=marker.id)
-            else:
-                rospy.logwarn('... but the list was empty.')
         self._lock.release()
 
     def receieve_object_info(self, object_list):
@@ -647,8 +645,8 @@ class World:
                 rospy.logerr('Exception during transform.')
                 return pose
         else:
-            rospy.logwarn('One of the frame objects might not exist: ' +
-                          from_frame + ' or ' + to_frame)
+            # rospy.logwarn('One of the frame objects might not exist: ' +
+            #               from_frame + ' or ' + to_frame)
             return pose
 
     @staticmethod
