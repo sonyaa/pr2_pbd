@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import threading
 from Exceptions import ConditionError, StoppedByUserError
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from pr2_pbd_interaction.msg import ExecutionStatus
@@ -29,6 +30,7 @@ class ActionReference(Step):
         self.id = kwargs.get('id')
         self.steps = []
         self.selected_step_id = None
+        self.lock = threading.Lock()
 
     def execute(self):
         from Robot import Robot
@@ -61,74 +63,96 @@ class ActionReference(Step):
                 break
 
     def add_step(self, step):
+        self.lock.acquire()
         self.steps.append(step)
         self.select_step(len(self.steps) - 1)
+        self.lock.release()
 
     def delete_last_step(self):
         self.delete_step(len(self.steps) - 1)
 
     def delete_step(self, index):
+        self.lock.acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.reset_viz()
             self.selected_step_id = None
             self.steps.pop(index)
+        self.lock.release()
 
     def set_loop_step(self, index, is_loop):
+        self.lock.acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.steps[index].is_while = is_loop
+        self.lock.release()
 
     def select_step(self, step_id):
+        self.lock.acquire()
         if self.selected_step_id != step_id:
             self.reset_viz()
             self.selected_step_id = step_id
             self.initialize_viz()
         else:
             self.update_viz()
+        self.lock.release()
 
     def get_selected_step(self):
-        if len(self.steps) == 0 or self.selected_step_id is None:
-            return None
-        return self.steps[self.selected_step_id]
+        self.lock.acquire()
+        step = None
+        if len(self.steps) > 0 and self.selected_step_id is not None:
+            step = self.steps[self.selected_step_id]
+        self.lock.release()
+        return step
 
     def select_arm_step(self, step_id):
         """ Makes the interactive marker for the indicated arm
         step selected, by showing the 6D controls.
         Only works if the current step is manipulation."""
+        self.lock.acquire()
         current_step = self.get_selected_step()
         if current_step is not None and isinstance(current_step, ManipulationStep):
             current_step.select_step(step_id)
+        self.lock.release()
 
     def deselect_arm_step(self, step_id):
         """ Makes the interactive marker for the indicated arm
         step deselected, by removing the 6D controls.
         Only works if the current step is manipulation."""
+        self.lock.acquire()
         current_step = self.get_selected_step()
         if current_step is not None and isinstance(current_step, ManipulationStep):
             current_step.deselect_step(step_id)
+        self.lock.release()
 
     def get_last_step(self):
-        if len(self.steps) == 0:
-            return None
-        return self.steps[len(self.steps) - 1]
+        self.lock.acquire()
+        step = None
+        if len(self.steps) > 0:
+            step = self.steps[len(self.steps) - 1]
+        self.lock.release()
+        return step
 
     def initialize_viz(self):
+        self.lock.acquire()
         if self.selected_step_id is not None:
-            if isinstance(self.steps[self.selected_step_id], ActionReference):
-                return
-            self.steps[self.selected_step_id].initialize_viz()
+            if not isinstance(self.steps[self.selected_step_id], ActionReference):
+                self.steps[self.selected_step_id].initialize_viz()
+        self.lock.release()
 
     def update_viz(self):
+        self.lock.acquire()
         if self.selected_step_id is not None:
-            if isinstance(self.steps[self.selected_step_id], ActionReference):
-                return
-            self.steps[self.selected_step_id].update_viz()
+            if not isinstance(self.steps[self.selected_step_id], ActionReference):
+                self.steps[self.selected_step_id].update_viz()
+        self.lock.release()
 
     def reset_viz(self):
+        self.lock.acquire()
         if self.selected_step_id is not None:
             if not isinstance(self.steps[self.selected_step_id], ActionReference):
                 self.steps[self.selected_step_id].reset_viz()
         self.interactive_marker_server.clear()
         self.interactive_marker_server.applyChanges()
+        self.lock.release()
 
     def n_steps(self):
         return len(self.steps)
