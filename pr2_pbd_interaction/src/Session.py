@@ -211,13 +211,15 @@ class Session:
         return self.actions[self.current_action_index].get_selected_step()
 
     def get_last_arm_step(self):
-        """ Returns the last arm step if the last action step is ManipulationStep
+        """ Returns the last arm step if the current action step is ManipulationStep
         and there are arm steps in it, or None otherwise.
         """
         if self.n_actions() > 0:
-            last_step = self.get_current_action().get_last_step()
-            if last_step is not None and isinstance(last_step, ManipulationStep):
-                return last_step.get_last_step()
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, ManipulationStep):
+                return cur_step.get_last_step()
+            else:
+                rospy.logwarn('Current step is not ManipulationStep, cannot get last arm step.')
         return None
 
     #     def get_current_action_name(self):
@@ -315,6 +317,8 @@ class Session:
             current_step = self.get_current_step()
             if isinstance(current_step, ManipulationStep):
                 current_step.delete_arm_step(step_id)
+            else:
+                rospy.logwarn('Current step is not ManipulationStep, cannot delete arm step.')
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
