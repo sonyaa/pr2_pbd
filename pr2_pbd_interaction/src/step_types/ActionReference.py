@@ -62,97 +62,104 @@ class ActionReference(Step):
             if not self.is_while:
                 break
 
+    def get_lock(self):
+        try:
+            return self.lock
+        except AttributeError:
+            self.lock = threading.Lock()
+            return self.lock
+
     def add_step(self, step):
-        self.lock.acquire()
+        self.get_lock().acquire()
         self.steps.append(step)
         self.select_step(len(self.steps) - 1)
-        self.lock.release()
+        self.get_lock().release()
 
     def delete_last_step(self):
         self.delete_step(len(self.steps) - 1)
 
     def delete_step(self, index):
-        self.lock.acquire()
+        self.get_lock().acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.reset_viz()
             self.selected_step_id = None
             self.steps.pop(index)
-        self.lock.release()
+        self.get_lock().release()
 
     def set_loop_step(self, index, is_loop):
-        self.lock.acquire()
+        self.get_lock().acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.steps[index].is_while = is_loop
-        self.lock.release()
+        self.get_lock().release()
 
     def select_step(self, step_id):
-        self.lock.acquire()
+        self.get_lock().acquire()
         if self.selected_step_id != step_id:
             self.reset_viz()
             self.selected_step_id = step_id
             self.initialize_viz()
         else:
             self.update_viz()
-        self.lock.release()
+        self.get_lock().release()
 
     def get_selected_step(self):
-        self.lock.acquire()
+        self.get_lock().acquire()
         step = None
         if len(self.steps) > 0 and self.selected_step_id is not None:
             step = self.steps[self.selected_step_id]
-        self.lock.release()
+        self.get_lock().release()
         return step
 
     def select_arm_step(self, step_id):
         """ Makes the interactive marker for the indicated arm
         step selected, by showing the 6D controls.
         Only works if the current step is manipulation."""
-        self.lock.acquire()
+        self.get_lock().acquire()
         current_step = self.get_selected_step()
         if current_step is not None and isinstance(current_step, ManipulationStep):
             current_step.select_step(step_id)
-        self.lock.release()
+        self.get_lock().release()
 
     def deselect_arm_step(self, step_id):
         """ Makes the interactive marker for the indicated arm
         step deselected, by removing the 6D controls.
         Only works if the current step is manipulation."""
-        self.lock.acquire()
+        self.get_lock().acquire()
         current_step = self.get_selected_step()
         if current_step is not None and isinstance(current_step, ManipulationStep):
             current_step.deselect_step(step_id)
-        self.lock.release()
+        self.get_lock().release()
 
     def get_last_step(self):
-        self.lock.acquire()
+        self.get_lock().acquire()
         step = None
         if len(self.steps) > 0:
             step = self.steps[len(self.steps) - 1]
-        self.lock.release()
+        self.get_lock().release()
         return step
 
     def initialize_viz(self):
-        self.lock.acquire()
+        self.get_lock().acquire()
         if self.selected_step_id is not None:
             if not isinstance(self.steps[self.selected_step_id], ActionReference):
                 self.steps[self.selected_step_id].initialize_viz()
-        self.lock.release()
+        self.get_lock().release()
 
     def update_viz(self):
-        self.lock.acquire()
+        self.get_lock().acquire()
         if self.selected_step_id is not None:
             if not isinstance(self.steps[self.selected_step_id], ActionReference):
                 self.steps[self.selected_step_id].update_viz()
-        self.lock.release()
+        self.get_lock().release()
 
     def reset_viz(self):
-        self.lock.acquire()
+        self.get_lock().acquire()
         if self.selected_step_id is not None:
             if not isinstance(self.steps[self.selected_step_id], ActionReference):
                 self.steps[self.selected_step_id].reset_viz()
         self.interactive_marker_server.clear()
         self.interactive_marker_server.applyChanges()
-        self.lock.release()
+        self.get_lock().release()
 
     def n_steps(self):
         return len(self.steps)
@@ -167,26 +174,19 @@ class ActionReference(Step):
                     self.id += 1
             return 'Action ' + str(self.id)
 
-
-    @staticmethod
-    def get_saved_actions():
-        return map(ActionReference.load,
-                   filter(lambda f: f.endswith(ActionReference.FILE_EXTENSION),
-                          filter(isfile,
-                                 map(partial(join, ActionReference.ACTION_DIRECTORY),
-                                     listdir(ActionReference.ACTION_DIRECTORY)))))
-
     @staticmethod
     def get_file(action):
         return ActionReference.ACTION_DIRECTORY + str(action) + ActionReference.FILE_EXTENSION
 
     @staticmethod
     def get_saved_actions():
-        return map(ActionReference.load,
+        actions = map(ActionReference.load,
                    filter(lambda f: f.endswith(ActionReference.FILE_EXTENSION),
                           filter(isfile,
                                  map(partial(join, ActionReference.ACTION_DIRECTORY),
                                      listdir(ActionReference.ACTION_DIRECTORY)))))
+        actions.sort(key=lambda action: action.id)
+        return actions
 
     @staticmethod
     def load(act_f_id):
@@ -220,3 +220,30 @@ class ActionReference(Step):
 
     def copy(self):
         return ActionReference.from_string(self.to_string())
+
+
+def action_step_constructor(loader, node):
+    fields = loader.construct_mapping(node, deep=True)
+    step = ActionReference(fields)
+    step.strategy = fields['strategy']
+    step.is_while = fields['is_while']
+    step.conditions = fields['conditions']
+    step.steps = fields['steps']
+    step.selected_step_id = fields['selected_step_id']
+    step.name = fields.get('name')
+    step.id = fields.get('id')
+    return step
+
+yaml.add_constructor(u'!ActionStep', action_step_constructor)
+
+
+def action_step_representer(dumper, data):
+    return dumper.represent_mapping(u'!ActionStep', {'strategy': data.strategy,
+                                                     'is_while': data.is_while,
+                                                     'conditions': data.conditions,
+                                                     'steps': data.steps,
+                                                     'selected_step_id': data.selected_step_id,
+                                                     'name': data.name,
+                                                     'id': data.id})
+
+yaml.add_representer(ActionReference, action_step_representer)
