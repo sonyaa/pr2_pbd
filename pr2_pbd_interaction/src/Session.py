@@ -21,7 +21,7 @@ class Session:
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
 
         self._exp_number = None
-        self._selected_step = None
+        self._selected_step = 0
         self._selected_arm_step = None
 
         #TODO: read data_dir name from parameters?
@@ -98,7 +98,7 @@ class Session:
              else ""),
             map(lambda act: act.name, self.actions),
             map(lambda act: act.id, self.actions),
-            -1 if self.current_action_index is None else self.current_action_index,
+            0 if self.current_action_index is None else self.current_action_index,
             self._selected_step,
             self._selected_arm_step)
 
@@ -191,7 +191,7 @@ class Session:
     def new_action(self):
         '''Creates new action'''
         self.current_action_index = len(self.actions)
-        self._selected_step = None
+        self._selected_step = 0
         self._selected_arm_step = None
         newAct = ActionReference(name="Unnamed " + str(self.current_action_index))
         newAct.save()
@@ -302,7 +302,7 @@ class Session:
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].delete_step(step_id)
             if self._selected_step == step_id:
-                self._selected_step = None
+                self._selected_step = 0
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
