@@ -559,7 +559,7 @@ class Interaction:
                 elif (command.command == GuiCommand.DELETE_ARM_STEP):
                     step_no = command.param
                     self.session.delete_arm_step(step_no)
-                    rospy.loginfo('Deleted action step ' + str(step_no))
+                    rospy.loginfo('Deleted arm step ' + str(step_no))
                 elif (command.command == GuiCommand.SELECT_ARM_STEP):
                     step_no = command.param
                     self.session.select_arm_step(step_no)
