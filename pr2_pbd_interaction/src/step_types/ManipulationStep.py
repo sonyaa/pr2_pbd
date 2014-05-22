@@ -207,8 +207,11 @@ class ManipulationStep(Step):
         self.arm_steps.pop(step_id)
         # Deleting two objects that correspond to rArm and lArm for specified step.
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            self.conditions[0].objects.pop(2*step_id+1)
-            self.conditions[0].objects.pop(2*step_id)
+            if len(self.conditions[0].objects) > 2*step_id:
+                self.conditions[0].objects.pop(2*step_id+1)
+                self.conditions[0].objects.pop(2*step_id)
+            else:
+                rospy.logwarn('Condition for manipulation step has invalid number of objects.')
         self.lock.release()
 
     def delete_last_step_and_update_viz(self):
