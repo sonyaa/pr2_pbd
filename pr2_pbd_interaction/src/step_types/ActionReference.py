@@ -71,10 +71,10 @@ class ActionReference(Step):
             return self.lock
 
     def add_step(self, step):
-        self.get_lock().acquire()
+        # self.get_lock().acquire()
         self.steps.append(step)
         self.select_step(len(self.steps) - 1)
-        self.get_lock().release()
+        # self.get_lock().release()
 
     def delete_last_step(self):
         self.delete_step(len(self.steps) - 1)
