@@ -153,6 +153,12 @@ class ActionReference(Step):
                 self.steps[self.selected_step_id].update_viz()
         self.get_lock().release()
 
+    def clear(self):
+        self.reset_viz()
+        self.lock.acquire()
+        del self.steps[:]
+        self.lock.release()
+
     def reset_viz(self):
         # self.get_lock().acquire()
         # if self.selected_step_id is not None:
