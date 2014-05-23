@@ -190,12 +190,12 @@ class Session:
 
     def new_action(self):
         '''Creates new action'''
-        self.current_action_index = len(self.actions)
         self._selected_step = 0
         self._selected_arm_step = None
         newAct = ActionReference(name="Unnamed " + str(self.current_action_index))
         newAct.save()
         self.actions.append(newAct)
+        self.current_action_index = len(self.actions)
         self._update_experiment_state()
 
     def n_actions(self):
