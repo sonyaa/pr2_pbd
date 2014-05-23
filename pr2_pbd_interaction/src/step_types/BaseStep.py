@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from Exceptions import BaseObstructedError, ConditionError
+from Exceptions import BaseObstructedError, ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from step_types.Step import Step
 
@@ -27,6 +27,11 @@ class BaseStep(Step):
                     if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
+            if robot.preempt:
+                # robot.preempt = False
+                robot.status = ExecutionStatus.PREEMPTED
+                rospy.logerr('Execution of base step failed, execution preempted by user.')
+                raise StoppedByUserError()
             # send a request to Robot to move to end_pose
             if not robot.move_base(self.end_pose):
                 raise BaseObstructedError()

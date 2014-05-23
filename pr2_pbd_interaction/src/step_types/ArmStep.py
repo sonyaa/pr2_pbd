@@ -2,7 +2,7 @@
 from geometry_msgs.msg import Pose
 import rospy
 import time
-from Exceptions import ArmObstructedError, ConditionError
+from Exceptions import ArmObstructedError, ConditionError, StoppedByUserError
 from Response import Response
 from condition_types.GripperCondition import GripperCondition
 from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction, Strategy
@@ -47,6 +47,11 @@ class ArmStep(Step):
                     if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
+            if robot.preempt:
+                # robot.preempt = False
+                robot.status = ExecutionStatus.PREEMPTED
+                rospy.logerr('Execution of arm step failed, execution preempted by user.')
+                raise StoppedByUserError()
             # send a request to Robot to move the arms to their respective targets
             if (self.type == ArmStep.ARM_TARGET):
                 rospy.loginfo('Will perform arm target action step.')

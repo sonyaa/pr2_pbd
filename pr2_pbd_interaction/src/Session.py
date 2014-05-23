@@ -18,6 +18,7 @@ class Session:
     session = None
 
     def __init__(self, object_list):
+        Session.session = self
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
 
         self._exp_number = None
@@ -68,7 +69,6 @@ class Session:
                       self.get_experiment_state_cb)
 
         self._update_experiment_state()
-        Session.session = self
 
 
     @staticmethod

@@ -48,14 +48,14 @@ class ActionReference(Step):
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             for (i, step) in enumerate(self.steps):
+                if robot.preempt:
+                    # robot.preempt = False
+                    robot.status = ExecutionStatus.PREEMPTED
+                    rospy.logerr('Execution of action step failed, execution preempted by user.')
+                    raise StoppedByUserError()
                 try:
                     if robot.status == ExecutionStatus.EXECUTING:
                         step.execute()
-                    if robot.preempt:
-                        robot.preempt = False
-                        robot.status = ExecutionStatus.PREEMPTED
-                        rospy.logerr('Execution of action step failed, execution preempted by user.')
-                        raise StoppedByUserError()
                     rospy.loginfo('Step ' + str(i) + ' of action step is complete.')
                 except:
                     rospy.logerr("Execution of an action failed")

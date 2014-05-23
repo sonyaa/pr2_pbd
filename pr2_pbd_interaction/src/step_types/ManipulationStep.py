@@ -21,6 +21,7 @@ def manipulation_step_constructor(loader, node):
     m_step.is_while = fields['is_while']
     m_step.conditions = fields['conditions']
     m_step.arm_steps = fields['arm_steps']
+    m_step.objects = fields.get('objects', [])
     # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
     # except arm steps and basic step members
     if len(Robot.arms) == 2:  # if the robot is initialized, construct ArmStepMarkerSequence
@@ -50,7 +51,7 @@ class ManipulationStep(Step):
             return
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
-        self.step_click_cb = functools.partial(Session.selected_arm_step_cb, Session.get_session())
+        self.step_click_cb = Session.get_session().selected_arm_step_cb
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
                                                      self.step_click_cb)
         self.objects = []
@@ -83,7 +84,7 @@ class ManipulationStep(Step):
                         if robot.status == ExecutionStatus.EXECUTING:
                             step.execute()
                         if robot.preempt:
-                            robot.preempt = False
+                            # robot.preempt = False
                             robot.status = ExecutionStatus.PREEMPTED
                             rospy.logerr('Execution of manipulation step failed, execution preempted by user.')
                             raise StoppedByUserError()
@@ -262,6 +263,7 @@ def manipulation_step_representer(dumper, data):
     return dumper.represent_mapping(u'!ManipulationStep', {'strategy': data.strategy,
                                                            'is_while': data.is_while,
                                                            'conditions': data.conditions,
-                                                           'arm_steps': data.arm_steps})
+                                                           'arm_steps': data.arm_steps,
+                                                           'objects': data.objects})
 
 yaml.add_representer(ManipulationStep, manipulation_step_representer)

@@ -94,7 +94,7 @@ class ArmStepMarkerSequence:
                     r_new_object = map_of_objects_old_to_new[r_old_object.name]
             self.r_markers[i].update_ref_frames(world_objects, r_new_object)
             if not has_real_objects:
-                self.r_markers[i].is_dimmed = True
+                self.r_markers[i].is_fake = True
         for i in range(len(self.l_markers)):
             l_new_object = None
             if map_of_objects_old_to_new is not None:
@@ -103,7 +103,7 @@ class ArmStepMarkerSequence:
                     l_new_object = map_of_objects_old_to_new[l_old_object.name]
             self.l_markers[i].update_ref_frames(world_objects, l_new_object)
             if not has_real_objects:
-                self.l_markers[i].is_dimmed = True
+                self.l_markers[i].is_fake = True
 
     def _update_markers(self):
         """Updates the markers after a change"""
@@ -161,8 +161,8 @@ class ArmStepMarkerSequence:
             l_marker = ArmStepMarker(i + 1, 1, step,
                                      self.marker_click_cb, self)
             if not has_real_objects:
-                r_marker.is_dimmed = True
-                l_marker.is_dimmed = True
+                r_marker.is_fake = True
+                l_marker.is_fake = True
             r_new_object = None
             l_new_object = None
             if map_of_objects_old_to_new is not None:

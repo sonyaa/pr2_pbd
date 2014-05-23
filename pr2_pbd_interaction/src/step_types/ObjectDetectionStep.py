@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from Exceptions import NoObjectError, ConditionError
+from Exceptions import NoObjectError, ConditionError, StoppedByUserError
 from World import World
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from step_types.Step import Step
@@ -24,6 +24,11 @@ class ObjectDetectionStep(Step):
                     if self.strategy == Strategy.FAIL_FAST:
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
+            if robot.preempt:
+                # robot.preempt = False
+                robot.status = ExecutionStatus.PREEMPTED
+                rospy.logerr('Execution of object detection step failed, execution preempted by user.')
+                raise StoppedByUserError()
             # call object detection
             world = World.get_world()
             if not world.update_object_pose():

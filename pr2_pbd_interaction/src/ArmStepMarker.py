@@ -34,6 +34,7 @@ class ArmStepMarker:
         self.is_edited = False
         self.has_object = False
         self.is_dimmed = False
+        self.is_fake = False
 
         self._sub_entries = None
         self._menu_handler = None
@@ -557,6 +558,8 @@ class ArmStepMarker:
         mesh.scale.z = 1.0
         alpha = 0.6
         if self.is_dimmed:
+            alpha = 0.1
+        if self.is_fake:
             alpha = 0.2
         if self._is_reachable():
             # Original: some kinda orange
