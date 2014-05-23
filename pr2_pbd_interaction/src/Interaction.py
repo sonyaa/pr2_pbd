@@ -165,30 +165,39 @@ class Interaction:
         self.world.clear_all_objects()
         self.session.new_action()
         Interaction._is_programming = True
+        action_name = self.session.get_action_name(self.session.current_action_index)
+        if action_name is None:
+            action_name = str(self.session.current_action_index)
         return [RobotSpeech.SKILL_CREATED + ' ' +
-                str(self.session.current_action_index), GazeGoal.NOD]
+                action_name, GazeGoal.NOD]
 
     def next_action(self, dummy=None):
         """Switches to next action"""
         if (self.session.n_actions() > 0):
+            action_name = self.session.get_action_name(self.session.current_action_index)
+            if action_name is None:
+                action_name = str(self.session.current_action_index)
             if self.session.next_action():
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
-                        str(self.session.current_action_index), GazeGoal.NOD]
+                        action_name, GazeGoal.NOD]
             else:
                 return [RobotSpeech.ERROR_NEXT_SKILL + ' ' +
-                        str(self.session.current_action_index), GazeGoal.SHAKE]
+                        action_name, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     def previous_action(self, dummy=None):
         """Switches to previous action"""
         if (self.session.n_actions() > 0):
+            action_name = self.session.get_action_name(self.session.current_action_index)
+            if action_name is None:
+                action_name = str(self.session.current_action_index)
             if self.session.previous_action():
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
-                        str(self.session.current_action_index), GazeGoal.NOD]
+                        action_name, GazeGoal.NOD]
             else:
                 return [RobotSpeech.ERROR_PREV_SKILL + ' ' +
-                        str(self.session.current_action_index), GazeGoal.SHAKE]
+                        action_name, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
@@ -221,7 +230,10 @@ class Interaction:
                 else:
                     return [RobotSpeech.SKILL_EMPTY, GazeGoal.SHAKE]
             else:
-                return ['Action ' + str(self.session.current_action_index) +
+                action_name = self.session.get_action_name(self.session.current_action_index)
+                if action_name is None:
+                    action_name = str(self.session.current_action_index)
+                return ['Action ' + action_name +
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -236,7 +248,10 @@ class Interaction:
                 else:
                     return [RobotSpeech.SKILL_EMPTY, None]
             else:
-                return ['Action ' + str(self.session.current_action_index) +
+                action_name = self.session.get_action_name(self.session.current_action_index)
+                if action_name is None:
+                    action_name = str(self.session.current_action_index)
+                return ['Action ' + action_name +
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
@@ -281,7 +296,10 @@ class Interaction:
                     return [RobotSpeech.ALREADY_RECORDING_MOTION,
                             GazeGoal.SHAKE]
             else:
-                return ['Action ' + str(self.session.current_action_index) +
+                action_name = self.session.get_action_name(self.session.current_action_index)
+                if action_name is None:
+                    action_name = str(self.session.current_action_index)
+                return ['Action ' + action_name +
                         RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
