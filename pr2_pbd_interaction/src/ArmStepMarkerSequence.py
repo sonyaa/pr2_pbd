@@ -84,7 +84,7 @@ class ArmStepMarkerSequence:
                       color=ColorRGBA(0.8, 0.8, 0.5, 0.4),
                       points=[new_start, new_end])
 
-    def update_objects(self, action_objects, world_objects, map_of_objects_old_to_new):
+    def update_objects(self, action_objects, world_objects, map_of_objects_old_to_new, has_real_objects):
         self._update_markers()
         for i in range(len(self.r_markers)):
             r_new_object = None
@@ -93,6 +93,8 @@ class ArmStepMarkerSequence:
                 if r_old_object is not None:
                     r_new_object = map_of_objects_old_to_new[r_old_object.name]
             self.r_markers[i].update_ref_frames(world_objects, r_new_object)
+            if not has_real_objects:
+                self.r_markers[i].is_dimmed = True
         for i in range(len(self.l_markers)):
             l_new_object = None
             if map_of_objects_old_to_new is not None:
@@ -100,6 +102,8 @@ class ArmStepMarkerSequence:
                 if l_old_object is not None:
                     l_new_object = map_of_objects_old_to_new[l_old_object.name]
             self.l_markers[i].update_ref_frames(world_objects, l_new_object)
+            if not has_real_objects:
+                self.l_markers[i].is_dimmed = True
 
     def _update_markers(self):
         """Updates the markers after a change"""
@@ -147,7 +151,7 @@ class ArmStepMarkerSequence:
             m_array.markers.append(self.l_links[i])
         self.marker_publisher.publish(m_array)
 
-    def initialize_viz(self, steps, action_objects, world_objects, map_of_objects_old_to_new):
+    def initialize_viz(self, steps, action_objects, world_objects, map_of_objects_old_to_new, has_real_objects):
         """Initialize visualization"""
         self.set_total_n_markers(len(steps))
         for i in range(len(steps)):
@@ -156,6 +160,9 @@ class ArmStepMarkerSequence:
                                      self.marker_click_cb, self)
             l_marker = ArmStepMarker(i + 1, 1, step,
                                      self.marker_click_cb, self)
+            if not has_real_objects:
+                r_marker.is_dimmed = True
+                l_marker.is_dimmed = True
             r_new_object = None
             l_new_object = None
             if map_of_objects_old_to_new is not None:

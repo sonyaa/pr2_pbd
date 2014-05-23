@@ -557,7 +557,7 @@ class ArmStepMarker:
         mesh.scale.z = 1.0
         alpha = 0.6
         if self.is_dimmed:
-            alpha = 0.1
+            alpha = 0.2
         if self._is_reachable():
             # Original: some kinda orange
             # r,g,b = 1.0, 0.5, 0.0

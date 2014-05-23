@@ -53,6 +53,7 @@ class ManipulationStep(Step):
         self.step_click_cb = functools.partial(Session.selected_arm_step_cb, Session.get_session())
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
                                                      self.step_click_cb)
+        self.objects = []
 
     def execute(self):
         from Robot import Robot
@@ -142,6 +143,7 @@ class ManipulationStep(Step):
     def update_objects(self):
         """Updates the object list for all arm steps"""
         self.lock.acquire()
+        has_real_objects = True
         world_objects = World.get_world().get_frame_list()
         action_objects = None
         map_of_objects_old_to_new = None
@@ -149,11 +151,18 @@ class ManipulationStep(Step):
             action_objects = self.conditions[0].get_objects()
             unique_action_objects = self.conditions[0].get_unique_objects()
             map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
-        self.marker_sequence.update_objects(action_objects, world_objects, map_of_objects_old_to_new)
+            if map_of_objects_old_to_new is not None:
+                self.objects = world_objects
+            else:
+                world_objects = self.objects
+                map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+                has_real_objects = False
+        self.marker_sequence.update_objects(action_objects, world_objects, map_of_objects_old_to_new, has_real_objects)
         self.lock.release()
 
     def initialize_viz(self):
         self.lock.acquire()
+        has_real_objects = True
         world_objects = World.get_world().get_frame_list()
         action_objects = None
         map_of_objects_old_to_new = None
@@ -161,7 +170,14 @@ class ManipulationStep(Step):
             action_objects = self.conditions[0].get_objects()
             unique_action_objects = self.conditions[0].get_unique_objects()
             map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
-        self.marker_sequence.initialize_viz(self.arm_steps, action_objects, world_objects, map_of_objects_old_to_new)
+            if map_of_objects_old_to_new is not None:
+                self.objects = world_objects
+            else:
+                world_objects = self.objects
+                map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+                has_real_objects = False
+        self.marker_sequence.initialize_viz(self.arm_steps, action_objects, world_objects,
+                                            map_of_objects_old_to_new, has_real_objects)
         self.lock.release()
 
     def update_viz(self):
