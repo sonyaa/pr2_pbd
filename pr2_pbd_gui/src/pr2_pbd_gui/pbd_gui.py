@@ -248,13 +248,13 @@ class PbDGUI(Plugin):
 
     def get_uid(self, arm_index, index):
         '''Returns a unique id of the marker'''
-        return (2 * (index + 1) + arm_index)
+        return (2 * index + arm_index)
 
     def get_arm_and_index(self, uid):
         '''Returns a unique id of the marker'''
         arm_index = uid % 2
         index = (uid - arm_index) / 2
-        return (arm_index, (index - 1))
+        return (arm_index, index)
 
     def create_button(self, command):
         btn = QtGui.QPushButton(self.commands[command], self._widget)
@@ -425,10 +425,10 @@ class PbDGUI(Plugin):
                     view_r_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(0, ind)))
                     view_l_button = QtGui.QPushButton('Select', self._widget)
                     view_l_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(1, ind)))
-                    arm_steps_grid.addWidget(QtGui.QLabel('Step ' + str(ind + 1), self._widget), ind + 1, 0)
+                    arm_steps_grid.addWidget(QtGui.QLabel('Step ' + str(ind), self._widget), ind + 1, 0)
                     arm_steps_grid.addWidget(QtGui.QLabel(abs_string_r, self._widget), ind + 1, 1)
                     arm_steps_grid.addWidget(view_r_button, ind + 1, 2)
-                    arm_steps_grid.addWidget(QtGui.QLabel('Step ' + str(ind + 1), self._widget), ind + 1, 4)
+                    arm_steps_grid.addWidget(QtGui.QLabel('Step ' + str(ind), self._widget), ind + 1, 4)
                     arm_steps_grid.addWidget(QtGui.QLabel(abs_string_l, self._widget), ind + 1, 5)
                     arm_steps_grid.addWidget(view_l_button, ind + 1, 6)
                     arm_steps_grid.addWidget(del_pose_button, ind + 1, 8)
@@ -486,6 +486,8 @@ class PbDGUI(Plugin):
                 del layout
 
     def edit_conditions(self):
+        self.clear_editing_area()
+        # TODO
         pass
 
     def set_loop(self, is_checked):
