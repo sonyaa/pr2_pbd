@@ -168,6 +168,11 @@ class ActionReference(Step):
         self.interactive_marker_server.applyChanges()
         # self.get_lock().release()
 
+    def update_objects(self):
+        cur_step = self.get_selected_step()
+        if isinstance(cur_step, ManipulationStep):
+            cur_step.update_objects()
+
     def n_steps(self):
         return len(self.steps)
 

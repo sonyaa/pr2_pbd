@@ -638,9 +638,7 @@ class Interaction:
 
             if (is_world_changed):
                 rospy.loginfo('The world has changed.')
-                #TODO: fix this (add check that it's a ManipulationStep or teach ActionReference to take care of it)
-                self.session.get_current_action().update_objects(
-                    self.world.get_frame_list())
+                self.session.get_current_action().update_objects()
 
         time.sleep(0.1)
 
