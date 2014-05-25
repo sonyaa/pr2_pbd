@@ -58,6 +58,10 @@ class ArmStep(Step):
 
                 if (not robot.move_to_joints(self.armTarget.rArm,
                                              self.armTarget.lArm)):
+                    if robot.preempt:
+                        robot.status = ExecutionStatus.PREEMPTED
+                        rospy.logerr('Execution of arm step failed, execution preempted by user.')
+                        raise StoppedByUserError()
                     robot.status = ExecutionStatus.OBSTRUCTED
                     raise ArmObstructedError()
             # If arm trajectory action
@@ -66,6 +70,10 @@ class ArmStep(Step):
                 # First move to the start frame
                 if (not robot.move_to_joints(self.armTrajectory.r_arm[0],
                                              self.armTrajectory.l_arm[0])):
+                    if robot.preempt:
+                        robot.status = ExecutionStatus.PREEMPTED
+                        rospy.logerr('Execution of arm step failed, execution preempted by user.')
+                        raise StoppedByUserError()
                     robot.status = ExecutionStatus.OBSTRUCTED
                     raise ArmObstructedError()
 

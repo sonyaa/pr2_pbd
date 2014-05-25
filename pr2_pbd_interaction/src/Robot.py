@@ -306,6 +306,9 @@ class Robot:
         while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
                or self.nav_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.01)
+            if self.preempt:
+                rospy.logwarn('Execution stopped by user, cannot move base to pose')
+                return False
         rospy.loginfo('Done with base navigation.')
 
         # Untuck arms and move to where they were.

@@ -80,14 +80,13 @@ class ManipulationStep(Step):
                 Robot.set_arm_mode(0, ArmMode.HOLD)
                 Robot.set_arm_mode(1, ArmMode.HOLD)
                 for (i, step) in enumerate(step_to_execute.arm_steps):
+                    if robot.preempt:
+                        # robot.preempt = False
+                        robot.status = ExecutionStatus.PREEMPTED
+                        rospy.logerr('Execution of manipulation step failed, execution preempted by user.')
+                        raise StoppedByUserError()
                     try:
-                        if robot.status == ExecutionStatus.EXECUTING:
-                            step.execute()
-                        if robot.preempt:
-                            # robot.preempt = False
-                            robot.status = ExecutionStatus.PREEMPTED
-                            rospy.logerr('Execution of manipulation step failed, execution preempted by user.')
-                            raise StoppedByUserError()
+                        step.execute()
                         rospy.loginfo('Step ' + str(i) + ' of manipulation step is complete.')
                     except:
                         rospy.logerr("Execution of a manipulation step failed")

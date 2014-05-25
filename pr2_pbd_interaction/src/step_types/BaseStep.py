@@ -34,6 +34,10 @@ class BaseStep(Step):
                 raise StoppedByUserError()
             # send a request to Robot to move to end_pose
             if not robot.move_base(self.end_pose):
+                if robot.preempt:
+                    robot.status = ExecutionStatus.PREEMPTED
+                    rospy.logerr('Execution of base step failed, execution preempted by user.')
+                    raise StoppedByUserError()
                 raise BaseObstructedError()
             if not self.is_while:
                 break

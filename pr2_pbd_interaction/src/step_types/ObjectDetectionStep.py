@@ -25,13 +25,16 @@ class ObjectDetectionStep(Step):
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
             if robot.preempt:
-                # robot.preempt = False
                 robot.status = ExecutionStatus.PREEMPTED
                 rospy.logerr('Execution of object detection step failed, execution preempted by user.')
                 raise StoppedByUserError()
             # call object detection
             world = World.get_world()
             if not world.update_object_pose():
+                if robot.preempt:
+                    robot.status = ExecutionStatus.PREEMPTED
+                    rospy.logerr('Execution of object detection step failed, execution preempted by user.')
+                    raise StoppedByUserError()
                 rospy.logwarn("Object detection failed.")
                 robot.status = ExecutionStatus.OBJECT_DETECTION_FAILED
                 raise NoObjectError()
