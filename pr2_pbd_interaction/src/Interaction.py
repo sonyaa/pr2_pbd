@@ -515,8 +515,8 @@ class Interaction:
                 action_name = command.command[
                               len(switch_command):len(command.command)]
                 if (self.session.n_actions() > 0):
-                    self.session.switch_to_action_by_name(action_name)
                     self.world.clear_all_objects()
+                    self.session.switch_to_action_by_name(action_name)
                     response = Response(Interaction.empty_response,
                                         [RobotSpeech.SWITCH_SKILL + action_name,
                                          GazeGoal.NOD])
@@ -562,8 +562,8 @@ class Interaction:
             if (self.session.n_actions() > 0):
                 if (command.command == GuiCommand.SWITCH_TO_ACTION):
                     action_no = command.param
-                    self.session.switch_to_action(action_no)
                     self.world.clear_all_objects()
+                    self.session.switch_to_action(action_no)
                     action_name = self.session.get_action_name(action_no)
                     if action_name is None:
                         action_name = str(action_no)
