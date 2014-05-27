@@ -178,6 +178,7 @@ class Interaction:
             if action_name is None:
                 action_name = str(self.session.current_action_index)
             if self.session.next_action():
+                self.world.clear_all_objects()
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         action_name, GazeGoal.NOD]
             else:
@@ -193,6 +194,7 @@ class Interaction:
             if action_name is None:
                 action_name = str(self.session.current_action_index)
             if self.session.previous_action():
+                self.world.clear_all_objects()
                 return [RobotSpeech.SWITCH_SKILL + ' ' +
                         action_name, GazeGoal.NOD]
             else:
@@ -243,6 +245,7 @@ class Interaction:
         if (self.session.n_actions() > 0):
             if (Interaction._is_programming):
                 if self.session.n_steps() > 0:
+                    self.world.clear_all_objects()
                     self.session.clear_current_action()
                     return [RobotSpeech.SKILL_CLEARED, GazeGoal.NOD]
                 else:
@@ -513,6 +516,7 @@ class Interaction:
                               len(switch_command):len(command.command)]
                 if (self.session.n_actions() > 0):
                     self.session.switch_to_action_by_name(action_name)
+                    self.world.clear_all_objects()
                     response = Response(Interaction.empty_response,
                                         [RobotSpeech.SWITCH_SKILL + action_name,
                                          GazeGoal.NOD])
