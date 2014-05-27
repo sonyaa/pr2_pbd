@@ -563,6 +563,7 @@ class Interaction:
                 if (command.command == GuiCommand.SWITCH_TO_ACTION):
                     action_no = command.param
                     self.session.switch_to_action(action_no)
+                    self.world.clear_all_objects()
                     action_name = self.session.get_action_name(action_no)
                     if action_name is None:
                         action_name = str(action_no)
