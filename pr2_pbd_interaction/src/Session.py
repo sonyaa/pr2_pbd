@@ -22,8 +22,8 @@ class Session:
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
 
         self._exp_number = None
-        self._selected_step = None
-        self._selected_arm_step = None
+        self._selected_step = -1
+        self._selected_arm_step = -1
 
         #TODO: read data_dir name from parameters?
         if not os.path.exists(ActionReference.ACTION_DIRECTORY):
@@ -137,7 +137,7 @@ class Session:
         ''' Removes the 6D controls from the interactive marker
         when the indicated action step is deselected'''
         self.actions[self.current_action_index].deselect_arm_step(step_id)
-        self._selected_arm_step = None
+        self._selected_arm_step = -1
 
     def _get_participant_id(self):
         '''Gets the experiment number from the command line'''
@@ -190,8 +190,8 @@ class Session:
 
     def new_action(self):
         '''Creates new action'''
-        self._selected_step = None
-        self._selected_arm_step = None
+        self._selected_step = -1
+        self._selected_arm_step = -1
         newAct = ActionReference(name="Unnamed " + str(len(self.actions)))
         newAct.save()
         self.actions.append(newAct)
@@ -302,7 +302,7 @@ class Session:
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].delete_step(step_id)
             if self._selected_step == step_id:
-                self._selected_step = None
+                self._selected_step = -1
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
