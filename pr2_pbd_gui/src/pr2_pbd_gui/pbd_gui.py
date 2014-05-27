@@ -104,7 +104,8 @@ class PbDGUI(Plugin):
         self.commands[Command.EXECUTE_ACTION] = 'Execute action'
         self.commands[Command.STOP_EXECUTION] = 'Stop execution'
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
-        self.commands[Command.DELETE_LAST_ARM_STEP] = 'Delete last'
+        self.commands[Command.DELETE_LAST_STEP] = 'Delete last step'
+        self.commands[Command.DELETE_LAST_ARM_STEP] = 'Delete last arm pose'
         #self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
         self.commands[Command.SAVE_ACTION] = 'Save action'
@@ -142,8 +143,9 @@ class PbDGUI(Plugin):
         #stepsButtonGrid.addWidget(self.create_button(Command.SAVE_POSE))
         stepsButtonGrid.addWidget(self.create_button(Command.EXECUTE_ACTION))
         stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
-        #stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
-        #stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
+        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
+        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
+        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_ARM_STEP))
         #stepsButtonGrid.addWidget(self.create_button(Command.REPEAT_LAST_STEP))
 
         actionNameGrid = QtGui.QHBoxLayout()
