@@ -1,6 +1,6 @@
 string action_str
 string[] action_names
 int32[] action_ids
-uint8 selected_action
-uint8 selected_step
-uint8 selected_arm_step
+int8 selected_action
+int8 selected_step
+int8 selected_arm_step

@@ -29,7 +29,7 @@ class ActionReference(Step):
         self.name = kwargs.get('name')
         self.id = kwargs.get('id')
         self.steps = []
-        self.selected_step_id = 0
+        self.selected_step_id = None
         self.lock = threading.Lock()
         #TODO: only lock locks when you really need to
 
@@ -83,7 +83,7 @@ class ActionReference(Step):
         self.get_lock().acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.reset_viz()
-            self.selected_step_id = 0
+            self.selected_step_id = None
             self.steps.pop(index)
         self.get_lock().release()
 
