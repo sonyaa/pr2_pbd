@@ -262,6 +262,7 @@ class Session:
                     self.actions[self.current_action_index].add_step(new_step)
             else:
                 self.actions[self.current_action_index].add_step(step)
+            self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
@@ -271,6 +272,7 @@ class Session:
                 if act.name == act_name), None)
         if (act != None):
             self.actions[self.current_action_index].add_step(act)
+            self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
             self._update_experiment_state()
             return True
         else:
@@ -317,6 +319,8 @@ class Session:
             current_step = self.get_current_step()
             if isinstance(current_step, ManipulationStep):
                 current_step.delete_arm_step(step_id)
+                if self._selected_arm_step == step_id:
+                    self._selected_arm_step = -1
             else:
                 rospy.logwarn('Current step is not ManipulationStep, cannot delete arm step.')
         else:
@@ -328,6 +332,8 @@ class Session:
         if (self.n_actions() > 0):
             current_step = self.get_current_step()
             if isinstance(current_step, ManipulationStep):
+                if self._selected_arm_step == current_step.n_steps()-1:
+                    self._selected_arm_step = -1
                 current_step.delete_last_step_and_update_viz()
         else:
             rospy.logwarn('No skills created yet.')

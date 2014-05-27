@@ -103,6 +103,9 @@ class ActionReference(Step):
             self.update_viz()
         # self.get_lock().release()
 
+    def get_selected_step_id(self):
+        return self.selected_step_id
+
     def get_selected_step(self):
         # self.get_lock().acquire()
         step = None
