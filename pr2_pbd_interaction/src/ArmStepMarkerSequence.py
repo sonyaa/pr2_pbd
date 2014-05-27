@@ -27,6 +27,7 @@ class ArmStepMarkerSequence:
     def construct_from_arm_steps(im_server, marker_publisher, step_click_cb, arm_steps, world_objects):
         """ Create ArmStepMarkerSequence from a sequence of ArmSteps - but don't display it.
         """
+        rospy.loginfo("Constructing ArmStepMarkerSequence from arm steps")
         seq = ArmStepMarkerSequence(im_server, marker_publisher, step_click_cb)
         for arm_step in arm_steps:
             r_marker = ArmStepMarker(seq.total_n_markers, 0,
@@ -39,9 +40,9 @@ class ArmStepMarkerSequence:
             seq.l_markers.append(l_marker)
             if (seq.total_n_markers > 1):
                 seq.r_links[seq.total_n_markers - 1] = seq._get_link(0,
-                                                                        seq.total_n_markers - 1)
+                                                                     seq.total_n_markers - 1)
                 seq.l_links[seq.total_n_markers - 1] = seq._get_link(1,
-                                                                        seq.total_n_markers - 1)
+                                                                     seq.total_n_markers - 1)
         return seq
 
     def add_arm_step(self, arm_step, world_objects):

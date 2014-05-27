@@ -212,7 +212,15 @@ class ManipulationStep(Step):
         self.lock.acquire()
         to_delete = self.marker_sequence.delete_requested_steps()
         if to_delete is not None:
+            rospy.loginfo('Deleting arm step ' + str(to_delete))
             self.arm_steps.pop(to_delete)
+            # Deleting two objects that correspond to rArm and lArm for specified step.
+            if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+                if len(self.conditions[0].objects) > 2*to_delete:
+                    self.conditions[0].objects.pop(2*to_delete+1)
+                    self.conditions[0].objects.pop(2*to_delete)
+                else:
+                    rospy.logwarn('Condition for manipulation step has invalid number of objects.')
         self.lock.release()
 
     def delete_arm_step(self, step_id):
@@ -221,6 +229,7 @@ class ManipulationStep(Step):
         self.lock.acquire()
         self.marker_sequence.delete_step(step_id)
         self.arm_steps.pop(step_id)
+        rospy.loginfo('Deleting arm step ' + str(step_id))
         # Deleting two objects that correspond to rArm and lArm for specified step.
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
             if len(self.conditions[0].objects) > 2*step_id:

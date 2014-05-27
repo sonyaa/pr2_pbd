@@ -161,9 +161,9 @@ class ActionReference(Step):
 
     def reset_viz(self):
         # self.get_lock().acquire()
-        # if self.selected_step_id is not None:
-        #     if not isinstance(self.steps[self.selected_step_id], ActionReference):
-        #         self.steps[self.selected_step_id].reset_viz()
+        if self.selected_step_id is not None:
+            if not isinstance(self.steps[self.selected_step_id], ActionReference):
+                self.steps[self.selected_step_id].reset_viz()
         self.interactive_marker_server.clear()
         self.interactive_marker_server.applyChanges()
         # self.get_lock().release()
