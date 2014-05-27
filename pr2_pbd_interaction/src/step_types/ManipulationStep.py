@@ -153,7 +153,7 @@ class ManipulationStep(Step):
             map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
             if map_of_objects_old_to_new is not None:
                 self.objects = world_objects
-            else:
+            elif len(unique_action_objects) > 0:
                 world_objects = self.objects
                 map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
                 has_real_objects = False
@@ -172,7 +172,7 @@ class ManipulationStep(Step):
             map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
             if map_of_objects_old_to_new is not None:
                 self.objects = world_objects
-            else:
+            elif len(unique_action_objects) > 0:
                 world_objects = self.objects
                 map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
                 has_real_objects = False

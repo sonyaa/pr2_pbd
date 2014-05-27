@@ -258,7 +258,7 @@ class ArmStepMarkerSequence:
         for i in range(len(self.r_markers)):
             if (self.r_markers[i].is_deleted or
                     self.l_markers[i].is_deleted):
-                rospy.loginfo('Will delete step ' + str(i + 1))
+                rospy.loginfo('Will delete step ' + str(i))
                 self.r_markers[i].is_deleted = False
                 self.l_markers[i].is_deleted = False
                 to_delete = i
@@ -279,8 +279,8 @@ class ArmStepMarkerSequence:
             self.r_links.pop(self.r_links.keys()[-1])
             self.l_links.pop(self.l_links.keys()[-1])
 
-        self.r_markers[-1].destroy()
-        self.l_markers[-1].destroy()
+        self.r_markers[to_delete].destroy()
+        self.l_markers[to_delete].destroy()
         for i in range(to_delete + 1, self.total_n_markers):
             self.r_markers[i].decrease_id()
             self.l_markers[i].decrease_id()
