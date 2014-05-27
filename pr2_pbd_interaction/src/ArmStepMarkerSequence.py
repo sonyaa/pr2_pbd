@@ -161,9 +161,9 @@ class ArmStepMarkerSequence:
         self.set_total_n_markers(len(steps))
         for i in range(len(steps)):
             step = steps[i]
-            r_marker = ArmStepMarker(i + 1, 0, step,
+            r_marker = ArmStepMarker(i, 0, step,
                                      self.marker_click_cb, self)
-            l_marker = ArmStepMarker(i + 1, 1, step,
+            l_marker = ArmStepMarker(i, 1, step,
                                      self.marker_click_cb, self)
             if not has_real_objects:
                 r_marker.is_fake = True
@@ -269,10 +269,6 @@ class ArmStepMarkerSequence:
                 break
         if (to_delete is not None):
             self.delete_step(to_delete)
-
-        if (to_delete is not None):
-            self.update_viz()
-            self._update_markers()
         return to_delete
 
     def delete_step(self, to_delete):
@@ -291,6 +287,8 @@ class ArmStepMarkerSequence:
         self.r_markers.pop(to_delete)
         self.l_markers.pop(to_delete)
         self.set_total_n_markers(len(self.r_markers))
+        self.update_viz()
+        self._update_markers()
 
     def change_requested_steps(self, r_arm, l_arm):
         """Change an arm step to the current end effector
