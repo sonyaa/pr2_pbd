@@ -288,6 +288,15 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
+    def set_ignore_conditions(self, step_id, ignore_conditions):
+        """ Controls if the specified step should ignore conditions.
+        """
+        if (self.n_actions() > 0):
+            self.actions[self.current_action_index].set_ignore_conditions(step_id, ignore_conditions)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def set_current_step_strategy(self, strategy):
         """ Sets the condition failure strategy for the current step.
         """

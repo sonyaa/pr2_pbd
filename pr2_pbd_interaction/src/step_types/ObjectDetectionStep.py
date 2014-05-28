@@ -16,20 +16,21 @@ class ObjectDetectionStep(Step):
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
-            for condition in self.conditions:
-                if not condition.check():
-                    rospy.logwarn("Condition failed when executing object detection step.")
-                    if self.is_while:
-                        break
-                    if self.strategy == Strategy.FAIL_FAST:
-                        rospy.loginfo("Strategy is to fail-fast, stopping.")
-                        robot.status = ExecutionStatus.CONDITION_FAILED
-                        raise ConditionError()
-                    elif self.strategy == Strategy.CONTINUE:
-                        rospy.loginfo("Strategy is to continue, skipping this step.")
-                        break
-                    else:
-                        rospy.logwarn("Unknown strategy " + str(self.strategy))
+            if not self.ignore_conditions:
+                for condition in self.conditions:
+                    if not condition.check():
+                        rospy.logwarn("Condition failed when executing object detection step.")
+                        if self.is_while:
+                            break
+                        if self.strategy == Strategy.FAIL_FAST:
+                            rospy.loginfo("Strategy is to fail-fast, stopping.")
+                            robot.status = ExecutionStatus.CONDITION_FAILED
+                            raise ConditionError()
+                        elif self.strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                            break
+                        else:
+                            rospy.logwarn("Unknown strategy " + str(self.strategy))
             if robot.preempt:
                 robot.status = ExecutionStatus.PREEMPTED
                 rospy.logerr('Execution of object detection step failed, execution preempted by user.')

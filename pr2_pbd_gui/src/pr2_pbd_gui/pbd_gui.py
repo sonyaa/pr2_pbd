@@ -500,6 +500,14 @@ class PbDGUI(Plugin):
             gui_cmd = GuiCommand(GuiCommand.SET_NO_LOOP_STEP, self.currentStep)
             self.gui_cmd_publisher.publish(gui_cmd)
 
+    def set_ignore_conditions(self, is_checked):
+        if is_checked:
+            gui_cmd = GuiCommand(GuiCommand.SET_IGNORE_CONDITIONS, self.currentStep)
+            self.gui_cmd_publisher.publish(gui_cmd)
+        else:
+            gui_cmd = GuiCommand(GuiCommand.SET_NO_IGNORE_CONDITIONS, self.currentStep)
+            self.gui_cmd_publisher.publish(gui_cmd)
+
     def change_strategy(self, index):
         if index == 0:
             param = Strategy.FAIL_FAST

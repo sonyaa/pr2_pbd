@@ -39,20 +39,21 @@ class ActionReference(Step):
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
-            for condition in self.conditions:
-                if not condition.check():
-                    rospy.logwarn("Condition failed when executing action.")
-                    if self.is_while:
-                        break
-                    if self.strategy == Strategy.FAIL_FAST:
-                        rospy.loginfo("Strategy is to fail-fast, stopping.")
-                        robot.status = ExecutionStatus.CONDITION_FAILED
-                        raise ConditionError()
-                    elif self.strategy == Strategy.CONTINUE:
-                        rospy.loginfo("Strategy is to continue, skipping this step.")
-                        break
-                    else:
-                        rospy.logwarn("Unknown strategy " + str(self.strategy))
+            if not self.ignore_conditions:
+                for condition in self.conditions:
+                    if not condition.check():
+                        rospy.logwarn("Condition failed when executing action.")
+                        if self.is_while:
+                            break
+                        if self.strategy == Strategy.FAIL_FAST:
+                            rospy.loginfo("Strategy is to fail-fast, stopping.")
+                            robot.status = ExecutionStatus.CONDITION_FAILED
+                            raise ConditionError()
+                        elif self.strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                            break
+                        else:
+                            rospy.logwarn("Unknown strategy " + str(self.strategy))
             for (i, step) in enumerate(self.steps):
                 if robot.preempt:
                     # robot.preempt = False
@@ -97,6 +98,12 @@ class ActionReference(Step):
         self.get_lock().acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.steps[index].is_while = is_loop
+        self.get_lock().release()
+
+    def set_ignore_conditions(self, index, ignore_conditions):
+        self.get_lock().acquire()
+        if len(self.steps) > 0 and index < len(self.steps):
+            self.steps[index].ignore_conditions = ignore_conditions
         self.get_lock().release()
 
     def select_step(self, step_id):

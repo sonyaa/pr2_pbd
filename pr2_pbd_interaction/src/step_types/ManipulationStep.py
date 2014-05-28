@@ -62,20 +62,21 @@ class ManipulationStep(Step):
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             step_to_execute = self.copy()
-            for condition in step_to_execute.conditions:
-                if not condition.check():
-                    rospy.logwarn("Condition failed when executing manipulation step.")
-                    if step_to_execute.is_while:
-                        break
-                    if step_to_execute.strategy == Strategy.FAIL_FAST:
-                        rospy.loginfo("Strategy is to fail-fast, stopping.")
-                        robot.status = ExecutionStatus.CONDITION_FAILED
-                        raise ConditionError()
-                    elif self.strategy == Strategy.CONTINUE:
-                        rospy.loginfo("Strategy is to continue, skipping this step.")
-                        break
-                    else:
-                        rospy.logwarn("Unknown strategy " + str(self.strategy))
+            if not self.ignore_conditions:
+                for condition in step_to_execute.conditions:
+                    if not condition.check():
+                        rospy.logwarn("Condition failed when executing manipulation step.")
+                        if step_to_execute.is_while:
+                            break
+                        if step_to_execute.strategy == Strategy.FAIL_FAST:
+                            rospy.loginfo("Strategy is to fail-fast, stopping.")
+                            robot.status = ExecutionStatus.CONDITION_FAILED
+                            raise ConditionError()
+                        elif self.strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                            break
+                        else:
+                            rospy.logwarn("Unknown strategy " + str(self.strategy))
             self.update_objects()
             if not robot.solve_ik_for_manipulation_step(step_to_execute):
                 rospy.logwarn('Problems in finding IK solutions...')

@@ -16,6 +16,7 @@ class Step:
         self.strategy = Strategy.FAIL_FAST
         # If self.is_while, execute step in a loop until a condition fails. Else execute step once.
         self.is_while = False
+        self.ignore_conditions = False
         self.conditions = []
         if Step.interactive_marker_server is None:
             im_server = InteractiveMarkerServer('programmed_actions')
