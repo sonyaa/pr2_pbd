@@ -45,8 +45,14 @@ class ArmStep(Step):
                     if self.is_while:
                         break
                     if self.strategy == Strategy.FAIL_FAST:
+                        rospy.loginfo("Strategy is to fail-fast, stopping.")
                         robot.status = ExecutionStatus.CONDITION_FAILED
                         raise ConditionError()
+                    elif self.strategy == Strategy.CONTINUE:
+                        rospy.loginfo("Strategy is to continue, skipping this step.")
+                        break
+                    else:
+                        rospy.logwarn("Unknown strategy " + str(self.strategy))
             if robot.preempt:
                 # robot.preempt = False
                 robot.status = ExecutionStatus.PREEMPTED
