@@ -54,6 +54,7 @@ class ArmStepMarkerSequence:
         l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
         self.r_markers.append(r_marker)
         self.l_markers.append(l_marker)
+        rospy.loginfo('now markers: ' + str(len(self.r_markers)))
         if (self.total_n_markers > 1):
             self.r_links[self.total_n_markers - 1] = self._get_link(0,
                                                                     self.total_n_markers - 1)
@@ -158,6 +159,7 @@ class ArmStepMarkerSequence:
 
     def initialize_viz(self, steps, action_objects, world_objects, map_of_objects_old_to_new, has_real_objects):
         """Initialize visualization"""
+        self.reset_viz()
         self.set_total_n_markers(len(steps))
         for i in range(len(steps)):
             step = steps[i]
