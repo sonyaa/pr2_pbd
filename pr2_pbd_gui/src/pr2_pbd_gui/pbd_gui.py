@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import functools
 import roslib
+from condition_types.GripperCondition import GripperCondition
+from condition_types.SpecificObjectCondition import SpecificObjectCondition
 
 roslib.load_manifest('pr2_pbd_gui')
 
@@ -489,8 +491,31 @@ class PbDGUI(Plugin):
 
     def edit_conditions(self):
         self.clear_editing_area()
-        # TODO
-        pass
+        if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
+            step = self.action.steps[self.currentStep]
+            header_layout = QtGui.QHBoxLayout()
+            self.editingBox.addLayout(header_layout)
+            header_label = QtGui.QLabel("Editing conditions", self._widget)
+            header_layout.addWidget(header_label)
+            num_layout = QtGui.QHBoxLayout()
+            num_label = QtGui.QLabel("There are %s conditions" % str(len(step.conditions)), self._widget)
+            num_layout.addWidget(num_label)
+            self.editingBox.addLayout(num_layout)
+            cond_layout = QtGui.QVBoxLayout()
+            for ind, condition in enumerate(step.conditions):
+                typeLabel = QtGui.QLabel(self._widget)
+                if isinstance(condition, SpecificObjectCondition):
+                    typeLabel.setText("%s: SpecificObjectCondition" % str(ind))
+                elif isinstance(condition, GripperCondition):
+                    typeLabel.setText("%s: GripperCondition" % str(ind))
+                cond_layout.addWidget(typeLabel)
+            is_ignore_layout = QtGui.QHBoxLayout()
+            is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
+            if step.is_ignore_conditions:
+                is_ignore_checkbox.setChecked(True)
+            is_ignore_checkbox.clicked.connect(self.set_ignore_conditions)
+            is_ignore_layout.addWidget(is_ignore_checkbox)
+            self.editingBox.addLayout(is_ignore_layout)
 
     def set_loop(self, is_checked):
         if is_checked:
