@@ -668,7 +668,7 @@ class Interaction:
         elif (self.robot.status == ExecutionStatus.OBSTRUCTED):
             Response.say(RobotSpeech.EXECUTION_ERROR_OBSTRUCTED)
             Response.perform_gaze_action(GazeGoal.SHAKE)
-        elif (self.robot.status == ExecutionStatus.CONDITION_FAILED):
+        elif (self.robot.status == ExecutionStatus.OBJECT_DETECTION_FAILED):
             Response.say(RobotSpeech.OBJECT_NOT_DETECTED)
             Response.perform_gaze_action(GazeGoal.SHAKE)
         else:
