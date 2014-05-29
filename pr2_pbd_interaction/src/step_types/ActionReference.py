@@ -255,6 +255,7 @@ def action_step_constructor(loader, node):
     step = ActionReference(fields)
     step.strategy = fields['strategy']
     step.is_while = fields['is_while']
+    step.ignore_conditions = fields['ignore_conditions']
     step.conditions = fields['conditions']
     step.steps = fields['steps']
     step.selected_step_id = fields['selected_step_id']
@@ -268,6 +269,7 @@ yaml.add_constructor(u'!ActionStep', action_step_constructor)
 def action_step_representer(dumper, data):
     return dumper.represent_mapping(u'!ActionStep', {'strategy': data.strategy,
                                                      'is_while': data.is_while,
+                                                     'ignore_conditions': data.ignore_conditions,
                                                      'conditions': data.conditions,
                                                      'steps': data.steps,
                                                      'selected_step_id': data.selected_step_id,

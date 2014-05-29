@@ -19,6 +19,7 @@ def manipulation_step_constructor(loader, node):
     m_step = ManipulationStep()
     m_step.strategy = fields['strategy']
     m_step.is_while = fields['is_while']
+    m_step.ignore_conditions = fields['ignore_conditions']
     m_step.conditions = fields['conditions']
     m_step.arm_steps = fields['arm_steps']
     m_step.objects = fields.get('objects', [])
@@ -277,6 +278,7 @@ class ManipulationStep(Step):
 def manipulation_step_representer(dumper, data):
     return dumper.represent_mapping(u'!ManipulationStep', {'strategy': data.strategy,
                                                            'is_while': data.is_while,
+                                                           'ignore_conditions': data.ignore_conditions,
                                                            'conditions': data.conditions,
                                                            'arm_steps': data.arm_steps,
                                                            'objects': data.objects})
