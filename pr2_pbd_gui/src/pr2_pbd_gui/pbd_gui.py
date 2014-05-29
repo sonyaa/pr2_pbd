@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import functools
 import roslib
-from condition_types.GripperCondition import GripperCondition
-from condition_types.SpecificObjectCondition import SpecificObjectCondition
 
 roslib.load_manifest('pr2_pbd_gui')
 
@@ -25,6 +23,8 @@ from step_types.ActionReference import ActionReference
 from step_types.BaseStep import BaseStep
 from step_types.ManipulationStep import ManipulationStep
 from step_types.ObjectDetectionStep import ObjectDetectionStep
+from condition_types.GripperCondition import GripperCondition
+from condition_types.SpecificObjectCondition import SpecificObjectCondition
 
 
 class ClickableLabel(QtGui.QLabel):
@@ -117,6 +117,7 @@ class PbDGUI(Plugin):
         self.selectedArmStepUid = -1
         self.action = None
         self.is_edit = False
+        self.is_edit_conditions = False
 
         self.editingBox = QtGui.QVBoxLayout()
         allWidgetsBox = QtGui.QVBoxLayout()
@@ -324,7 +325,10 @@ class PbDGUI(Plugin):
         add_action_row.addWidget(add_btn)
         self.stepsVBox.addLayout(add_action_row)
         if self.is_edit:
-            self.display_editing_area()
+            if self.is_edit_conditions:
+                self.edit_conditions()
+            else:
+                self.display_editing_area()
         else:
             self.clear_editing_area()
         self.update_action_steps_buttons()
@@ -347,6 +351,7 @@ class PbDGUI(Plugin):
         # Otherwise, only display editing area after an explicit click on the Edit button.
         if self.currentAction != state.selected_action or self.currentStep != state.selected_step:
             self.is_edit = False
+            self.is_edit_conditions = False
         self.currentAction = state.selected_action
         self.currentStep = state.selected_step
         self.selectedArmStepUid = state.selected_arm_step
@@ -400,6 +405,7 @@ class PbDGUI(Plugin):
                             widget.setStyleSheet('QPushButton {font-weight: normal}')
 
     def display_editing_area(self):
+        self.is_edit_conditions = False
         self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
@@ -490,6 +496,7 @@ class PbDGUI(Plugin):
                 del layout
 
     def edit_conditions(self):
+        self.is_edit_conditions = True
         self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
@@ -497,6 +504,10 @@ class PbDGUI(Plugin):
             self.editingBox.addLayout(header_layout)
             header_label = QtGui.QLabel("Editing conditions", self._widget)
             header_layout.addWidget(header_label)
+            back_btn = QtGui.QPushButton("Back", self._widget)
+            back_btn.clicked.connect(self.display_editing_area)
+            header_layout.addItem(QtGui.QSpacerItem(20, 10))
+            header_layout.addWidget(back_btn)
             num_layout = QtGui.QHBoxLayout()
             num_label = QtGui.QLabel("There are %s conditions" % str(len(step.conditions)), self._widget)
             num_layout.addWidget(num_label)
@@ -505,13 +516,14 @@ class PbDGUI(Plugin):
             for ind, condition in enumerate(step.conditions):
                 typeLabel = QtGui.QLabel(self._widget)
                 if isinstance(condition, SpecificObjectCondition):
-                    typeLabel.setText("%s: SpecificObjectCondition" % str(ind))
+                    typeLabel.setText("%s: SpecificObjectCondition" % str(ind+1))
                 elif isinstance(condition, GripperCondition):
-                    typeLabel.setText("%s: GripperCondition" % str(ind))
+                    typeLabel.setText("%s: GripperCondition" % str(ind+1))
                 cond_layout.addWidget(typeLabel)
+            self.editingBox.addLayout(cond_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
-            if step.is_ignore_conditions:
+            if step.ignore_conditions:
                 is_ignore_checkbox.setChecked(True)
             is_ignore_checkbox.clicked.connect(self.set_ignore_conditions)
             is_ignore_layout.addWidget(is_ignore_checkbox)
@@ -549,6 +561,7 @@ class PbDGUI(Plugin):
         if self.currentStep == step_index:
             if self.is_edit:
                 self.is_edit = False
+                self.is_edit_conditions = False
                 self.clear_editing_area()
             else:
                 self.is_edit = True
@@ -561,6 +574,7 @@ class PbDGUI(Plugin):
     def step_pressed(self, step_index):
         if self.currentStep != step_index:
             self.is_edit = False
+            self.is_edit_conditions = False
             self.clear_editing_area()
             self.currentStep = step_index
             gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
