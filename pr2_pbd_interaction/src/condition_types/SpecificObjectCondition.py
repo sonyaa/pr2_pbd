@@ -13,6 +13,9 @@ class SpecificObjectCondition(Condition):
         Condition.__init__(self, *args, **kwargs)
         self.objects = []
 
+    def clear(self):
+        self.objects = []
+
     def add_object(self, obj):
         self.objects.append(obj)
 
@@ -36,15 +39,14 @@ class SpecificObjectCondition(Condition):
 
     def check(self):
         # look at the state of the world, verify that the world objects are similar to ours
-        if self.is_empty():
-            return True
-        if len(self.get_unique_objects()) == 0:
+        if self.is_empty() or len(self.get_unique_objects()) == 0:
+            rospy.loginfo("SpecificObjectCondition satisfied because no objects are required")
             return True
         world_objects = World.get_world().get_frame_list()
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(self.get_unique_objects(), world_objects)
         if map_of_objects_old_to_new is None:
             # didn't find similar objects
-            rospy.logwarn("Condition failure: didn't find similar objects")
+            rospy.logwarn("SpecificObjectCondition failure: didn't find similar objects")
             return False
         return True
 
