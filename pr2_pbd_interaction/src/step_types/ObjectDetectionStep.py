@@ -21,16 +21,18 @@ class ObjectDetectionStep(Step):
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing object detection step.")
                         if self.is_while:
-                            break
+                            return
                         if self.strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
                         elif self.strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, skipping this step.")
-                            break
+                            return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
+            else:
+                rospy.loginfo('Ignoring conditions for object detection step')
             if robot.preempt:
                 robot.status = ExecutionStatus.PREEMPTED
                 rospy.logerr('Execution of object detection step failed, execution preempted by user.')
@@ -47,4 +49,4 @@ class ObjectDetectionStep(Step):
                 raise NoObjectError()
             time.sleep(1)
             if not self.is_while:
-                break
+                return

@@ -44,16 +44,18 @@ class ActionReference(Step):
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing action.")
                         if self.is_while:
-                            break
+                            return
                         if self.strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
                         elif self.strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, skipping this step.")
-                            break
+                            return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
+            else:
+                rospy.loginfo('Ignoring conditions for action step')
             for (i, step) in enumerate(self.steps):
                 if robot.preempt:
                     # robot.preempt = False
@@ -68,7 +70,7 @@ class ActionReference(Step):
                     rospy.logerr("Execution of an action failed")
                     raise
             if not self.is_while:
-                break
+                return
 
     def get_lock(self):
         try:

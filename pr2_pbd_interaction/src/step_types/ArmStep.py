@@ -44,16 +44,18 @@ class ArmStep(Step):
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing arm step.")
                         if self.is_while:
-                            break
+                            return
                         if self.strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
                         elif self.strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, skipping this step.")
-                            break
+                            return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
+            else:
+                rospy.loginfo('Ignoring conditions for arm step')
             if robot.preempt:
                 # robot.preempt = False
                 robot.status = ExecutionStatus.PREEMPTED
@@ -130,7 +132,7 @@ class ArmStep(Step):
                     (not Robot.arms[1].is_gripper_at_goal())):
                 rospy.logwarn('Hand(s) did not fully close or open!')
             if not self.is_while:
-                break
+                return
 
 
     def copy(self):

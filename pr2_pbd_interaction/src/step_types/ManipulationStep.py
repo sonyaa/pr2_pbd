@@ -64,21 +64,23 @@ class ManipulationStep(Step):
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             step_to_execute = self.copy()
-            if not self.ignore_conditions:
+            if not step_to_execute.ignore_conditions:
                 for condition in step_to_execute.conditions:
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing manipulation step.")
                         if step_to_execute.is_while:
-                            break
+                            return
                         if step_to_execute.strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
-                        elif self.strategy == Strategy.CONTINUE:
+                        elif step_to_execute.strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, skipping this step.")
-                            break
+                            return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
+            else:
+                rospy.loginfo('Ignoring conditions for manipulation step')
             self.update_objects()
             if not robot.solve_ik_for_manipulation_step(step_to_execute):
                 rospy.logwarn('Problems in finding IK solutions...')
@@ -104,13 +106,13 @@ class ManipulationStep(Step):
             Robot.arms[0].reset_movement_history()
             Robot.arms[1].reset_movement_history()
             if not step_to_execute.is_while:
-                break
+                return
             # If the manipulation step needs objects and we're in a while loop, look for objects again.
             elif len(step_to_execute.conditions) > 0 and isinstance(step_to_execute.conditions[0], SpecificObjectCondition):
                 world = World.get_world()
                 if not world.update_object_pose():
                     rospy.logwarn("Object detection failed.")
-                    break
+                    return
 
     def add_arm_step(self, arm_step):
         self.lock.acquire()
