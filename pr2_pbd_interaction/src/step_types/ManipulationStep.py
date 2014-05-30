@@ -290,6 +290,8 @@ class ManipulationStep(Step):
         copy.conditions = self.conditions
         copy.strategy = self.strategy
         copy.is_while = self.is_while
+        copy.ignore_conditions = self.ignore_conditions
+        copy.objects = self.objects
         for step in self.arm_steps:
             copy.arm_steps.append(step.copy())
         return copy

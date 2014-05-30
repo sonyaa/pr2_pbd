@@ -173,6 +173,9 @@ class ArmStep(Step):
         ## WARNING: the following is not really copying
         copy.conditions = self.conditions[:]
         copy.postCond = self.postCond
+        copy.strategy = self.strategy
+        copy.is_while = self.is_while
+        copy.ignore_conditions = self.ignore_conditions
         return copy
 
     @staticmethod
