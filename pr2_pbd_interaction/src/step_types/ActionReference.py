@@ -158,6 +158,7 @@ class ActionReference(Step):
         return step
 
     def initialize_viz(self):
+        self.reset_viz()
         self.get_lock().acquire()
         if len(self.steps) > 0 and self.selected_step_id >= 0:
             if not isinstance(self.steps[self.selected_step_id], ActionReference):

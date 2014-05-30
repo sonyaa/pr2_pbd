@@ -41,10 +41,11 @@ class Step:
         pass
 
     def initialize_viz(self):
-        pass
+        self.reset_viz()
 
     def update_viz(self):
         pass
 
     def reset_viz(self):
-        pass
+        self.interactive_marker_server.clear()
+        self.interactive_marker_server.applyChanges()
