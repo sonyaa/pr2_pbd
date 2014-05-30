@@ -235,7 +235,7 @@ class World:
             return arm_state.ee_pose
 
     @staticmethod
-    def get_most_similar_obj(ref_object, ref_frame_list):
+    def get_most_similar_obj(ref_object, ref_frame_list, threshold=0.075):
         '''Finds the most similar object in the world'''
         best_dist = 10000
         chosen_obj_index = -1
@@ -249,7 +249,7 @@ class World:
             return None
         else:
             print 'Object dissimilarity is --- ', best_dist
-            if best_dist > 0.075:
+            if best_dist > threshold:
                 rospy.logwarn('Found some objects, but not similar enough.')
                 return None
             else:
@@ -258,7 +258,7 @@ class World:
                 return ref_frame_list[chosen_obj_index]
 
     @staticmethod
-    def get_map_of_most_similar_obj(object_list, ref_frame_list):
+    def get_map_of_most_similar_obj(object_list, ref_frame_list, threshold=0.075):
         if None in object_list:
             object_list.remove(None)
         if len(object_list) == 0 or len(ref_frame_list) == 0:
@@ -281,7 +281,7 @@ class World:
             cur_ref_frame_list = ref_frame_list[:]
             cur_assignment = []
             for object in ordering:
-                most_similar_object = World.get_most_similar_obj(object, cur_ref_frame_list)
+                most_similar_object = World.get_most_similar_obj(object, cur_ref_frame_list, threshold)
                 if most_similar_object is None:
                     return None
                 cur_ref_frame_list.remove(most_similar_object)

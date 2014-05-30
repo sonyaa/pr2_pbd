@@ -580,26 +580,26 @@ class PbDGUI(Plugin):
 
     def set_loop(self, is_checked):
         if is_checked:
-            gui_cmd = GuiCommand(GuiCommand.SET_LOOP_STEP, self.currentStep)
+            gui_cmd = GuiCommand(command=GuiCommand.SET_LOOP_STEP, param=self.currentStep)
             self.gui_cmd_publisher.publish(gui_cmd)
         else:
-            gui_cmd = GuiCommand(GuiCommand.SET_NO_LOOP_STEP, self.currentStep)
+            gui_cmd = GuiCommand(command=GuiCommand.SET_NO_LOOP_STEP, param=self.currentStep)
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def set_ignore_conditions(self, is_checked):
         if is_checked:
-            gui_cmd = GuiCommand(GuiCommand.SET_IGNORE_CONDITIONS, self.currentStep)
+            gui_cmd = GuiCommand(command=GuiCommand.SET_IGNORE_CONDITIONS, param=self.currentStep)
             self.gui_cmd_publisher.publish(gui_cmd)
         else:
-            gui_cmd = GuiCommand(GuiCommand.SET_NO_IGNORE_CONDITIONS, self.currentStep)
+            gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_CONDITIONS, param=self.currentStep)
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def set_ignore_arm_step_conditions(self, ind, is_checked):
         if is_checked:
-            gui_cmd = GuiCommand(GuiCommand.SET_IGNORE_ARM_STEP_CONDITIONS, ind)
+            gui_cmd = GuiCommand(command=GuiCommand.SET_IGNORE_ARM_STEP_CONDITIONS, param=ind)
             self.gui_cmd_publisher.publish(gui_cmd)
         else:
-            gui_cmd = GuiCommand(GuiCommand.SET_NO_IGNORE_ARM_STEP_CONDITIONS, ind)
+            gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_ARM_STEP_CONDITIONS, param=ind)
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def change_strategy(self, index):
@@ -610,7 +610,7 @@ class PbDGUI(Plugin):
         else:
             rospy.logwarn('Unknown strategy selector index ' + str(index))
             return
-        gui_cmd = GuiCommand(GuiCommand.SET_STRATEGY, param)
+        gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=param)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def edit_button_pressed(self, step_index):
@@ -636,30 +636,30 @@ class PbDGUI(Plugin):
             self.is_edit_arm_steps = False
             self.clear_editing_area()
             self.currentStep = step_index
-            gui_cmd = GuiCommand(GuiCommand.SELECT_ACTION_STEP, step_index)
+            gui_cmd = GuiCommand(command=GuiCommand.SELECT_ACTION_STEP, param=step_index)
             self.gui_cmd_publisher.publish(gui_cmd)
             self.update_action_steps_buttons()
 
     def delete_step(self, index):
-        gui_cmd = GuiCommand(GuiCommand.DELETE_STEP, index)
+        gui_cmd = GuiCommand(command=GuiCommand.DELETE_STEP, param=index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def delete_arm_step(self, index):
-        gui_cmd = GuiCommand(GuiCommand.DELETE_ARM_STEP, index)
+        gui_cmd = GuiCommand(command=GuiCommand.DELETE_ARM_STEP, param=index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def arm_step_pressed(self, step_index):
         if step_index != self.selectedArmStepUid:
             self.selectedArmStepUid = step_index
-            gui_cmd = GuiCommand(GuiCommand.SELECT_ARM_STEP, step_index)
+            gui_cmd = GuiCommand(command=GuiCommand.SELECT_ARM_STEP, param=step_index)
         else:
             self.selectedArmStepUid = -1
-            gui_cmd = GuiCommand(GuiCommand.DESELECT_ARM_STEP, step_index)
+            gui_cmd = GuiCommand(command=GuiCommand.DESELECT_ARM_STEP, param=step_index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def action_pressed(self, actionIndex, isPublish=True):
         if isPublish:
-            gui_cmd = GuiCommand(GuiCommand.SWITCH_TO_ACTION, actionIndex)
+            gui_cmd = GuiCommand(command=GuiCommand.SWITCH_TO_ACTION, param=actionIndex)
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def command_cb(self):

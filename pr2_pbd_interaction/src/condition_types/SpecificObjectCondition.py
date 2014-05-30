@@ -12,6 +12,7 @@ class SpecificObjectCondition(Condition):
     def __init__(self, *args, **kwargs):
         Condition.__init__(self, *args, **kwargs)
         self.objects = []
+        self.similarity_threshold = 0.075
 
     def clear(self):
         self.objects = []
@@ -37,13 +38,17 @@ class SpecificObjectCondition(Condition):
                 objects.append(obj)
         return objects
 
+    def set_similarity_threshold(self, threshold):
+        self.similarity_threshold = threshold
+
     def check(self):
         # look at the state of the world, verify that the world objects are similar to ours
         if self.is_empty() or len(self.get_unique_objects()) == 0:
             rospy.loginfo("SpecificObjectCondition satisfied because no objects are required")
             return True
         world_objects = World.get_world().get_frame_list()
-        map_of_objects_old_to_new = World.get_map_of_most_similar_obj(self.get_unique_objects(), world_objects)
+        map_of_objects_old_to_new = World.get_map_of_most_similar_obj(self.get_unique_objects(),
+                                                                      world_objects, self.similarity_threshold)
         if map_of_objects_old_to_new is None:
             # didn't find similar objects
             rospy.logwarn("SpecificObjectCondition failure: didn't find similar objects")
