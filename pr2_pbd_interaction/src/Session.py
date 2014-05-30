@@ -190,6 +190,8 @@ class Session:
 
     def new_action(self):
         '''Creates new action'''
+        if self.n_actions() > 0:
+            self.actions[self.current_action_index].reset_viz()
         self._selected_step = -1
         self._selected_arm_step = -1
         newAct = ActionReference(name="Unnamed " + str(len(self.actions)))
