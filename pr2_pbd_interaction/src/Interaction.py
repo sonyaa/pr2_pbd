@@ -601,10 +601,19 @@ class Interaction:
                 elif (command.command == GuiCommand.SET_IGNORE_CONDITIONS):
                     step_no = command.param
                     self.session.set_ignore_conditions(step_no, True)
-                    rospy.loginfo('Made step ' + str(step_no) + ' into a while loop')
+                    rospy.loginfo('Will ignore conditions for step ' + str(step_no))
                 elif (command.command == GuiCommand.SET_NO_IGNORE_CONDITIONS):
                     step_no = command.param
                     self.session.set_ignore_conditions(step_no, False)
+                    rospy.loginfo('Will not ignore conditions for step ' + str(step_no))
+                elif (command.command == GuiCommand.SET_IGNORE_ARM_STEP_CONDITIONS):
+                    step_no = command.param
+                    self.session.set_ignore_arm_step_conditions(step_no, True)
+                    rospy.loginfo('Will ignore conditions for arm step ' + str(step_no))
+                elif (command.command == GuiCommand.SET_NO_IGNORE_ARM_STEP_CONDITIONS):
+                    step_no = command.param
+                    self.session.set_ignore_arm_step_conditions(step_no, False)
+                    rospy.loginfo('Will not ignore conditions for arm step ' + str(step_no))
                 elif (command.command == GuiCommand.SET_STRATEGY):
                     strategy = command.param
                     self.session.set_current_step_strategy(strategy)

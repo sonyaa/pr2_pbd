@@ -279,6 +279,10 @@ class ManipulationStep(Step):
         self.lock.release()
         return pose
 
+    def set_ignore_arm_step_conditions(self, index, ignore_conditions):
+        if len(self.arm_steps) > 0 and index < len(self.arm_steps):
+            self.arm_steps[index].ignore_conditions = ignore_conditions
+
     def copy(self):
         copy = ManipulationStep()
         copy.conditions = self.conditions

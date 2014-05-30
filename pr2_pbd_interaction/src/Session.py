@@ -297,6 +297,19 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
+    def set_ignore_arm_step_conditions(self, step_id, ignore_conditions):
+        """ Controls if the specified arm step should ignore conditions.
+        """
+        if (self.n_actions() > 0):
+            current_step = self.get_current_step()
+            if isinstance(current_step, ManipulationStep):
+                current_step.set_ignore_arm_step_conditions(step_id, ignore_conditions)
+            else:
+                rospy.logwarn('Current step is not ManipulationStep, cannot ignore conditions for arm step.')
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def set_current_step_strategy(self, strategy):
         """ Sets the condition failure strategy for the current step.
         """

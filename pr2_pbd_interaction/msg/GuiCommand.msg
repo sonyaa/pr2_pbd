@@ -9,5 +9,7 @@ string SET_NO_LOOP_STEP = set-no-loop-step
 string SET_STRATEGY = set-strategy
 string SET_IGNORE_CONDITIONS = set-ignore-conditions
 string SET_NO_IGNORE_CONDITIONS = set-no-ignore-conditions
+string SET_IGNORE_ARM_STEP_CONDITIONS = set-ignore-arm-step-conditions
+string SET_NO_IGNORE_ARM_STEP_CONDITIONS = set-no-ignore-arm-step-conditions
 string command
 uint8 param
