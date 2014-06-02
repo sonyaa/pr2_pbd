@@ -622,7 +622,7 @@ class Interaction:
                     step_no = command.param
                     threshold = command.param_float
                     self.session.set_object_similarity_threshold(step_no, threshold)
-                    rospy.loginfo('Changed condition failure strategy for the current step')
+                    rospy.loginfo('Changed object similarity threshold for the current step')
                 else:
                     rospy.logwarn('\033[32m This command (' + command.command
                                   + ') is unknown. \033[0m')

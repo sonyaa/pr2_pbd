@@ -531,7 +531,7 @@ class PbDGUI(Plugin):
                     cond_layout.addItem(QtGui.QSpacerItem(30, 10))
                     cond_layout.addWidget(threshold_label)
                     threshold_edit = QtGui.QLineEdit(self._widget)
-                    threshold_edit.setText(condition.similarity_threshold)
+                    threshold_edit.setText(str(condition.similarity_threshold))
                     threshold_edit.setInputMask("9.900000000")
                     cond_layout.addWidget(threshold_edit)
                     threshold_edit_btn = QtGui.QPushButton("Set", self._widget)
