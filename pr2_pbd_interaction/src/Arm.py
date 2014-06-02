@@ -198,7 +198,7 @@ class Arm:
         self.ik_request.ik_request.ik_seed_state.joint_state.position = seed
 
         try:
-            rospy.loginfo('Sending IK request.')
+            #rospy.loginfo('Sending IK request.')
             response = self.ik_srv(self.ik_request)
             if(response.error_code.val == response.error_code.SUCCESS):
                 return response.solution.joint_state.position

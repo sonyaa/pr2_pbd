@@ -32,10 +32,10 @@ class ArmStepMarkerSequence:
         for arm_step in arm_steps:
             r_marker = ArmStepMarker(seq.total_n_markers, 0,
                                      arm_step, seq.marker_click_cb, seq)
-            r_marker.update_ref_frames(world_objects, arm_step.armTarget.rArm.refFrameObject)
+            #r_marker.update_ref_frames(world_objects, arm_step.armTarget.rArm.refFrameObject)
             l_marker = ArmStepMarker(seq.total_n_markers, 1,
                                      arm_step, seq.marker_click_cb, seq)
-            l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
+            #l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
             seq.r_markers.append(r_marker)
             seq.l_markers.append(l_marker)
             if (seq.total_n_markers > 1):
@@ -87,7 +87,6 @@ class ArmStepMarkerSequence:
                       points=[new_start, new_end])
 
     def update_objects(self, action_objects, world_objects, map_of_objects_old_to_new, has_real_objects):
-        self._update_markers()
         for i in range(len(self.r_markers)):
             r_new_object = None
             if map_of_objects_old_to_new is not None:
@@ -110,6 +109,7 @@ class ArmStepMarkerSequence:
                 self.l_markers[i].is_fake = False
             else:
                 self.l_markers[i].is_fake = True
+        self._update_markers()
 
     def _update_markers(self):
         """Updates the markers after a change"""
