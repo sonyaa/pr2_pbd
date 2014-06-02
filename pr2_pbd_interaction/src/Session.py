@@ -30,6 +30,9 @@ class Session:
             os.makedirs(ActionReference.ACTION_DIRECTORY)
         self.actions = ActionReference.get_saved_actions()
         self.current_action_index = 0 if len(self.actions) > 0 else None
+        if self.current_action_index is not None:
+            self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
+            self.actions[self.current_action_index].initialize_viz()
 
         #link actions in action list to themselves
         for act in self.actions:
