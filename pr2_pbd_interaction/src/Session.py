@@ -325,6 +325,13 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
+    def set_object_similarity_threshold(self, step_id, threshold):
+        if (self.n_actions() > 0):
+            self.actions[self.current_action_index].set_object_similarity_threshold(step_id, threshold)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def delete_action_step(self, step_id):
         """ Removes the specified step of the action.
         """

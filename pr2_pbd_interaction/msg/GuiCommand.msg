@@ -11,6 +11,7 @@ string SET_IGNORE_CONDITIONS = set-ignore-conditions
 string SET_NO_IGNORE_CONDITIONS = set-no-ignore-conditions
 string SET_IGNORE_ARM_STEP_CONDITIONS = set-ignore-arm-step-conditions
 string SET_NO_IGNORE_ARM_STEP_CONDITIONS = set-no-ignore-arm-step-conditions
+string SET_OBJECT_SIMILARITY_THRESHOLD = set-object-similarity-threshold
 string command
 uint8 param
 float32 param_float

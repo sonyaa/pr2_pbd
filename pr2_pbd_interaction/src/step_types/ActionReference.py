@@ -2,6 +2,7 @@
 import threading
 from Exceptions import ConditionError, StoppedByUserError
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from condition_types.SpecificObjectCondition import SpecificObjectCondition
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_pbd_interaction.msg._Strategy import Strategy
 from step_types.ManipulationStep import ManipulationStep
@@ -106,6 +107,18 @@ class ActionReference(Step):
         self.get_lock().acquire()
         if len(self.steps) > 0 and index < len(self.steps):
             self.steps[index].ignore_conditions = ignore_conditions
+        self.get_lock().release()
+
+    def set_object_similarity_threshold(self, index, threshold):
+        self.get_lock().acquire()
+        if len(self.steps) > 0 and index < len(self.steps):
+            done = False
+            for condition in self.steps[index].conditions:
+                if isinstance(condition, SpecificObjectCondition):
+                    condition.set_similarity_threshold(threshold)
+                    done = True
+            if not done:
+                rospy.logwarn("Couldn't set object similarity threshold because the step has no SpecificObjectCondition.")
         self.get_lock().release()
 
     def select_step(self, step_id):

@@ -618,6 +618,11 @@ class Interaction:
                     strategy = command.param
                     self.session.set_current_step_strategy(strategy)
                     rospy.loginfo('Changed condition failure strategy for the current step')
+                elif (command.command == GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD):
+                    step_no = command.param
+                    threshold = command.param_float
+                    self.session.set_object_similarity_threshold(step_no, threshold)
+                    rospy.loginfo('Changed condition failure strategy for the current step')
                 else:
                     rospy.logwarn('\033[32m This command (' + command.command
                                   + ') is unknown. \033[0m')

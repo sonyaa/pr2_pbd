@@ -521,15 +521,25 @@ class PbDGUI(Plugin):
             num_label = QtGui.QLabel("There are %s conditions" % str(len(step.conditions)), self._widget)
             num_layout.addWidget(num_label)
             self.editingBox.addLayout(num_layout)
-            cond_layout = QtGui.QVBoxLayout()
             for ind, condition in enumerate(step.conditions):
+                cond_layout = QtGui.QHBoxLayout()
                 typeLabel = QtGui.QLabel(self._widget)
+                cond_layout.addWidget(typeLabel)
                 if isinstance(condition, SpecificObjectCondition):
                     typeLabel.setText("%s: SpecificObjectCondition" % str(ind+1))
+                    threshold_label = QtGui.QLabel("Object similarity threshold (default is 0.075): ", self._widget)
+                    cond_layout.addItem(QtGui.QSpacerItem(30, 10))
+                    cond_layout.addWidget(threshold_label)
+                    threshold_edit = QtGui.QLineEdit(self._widget)
+                    threshold_edit.setText(condition.similarity_threshold)
+                    threshold_edit.setInputMask("9.900000000")
+                    cond_layout.addWidget(threshold_edit)
+                    threshold_edit_btn = QtGui.QPushButton("Set", self._widget)
+                    threshold_edit_btn.clicked.connect(self.set_object_condition_threshold)
+                    cond_layout.addWidget(threshold_edit_btn)
                 elif isinstance(condition, GripperCondition):
                     typeLabel.setText("%s: GripperCondition" % str(ind+1))
-                cond_layout.addWidget(typeLabel)
-            self.editingBox.addLayout(cond_layout)
+                self.editingBox.addLayout(cond_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
             if step.ignore_conditions:
@@ -577,6 +587,22 @@ class PbDGUI(Plugin):
                 if arm_step.ignore_conditions:
                     ignore_cond_checkbox.setChecked(True)
                 arm_steps_grid.addWidget(ignore_cond_checkbox, ind + 1, 5)
+
+    def set_object_condition_threshold(self):
+        for ind_l in xrange(self.editingBox.count()):
+            layout = self.editingBox.itemAt(ind_l).layout()
+            for ind_w in xrange(layout.count()):
+                widget = layout.itemAt(ind_w).widget()
+                if widget is not None and isinstance(widget, QtGui.QLineEdit):
+                    try:
+                        threshold = float(widget.text())
+                        gui_cmd = GuiCommand(command=GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD,
+                                             param=self.currentStep, param_float=threshold)
+                        self.gui_cmd_publisher.publish(gui_cmd)
+                        return
+                    except ValueError:
+                        rospy.logerr("Invalid value for object similarity threshold: " + widget.text())
+                        return
 
     def set_loop(self, is_checked):
         if is_checked:
