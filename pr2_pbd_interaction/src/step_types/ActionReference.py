@@ -176,11 +176,12 @@ class ActionReference(Step):
         self.reset_viz()
         self.lock.acquire()
         del self.steps[:]
+        self.selected_step_id = -1
         self.lock.release()
 
     def reset_viz(self):
         # self.get_lock().acquire()
-        if self.selected_step_id >= 0:
+        if len(self.steps) > 0 and self.selected_step_id >= 0:
             if not isinstance(self.steps[self.selected_step_id], ActionReference):
                 self.steps[self.selected_step_id].reset_viz()
         self.interactive_marker_server.clear()
