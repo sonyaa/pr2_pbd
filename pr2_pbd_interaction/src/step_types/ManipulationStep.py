@@ -78,10 +78,11 @@ class ManipulationStep(Step):
                             rospy.loginfo("Strategy is to continue, skipping this step.")
                             return
                         else:
-                            rospy.logwarn("Unknown strategy " + str(self.strategy))
+                            rospy.logwarn("Unknown strategy " + str(step_to_execute.strategy))
             else:
                 rospy.loginfo('Ignoring conditions for manipulation step')
-            self.update_objects()
+            step_to_execute.update_objects()
+            step_to_execute.initialize_viz()
             if not robot.solve_ik_for_manipulation_step(step_to_execute):
                 rospy.logwarn('Problems in finding IK solutions...')
                 robot.status = ExecutionStatus.NO_IK
