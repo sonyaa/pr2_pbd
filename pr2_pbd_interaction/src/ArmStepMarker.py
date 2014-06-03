@@ -46,8 +46,8 @@ class ArmStepMarker:
         '''Checks if there is an IK solution for action step'''
         dummy, is_reachable = Robot.solve_ik_for_arm(self.arm_index,
                                                     self.get_target())
-        rospy.loginfo('Reachability of pose in ArmStepMarker : ' +
-            str(is_reachable))
+        # rospy.loginfo('Reachability of pose in ArmStepMarker : ' +
+        #     str(is_reachable))
         return is_reachable
 
     def get_uid(self):

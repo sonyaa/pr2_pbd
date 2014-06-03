@@ -54,7 +54,6 @@ class ArmStepMarkerSequence:
         l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
         self.r_markers.append(r_marker)
         self.l_markers.append(l_marker)
-        rospy.loginfo('now markers: ' + str(len(self.r_markers)))
         if (self.total_n_markers > 1):
             self.r_links[self.total_n_markers - 1] = self._get_link(0,
                                                                     self.total_n_markers - 1)
@@ -190,6 +189,7 @@ class ArmStepMarkerSequence:
                 self.l_links[i] = self._get_link(1, i)
 
         self._update_markers()
+        self.update_viz()
 
     def marker_click_cb(self, uid, is_selected):
         """Callback for when one of the markers is clicked.
