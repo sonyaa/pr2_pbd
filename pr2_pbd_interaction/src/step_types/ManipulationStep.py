@@ -175,7 +175,8 @@ class ManipulationStep(Step):
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
             action_objects = self.conditions[0].get_objects()
             unique_action_objects = self.conditions[0].get_unique_objects()
-            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
+                                                                    threshold=self.conditions[0].similarity_threshold)
             if map_of_objects_old_to_new is not None:
                 self.objects = world_objects
             elif len(unique_action_objects) > 0:
@@ -194,7 +195,8 @@ class ManipulationStep(Step):
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
             action_objects = self.conditions[0].get_objects()
             unique_action_objects = self.conditions[0].get_unique_objects()
-            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
+                                                                    threshold=self.conditions[0].similarity_threshold)
             if map_of_objects_old_to_new is not None:
                 self.objects = world_objects
             elif len(unique_action_objects) > 0:
