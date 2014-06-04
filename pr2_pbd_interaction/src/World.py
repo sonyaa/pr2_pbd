@@ -1,5 +1,6 @@
 '''Everything related to perception of the world'''
 import roslib
+
 roslib.load_manifest('pr2_pbd_interaction')
 
 # Generic libraries
@@ -39,10 +40,11 @@ from Response import Response
 class WorldObject:
     '''Class for representing objects'''
 
-    default_color = ColorRGBA(0.2, 0.8, 0.0, 0.6) 
+    default_color = ColorRGBA(0.2, 0.8, 0.0, 0.6)
+    fake_color = ColorRGBA(0.4, 0.6, 0.4, 0.6)
     selected_colors = [ColorRGBA(0.6, 0.6, 0.0, 0.6), ColorRGBA(0.6, 0.6, 0.2, 0.6)]
 
-    def __init__(self, pose, index, dimensions, is_recognized):
+    def __init__(self, pose, index, dimensions, is_recognized, is_fake=False):
         ''' Initialization of objects'''
         self.index = index
         self.assigned_name = None
@@ -54,6 +56,7 @@ class WorldObject:
         self.is_removed = False
         self.menu_handler.insert('Remove from scene', callback=self.remove)
         self.is_marker = False
+        self.is_fake = is_fake
 
     def remove(self, dummy):
         '''Function for removing object from the world'''
@@ -79,6 +82,7 @@ class WorldObject:
         '''Function to decrese object index'''
         self.index -= 1
 
+
 class World:
     '''Object recognition and localization related stuff'''
 
@@ -96,9 +100,9 @@ class World:
         bb_service_name = 'find_cluster_bounding_box'
         rospy.wait_for_service(bb_service_name)
         self._bb_service = rospy.ServiceProxy(bb_service_name,
-                                            FindClusterBoundingBox)
+                                              FindClusterBoundingBox)
         rospy.Subscriber('interactive_object_recognition_result',
-            GraspableObjectList, self.receieve_object_info)
+                         GraspableObjectList, self.receieve_object_info)
         self._object_action_client = actionlib.SimpleActionClient(
             'object_detection_user_command', UserCommandAction)
         self._object_action_client.wait_for_server()
@@ -152,7 +156,7 @@ class World:
                 dimensions = Vector3(depth, width, 0.01)
                 self.surface = World._get_surface_marker(pose, dimensions)
                 self._im_server.insert(self.surface,
-                                     self.marker_feedback_cb)
+                                       self.marker_feedback_cb)
                 self._im_server.applyChanges()
 
     def receive_ar_markers(self, data):
@@ -184,8 +188,8 @@ class World:
                         rospy.logwarn('Adding the recognized object ' +
                                       'with most confident model.')
                         self._add_new_object(object_pose,
-                            Vector3(0.2, 0.2, 0.2), True,
-                            object_list.meshes[i])
+                                             Vector3(0.2, 0.2, 0.2), True,
+                                             object_list.meshes[i])
                 else:
                     rospy.logwarn('... this is not a recognition result, ' +
                                   'it is probably just segmentation.')
@@ -194,8 +198,8 @@ class World:
                     cluster_pose = bbox.pose.pose
                     if (cluster_pose != None):
                         rospy.loginfo('Adding unrecognized object with pose:' +
-                            World.pose_to_string(cluster_pose) + '\n' +
-                            'In ref frame' + str(bbox.pose.header.frame_id))
+                                      World.pose_to_string(cluster_pose) + '\n' +
+                                      'In ref frame' + str(bbox.pose.header.frame_id))
                         self._add_new_object(cluster_pose, bbox.box_dims,
                                              False)
         else:
@@ -225,10 +229,10 @@ class World:
         '''Returns absolute pose of an end effector state'''
         if (arm_state.refFrame == ArmState.OBJECT):
             arm_state_copy = ArmState(arm_state.refFrame,
-                            Pose(arm_state.ee_pose.position,
-                                 arm_state.ee_pose.orientation),
-                            arm_state.joint_pose[:],
-                            arm_state.refFrameObject)
+                                      Pose(arm_state.ee_pose.position,
+                                           arm_state.ee_pose.orientation),
+                                      arm_state.joint_pose[:],
+                                      arm_state.refFrameObject)
             World.convert_ref_frame(arm_state_copy, ArmState.ROBOT_BASE)
             return arm_state_copy.ee_pose
         else:
@@ -254,7 +258,7 @@ class World:
                 return None
             else:
                 rospy.loginfo('Most similar to new object '
-                                        + str(chosen_obj_index))
+                              + str(chosen_obj_index))
                 return ref_frame_list[chosen_obj_index]
 
     @staticmethod
@@ -318,8 +322,8 @@ class World:
         marker.scale = Vector3(1.0, 1.0, 1.0)
         while (index + 2 < len(mesh.triangles)):
             if ((mesh.triangles[index] < len(mesh.vertices))
-                    and (mesh.triangles[index + 1] < len(mesh.vertices))
-                    and (mesh.triangles[index + 2] < len(mesh.vertices))):
+                and (mesh.triangles[index + 1] < len(mesh.vertices))
+                and (mesh.triangles[index + 2] < len(mesh.vertices))):
                 marker.points.append(mesh.vertices[mesh.triangles[index]])
                 marker.points.append(mesh.vertices[mesh.triangles[index + 1]])
                 marker.points.append(mesh.vertices[mesh.triangles[index + 2]])
@@ -344,12 +348,12 @@ class World:
                 if (distance < dist_threshold):
                     if (World.objects[i].is_recognized):
                         rospy.loginfo('Previously recognized object at ' +
-                            'the same location, will not add this object.')
+                                      'the same location, will not add this object.')
                         return False
                     else:
                         rospy.loginfo('Previously unrecognized object at ' +
-                            'the same location, will replace it with the ' +
-                            'recognized object.')
+                                      'the same location, will replace it with the ' +
+                                      'recognized object.')
                         to_remove = i
                         break
 
@@ -358,7 +362,7 @@ class World:
 
             n_objects = len(World.objects)
             new_object = WorldObject(pose, n_objects,
-                                            dimensions, is_recognized)
+                                     dimensions, is_recognized)
             if id is not None:
                 new_object.assign_name("marker" + str(id))
                 new_object.is_marker = True
@@ -368,7 +372,7 @@ class World:
             self._im_server.insert(int_marker, self.marker_feedback_cb)
             self._im_server.applyChanges()
             World.objects[-1].menu_handler.apply(self._im_server,
-                                               int_marker.name)
+                                                 int_marker.name)
             self._im_server.applyChanges()
             return True
         else:
@@ -380,7 +384,7 @@ class World:
                     return False
             n_objects = len(World.objects)
             new_object = WorldObject(pose, n_objects,
-                                            dimensions, is_recognized)
+                                     dimensions, is_recognized)
             if id is not None:
                 new_object.assign_name("marker_" + str(id))
             World.objects.append(new_object)
@@ -389,7 +393,7 @@ class World:
             self._im_server.insert(int_marker, self.marker_feedback_cb)
             self._im_server.applyChanges()
             World.objects[-1].menu_handler.apply(self._im_server,
-                                               int_marker.name)
+                                                 int_marker.name)
             self._im_server.applyChanges()
             return True
 
@@ -420,18 +424,19 @@ class World:
         rospy.loginfo('Removing object ' + obj.int_marker.name)
         self._im_server.erase(obj.int_marker.name)
         self._im_server.applyChanges()
-#        if (obj.is_recognized):
-#            for i in range(len(World.objects)):
-#                if ((World.objects[i].is_recognized)
-#                    and World.objects[i].index>obj.index):
-#                    World.objects[i].decrease_index()
-#            self.n_recognized -= 1
-#        else:
-#            for i in range(len(World.objects)):
-#                if ((not World.objects[i].is_recognized) and
-#                    World.objects[i].index>obj.index):
-#                    World.objects[i].decrease_index()
-#            self.n_unrecognized -= 1
+
+    #        if (obj.is_recognized):
+    #            for i in range(len(World.objects)):
+    #                if ((World.objects[i].is_recognized)
+    #                    and World.objects[i].index>obj.index):
+    #                    World.objects[i].decrease_index()
+    #            self.n_recognized -= 1
+    #        else:
+    #            for i in range(len(World.objects)):
+    #                if ((not World.objects[i].is_recognized) and
+    #                    World.objects[i].index>obj.index):
+    #                    World.objects[i].decrease_index()
+    #            self.n_unrecognized -= 1
 
     def _remove_surface(self):
         '''Function to request removing surface'''
@@ -449,21 +454,21 @@ class World:
         pointsList.append(Point(0, 0, radius))
         pointsList.append(Point(0, 0, -radius))
         for x in range(nx):
-            theta = 2 * pi * (x*1.0 / nx)
+            theta = 2 * pi * (x * 1.0 / nx)
             for y in range(1, ny):
-                phi = pi * (y*1.0 / ny)
+                phi = pi * (y * 1.0 / ny)
                 destx = radius * cos(theta) * sin(phi)
                 desty = radius * sin(theta) * sin(phi)
                 destz = radius * cos(phi)
                 pointsList.append(Point(destx, desty, destz))
         id = abs(hash(world_object.get_name() + "_reachability")) % (10 ** 8)
         marker = Marker(type=Marker.SPHERE_LIST, id=id,
-                lifetime=rospy.Duration(nsecs=10**8),
-                scale=Vector3(0.01, 0.01, 0.01),
-                points=set(pointsList),
-                header=Header(frame_id='base_link'),
-                color=ColorRGBA(1, 1, 1, 0.5),
-                pose=world_object.object.pose)
+                        lifetime=rospy.Duration(nsecs=10 ** 8),
+                        scale=Vector3(0.01, 0.01, 0.01),
+                        points=set(pointsList),
+                        header=Header(frame_id='base_link'),
+                        color=ColorRGBA(1, 1, 1, 0.5),
+                        pose=world_object.object.pose)
         return marker
 
     def _get_object_marker(self, index, mesh=None):
@@ -478,12 +483,13 @@ class World:
         button_control.interaction_mode = InteractiveMarkerControl.BUTTON
         button_control.always_visible = True
 
+        color = WorldObject.default_color if not World.objects[index].is_fake else WorldObject.fake_color
         object_marker = Marker(type=Marker.CUBE, id=index,
-                lifetime=rospy.Duration(2),
-                scale=World.objects[index].object.dimensions,
-                header=Header(frame_id='base_link'),
-                color=ColorRGBA(0.2, 0.8, 0.0, 0.6),
-                pose=World.objects[index].object.pose)
+                               lifetime=rospy.Duration(2),
+                               scale=World.objects[index].object.dimensions,
+                               header=Header(frame_id='base_link'),
+                               color=color,
+                               pose=World.objects[index].object.pose)
         if (mesh != None):
             object_marker = World._get_mesh_marker(object_marker, mesh)
         button_control.markers.append(object_marker)
@@ -492,12 +498,12 @@ class World:
         text_pos.x = World.objects[index].object.pose.position.x
         text_pos.y = World.objects[index].object.pose.position.y
         text_pos.z = (World.objects[index].object.pose.position.z +
-                     World.objects[index].object.dimensions.z / 2 + 0.06)
+                      World.objects[index].object.dimensions.z / 2 + 0.06)
         button_control.markers.append(Marker(type=Marker.TEXT_VIEW_FACING,
-                id=index, scale=Vector3(0, 0, 0.03),
-                text=int_marker.name, color=ColorRGBA(0.0, 0.0, 0.0, 0.5),
-                header=Header(frame_id='base_link'),
-                pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
+                                             id=index, scale=Vector3(0, 0, 0.03),
+                                             text=int_marker.name, color=ColorRGBA(0.0, 0.0, 0.0, 0.5),
+                                             header=Header(frame_id='base_link'),
+                                             pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
         int_marker.controls.append(button_control)
         return int_marker
 
@@ -513,11 +519,11 @@ class World:
         button_control.interaction_mode = InteractiveMarkerControl.BUTTON
         button_control.always_visible = True
         object_marker = Marker(type=Marker.CUBE, id=2000,
-                            lifetime=rospy.Duration(2),
-                            scale=dimensions,
-                            header=Header(frame_id='base_link'),
-                            color=ColorRGBA(0.8, 0.0, 0.4, 0.4),
-                            pose=pose)
+                               lifetime=rospy.Duration(2),
+                               scale=dimensions,
+                               header=Header(frame_id='base_link'),
+                               color=ColorRGBA(0.8, 0.0, 0.4, 0.4),
+                               pose=pose)
         button_control.markers.append(object_marker)
         text_pos = Point()
         position = pose.position
@@ -526,10 +532,10 @@ class World:
         text_pos.y = position.y - dimensions.y / 2 + 0.06
         text_pos.z = position.z + dimensions.z / 2 + 0.06
         text_marker = Marker(type=Marker.TEXT_VIEW_FACING, id=2001,
-                scale=Vector3(0, 0, 0.03), text=int_marker.name,
-                color=ColorRGBA(0.0, 0.0, 0.0, 0.5),
-                header=Header(frame_id='base_link'),
-                pose=Pose(text_pos, Quaternion(0, 0, 0, 1)))
+                             scale=Vector3(0, 0, 0.03), text=int_marker.name,
+                             color=ColorRGBA(0.0, 0.0, 0.0, 0.5),
+                             header=Header(frame_id='base_link'),
+                             pose=Pose(text_pos, Quaternion(0, 0, 0, 1)))
         button_control.markers.append(text_marker)
         int_marker.controls.append(button_control)
         return int_marker
@@ -580,17 +586,17 @@ class World:
                               'needed (both absolute).')
             elif (arm_frame.refFrame == ArmState.OBJECT):
                 abs_ee_pose = World.transform(arm_frame.ee_pose,
-                                arm_frame.refFrameObject.name, 'base_link')
+                                              arm_frame.refFrameObject.name, 'base_link')
                 arm_frame.ee_pose = abs_ee_pose
                 arm_frame.refFrame = ArmState.ROBOT_BASE
                 arm_frame.refFrameObject = Object()
             else:
                 rospy.logerr('Unhandled reference frame conversion:' +
-                    str(arm_frame.refFrame) + ' to ' + str(ref_frame))
+                             str(arm_frame.refFrame) + ' to ' + str(ref_frame))
         elif ref_frame == ArmState.OBJECT:
             if (arm_frame.refFrame == ArmState.ROBOT_BASE):
                 rel_ee_pose = World.transform(arm_frame.ee_pose,
-                            'base_link', ref_frame_obj.name)
+                                              'base_link', ref_frame_obj.name)
                 arm_frame.ee_pose = rel_ee_pose
                 arm_frame.refFrame = ArmState.OBJECT
                 arm_frame.refFrameObject = ref_frame_obj
@@ -600,13 +606,13 @@ class World:
                                   'needed (same object).')
                 else:
                     rel_ee_pose = World.transform(arm_frame.ee_pose,
-                        arm_frame.refFrameObject.name, ref_frame_obj.name)
+                                                  arm_frame.refFrameObject.name, ref_frame_obj.name)
                     arm_frame.ee_pose = rel_ee_pose
                     arm_frame.refFrame = ArmState.OBJECT
                     arm_frame.refFrameObject = ref_frame_obj
             else:
                 rospy.logerr('Unhandled reference frame conversion:' +
-                    str(arm_frame.refFrame) + ' to ' + str(ref_frame))
+                             str(arm_frame.refFrame) + ' to ' + str(ref_frame))
         return arm_frame
 
     @staticmethod
@@ -663,15 +669,15 @@ class World:
         if (pose != None):
             pos = (pose.position.x, pose.position.y, pose.position.z)
             rot = (pose.orientation.x, pose.orientation.y,
-                        pose.orientation.z, pose.orientation.w)
+                   pose.orientation.z, pose.orientation.w)
             self._tf_broadcaster.sendTransform(pos, rot,
-                                        rospy.Time.now(), name, parent)
+                                               rospy.Time.now(), name, parent)
 
     def update_object_pose(self):
         ''' Function to externally update an object pose'''
         Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
-               Response.gaze_client.get_state() == GoalStatus.ACTIVE):
+                       Response.gaze_client.get_state() == GoalStatus.ACTIVE):
             time.sleep(0.1)
         rospy.loginfo("Goal status: " + str(Response.gaze_client.get_state()))
 
@@ -683,7 +689,7 @@ class World:
         goal = UserCommandGoal(UserCommandGoal.RESET, False)
         self._object_action_client.send_goal(goal)
         while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
+                       self._object_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.1)
         rospy.loginfo(Response.gaze_client.get_state())
         rospy.loginfo('Object recognition has been reset.')
@@ -701,7 +707,7 @@ class World:
         goal = UserCommandGoal(UserCommandGoal.SEGMENT, False)
         self._object_action_client.send_goal(goal)
         while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
+                       self._object_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.1)
         rospy.loginfo('Table segmentation is complete.')
         rospy.loginfo('STATUS: ' +
@@ -716,7 +722,7 @@ class World:
         goal = UserCommandGoal(UserCommandGoal.RECOGNIZE, False)
         self._object_action_client.send_goal(goal)
         while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
+                       self._object_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.1)
         rospy.loginfo('Objects on the table have been recognized.')
         rospy.loginfo('STATUS: ' +
@@ -747,7 +753,7 @@ class World:
         goal = UserCommandGoal(UserCommandGoal.RESET, False)
         self._object_action_client.send_goal(goal)
         while (self._object_action_client.get_state() == GoalStatus.ACTIVE or
-               self._object_action_client.get_state() == GoalStatus.PENDING):
+                       self._object_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.1)
         rospy.loginfo('Object recognition has been reset.')
         rospy.loginfo('STATUS: ' +
@@ -760,8 +766,8 @@ class World:
     def process_nearest_objects(self, nearest_object_pair):
         for i in range(len(World.objects)):
             old_color = World.objects[i].int_marker.controls[0].markers[0].color
-            new_color = WorldObject.default_color
-            for arm_index in [0,1]:
+            new_color = WorldObject.default_color if not World.objects[i].is_fake else WorldObject.fake_color
+            for arm_index in [0, 1]:
                 if World.objects[i].object == nearest_object_pair[arm_index]:
                     new_color = WorldObject.selected_colors[arm_index]
             if new_color != old_color:
@@ -776,7 +782,7 @@ class World:
         distances = []
         for i in range(len(World.objects)):
             dist = World.pose_distance(World.objects[i].object.pose,
-                                                            arm_pose)
+                                       arm_pose)
             distances.append(dist)
         dist_threshold = self.relative_frame_threshold
         if (len(distances) > 0):
@@ -787,6 +793,36 @@ class World:
                 return None
         else:
             return None
+
+    def add_fake_objects(self, objects):
+        self._lock.acquire()
+        for obj in objects:
+            n_objects = len(World.objects)
+            new_object = WorldObject(obj.pose, n_objects,
+                                     obj.dimensions, False, is_fake=True)
+            new_object.assign_name(obj.name)
+            World.objects.append(new_object)
+            int_marker = self._get_object_marker(len(World.objects) - 1)
+            World.objects[-1].int_marker = int_marker
+            self._im_server.insert(int_marker, self.marker_feedback_cb)
+            self._im_server.applyChanges()
+            World.objects[-1].menu_handler.apply(self._im_server,
+                                                 int_marker.name)
+            self._im_server.applyChanges()
+        self._lock.release()
+
+    def remove_fake_objects(self):
+        self._lock.acquire()
+        to_remove = []
+        for i in range(len(World.objects)):
+            if World.objects[i].is_fake:
+                self._im_server.erase(World.objects[i].int_marker.name)
+                self._im_server.applyChanges()
+                to_remove.append(i)
+        to_remove.reverse()
+        for i in range(len(to_remove)):
+            World.objects.pop(i)
+        self._lock.release()
 
     @staticmethod
     def pose_distance(pose1, pose2, is_on_table=False):
@@ -824,7 +860,7 @@ class World:
             to_remove = None
             for i in range(len(World.objects)):
                 self._publish_tf_pose(World.objects[i].object.pose,
-                    World.objects[i].get_name(), 'base_link')
+                                      World.objects[i].get_name(), 'base_link')
                 if (World.objects[i].is_removed):
                     to_remove = i
             if to_remove != None:

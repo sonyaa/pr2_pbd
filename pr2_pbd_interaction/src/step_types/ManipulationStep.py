@@ -2,8 +2,6 @@
 import functools
 import threading
 import yaml
-from interactive_markers.interactive_marker_server import InteractiveMarkerServer
-from visualization_msgs.msg import MarkerArray
 from ArmStepMarkerSequence import ArmStepMarkerSequence
 from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
 from World import World
@@ -122,8 +120,10 @@ class ManipulationStep(Step):
         self.arm_steps.append(arm_step.copy())
         if arm_step.armTarget.rArm.refFrame == ArmState.OBJECT:
             r_object = arm_step.armTarget.rArm.refFrameObject
+            self.objects.append(r_object)
         if arm_step.armTarget.lArm.refFrame == ArmState.OBJECT:
             l_object = arm_step.armTarget.lArm.refFrameObject
+            self.objects.append(l_object)
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
             self.conditions[0].add_object(r_object)
             self.conditions[0].add_object(l_object)
@@ -132,7 +132,6 @@ class ManipulationStep(Step):
         self.marker_sequence.add_arm_step(cur_step, world_objects)
         self.marker_sequence.set_total_n_markers(len(self.arm_steps))
         self.lock.release()
-
 
     def get_step(self, index):
         '''Returns a step of the manipulation'''
@@ -177,10 +176,8 @@ class ManipulationStep(Step):
             unique_action_objects = self.conditions[0].get_unique_objects()
             map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
                                                                     threshold=self.conditions[0].similarity_threshold)
-            if map_of_objects_old_to_new is not None:
-                self.objects = world_objects
-            elif len(unique_action_objects) > 0:
-                world_objects = self.objects
+            if map_of_objects_old_to_new is None and len(unique_action_objects) > 0:
+                world_objects = self.get_unique_objects()
                 map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
                 has_real_objects = False
         self.marker_sequence.update_objects(action_objects, world_objects, map_of_objects_old_to_new, has_real_objects)
@@ -190,6 +187,10 @@ class ManipulationStep(Step):
         self.lock.acquire()
         has_real_objects = True
         world_objects = World.get_world().get_frame_list()
+        if len(world_objects) == 0 and len(self.get_unique_objects()) > 0:
+            World.get_world().add_fake_objects(self.get_unique_objects())
+            world_objects = World.get_world().get_frame_list()
+            has_real_objects = False
         action_objects = None
         map_of_objects_old_to_new = None
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
@@ -197,15 +198,18 @@ class ManipulationStep(Step):
             unique_action_objects = self.conditions[0].get_unique_objects()
             map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
                                                                     threshold=self.conditions[0].similarity_threshold)
-            if map_of_objects_old_to_new is not None:
-                self.objects = world_objects
-            elif len(unique_action_objects) > 0:
-                world_objects = self.objects
-                map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
-                has_real_objects = False
         self.marker_sequence.initialize_viz(self.arm_steps, action_objects, world_objects,
                                             map_of_objects_old_to_new, has_real_objects)
         self.lock.release()
+
+    def get_unique_objects(self):
+        objects = []
+        object_names = []
+        for obj in self.objects:
+            if obj is not None and obj.name not in object_names:
+                object_names.append(obj.name)
+                objects.append(obj)
+        return objects
 
     def update_viz(self):
         self.lock.acquire()
@@ -214,6 +218,7 @@ class ManipulationStep(Step):
 
     def reset_viz(self):
         self.lock.acquire()
+        World.get_world().remove_fake_objects()
         self.marker_sequence.reset_viz()
         self.lock.release()
 
