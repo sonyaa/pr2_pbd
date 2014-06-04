@@ -28,7 +28,7 @@ def manipulation_step_constructor(loader, node):
         m_step.marker_sequence = ArmStepMarkerSequence.construct_from_arm_steps(m_step.interactive_marker_server,
                                                                                 m_step.marker_publisher,
                                                                                 m_step.step_click_cb, m_step.arm_steps,
-                                                                                world_objects)
+                                                                                m_step.reference_change_cb)
     return m_step
 
 
@@ -52,11 +52,10 @@ class ManipulationStep(Step):
         self.conditions = [SpecificObjectCondition()]
         self.step_click_cb = Session.get_session().selected_arm_step_cb
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
-                                                     self.step_click_cb)
+                                                     self.step_click_cb, self.reference_change_cb)
         self.objects = []
 
     def execute(self):
-        self.update_object_condition()
         from Robot import Robot
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
@@ -150,19 +149,6 @@ class ManipulationStep(Step):
     def n_steps(self):
         """Returns the number of arm steps in the manipulation step"""
         return len(self.arm_steps)
-
-    def update_object_condition(self):
-        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            self.conditions[0].clear()
-            for step in self.arm_steps:
-                r_object = None
-                l_object = None
-                if step.armTarget.rArm.refFrame == ArmState.OBJECT:
-                    r_object = step.armTarget.rArm.refFrameObject
-                if step.armTarget.lArm.refFrame == ArmState.OBJECT:
-                    l_object = step.armTarget.lArm.refFrameObject
-                self.conditions[0].add_object(r_object)
-                self.conditions[0].add_object(l_object)
 
     def update_objects(self):
         """Updates the object list for all arm steps"""
@@ -292,6 +278,11 @@ class ManipulationStep(Step):
     def set_ignore_arm_step_conditions(self, index, ignore_conditions):
         if len(self.arm_steps) > 0 and index < len(self.arm_steps):
             self.arm_steps[index].ignore_conditions = ignore_conditions
+
+    def reference_change_cb(self, uid, new_ref_obj):
+        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
+            self.conditions[0].objects[uid] = new_ref_obj
+            rospy.loginfo("Changed reference object in SpecificObjectCondition")
 
     def copy(self):
         copy = ManipulationStep()

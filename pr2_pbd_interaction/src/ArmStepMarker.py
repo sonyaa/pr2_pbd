@@ -22,9 +22,10 @@ class ArmStepMarker:
 
     _offset = 0.09
     _marker_click_cb = None
+    _reference_change_cb = None
 
     def __init__(self, step_number, arm_index, action_step,
-                 marker_click_cb, parent_sequence):
+                 marker_click_cb, reference_change_cb, parent_sequence):
         self.action_step = action_step
         self.arm_index = arm_index
         self.step_number = step_number
@@ -39,6 +40,7 @@ class ArmStepMarker:
         self._sub_entries = None
         self._menu_handler = None
         ArmStepMarker._marker_click_cb = marker_click_cb
+        ArmStepMarker._reference_change_cb = reference_change_cb
 
         self.parent_step_sequence = parent_sequence
 
@@ -195,6 +197,7 @@ class ArmStepMarker:
             else:
                 self.action_step.armTrajectory.lRefFrameObject = new_ref_obj
                 self.action_step.armTrajectory.lRefFrame = new_ref
+        ArmStepMarker._reference_change_cb(self.get_uid(), new_ref_obj)
 
     def _is_hand_open(self):
         '''Checks if the gripper is open for the action step'''

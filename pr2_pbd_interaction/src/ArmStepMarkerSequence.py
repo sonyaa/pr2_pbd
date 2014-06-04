@@ -11,7 +11,7 @@ class ArmStepMarkerSequence:
     """ Class that visualizes the arm markers for one manipulation step.
     """
 
-    def __init__(self, im_server, marker_publisher, step_click_cb):
+    def __init__(self, im_server, marker_publisher, step_click_cb, reference_change_cb):
         self.im_server = im_server
         self.marker_publisher = marker_publisher
         self.ref_object_list = []
@@ -22,20 +22,19 @@ class ArmStepMarkerSequence:
         self.r_links = dict()
         self.l_links = dict()
         self.step_click_cb = step_click_cb
+        self.reference_change_cb = reference_change_cb
 
     @staticmethod
-    def construct_from_arm_steps(im_server, marker_publisher, step_click_cb, arm_steps, world_objects):
+    def construct_from_arm_steps(im_server, marker_publisher, step_click_cb, arm_steps, reference_change_cb):
         """ Create ArmStepMarkerSequence from a sequence of ArmSteps - but don't display it.
         """
         rospy.loginfo("Constructing ArmStepMarkerSequence from arm steps")
-        seq = ArmStepMarkerSequence(im_server, marker_publisher, step_click_cb)
+        seq = ArmStepMarkerSequence(im_server, marker_publisher, step_click_cb, reference_change_cb)
         for arm_step in arm_steps:
             r_marker = ArmStepMarker(seq.total_n_markers, 0,
-                                     arm_step, seq.marker_click_cb, seq)
-            #r_marker.update_ref_frames(world_objects, arm_step.armTarget.rArm.refFrameObject)
+                                     arm_step, seq.marker_click_cb, reference_change_cb, seq)
             l_marker = ArmStepMarker(seq.total_n_markers, 1,
-                                     arm_step, seq.marker_click_cb, seq)
-            #l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
+                                     arm_step, seq.marker_click_cb, reference_change_cb, seq)
             seq.r_markers.append(r_marker)
             seq.l_markers.append(l_marker)
             if (seq.total_n_markers > 1):
@@ -47,10 +46,10 @@ class ArmStepMarkerSequence:
 
     def add_arm_step(self, arm_step, world_objects):
         r_marker = ArmStepMarker(self.total_n_markers, 0,
-                                 arm_step, self.marker_click_cb, self)
+                                 arm_step, self.marker_click_cb, self.reference_change_cb, self)
         r_marker.update_ref_frames(world_objects, arm_step.armTarget.rArm.refFrameObject)
         l_marker = ArmStepMarker(self.total_n_markers, 1,
-                                 arm_step, self.marker_click_cb, self)
+                                 arm_step, self.marker_click_cb, self.reference_change_cb, self)
         l_marker.update_ref_frames(world_objects, arm_step.armTarget.lArm.refFrameObject)
         self.r_markers.append(r_marker)
         self.l_markers.append(l_marker)
@@ -163,9 +162,9 @@ class ArmStepMarkerSequence:
         for i in range(len(steps)):
             step = steps[i]
             r_marker = ArmStepMarker(i, 0, step,
-                                     self.marker_click_cb, self)
+                                     self.marker_click_cb, self.reference_change_cb, self)
             l_marker = ArmStepMarker(i, 1, step,
-                                     self.marker_click_cb, self)
+                                     self.marker_click_cb, self.reference_change_cb, self)
             if not has_real_objects:
                 r_marker.is_fake = True
                 l_marker.is_fake = True
