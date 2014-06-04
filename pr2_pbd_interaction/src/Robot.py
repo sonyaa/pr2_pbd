@@ -32,6 +32,9 @@ class Robot:
     '''
     arms = []
     robot = None
+    r_tucked_with_object_pose = [-0.0175476818422744, 1.1720448201611564, -1.3268105758514066, -1.288722079574422, -31.28968470078213, -2.0089650532319836, -5.841424529413016]
+    l_tucked_with_object_pose = [0.058297695494463064, 0.8952726777787402, 1.5610673959992847, -1.9950583804146542, 15.589646214067146, -1.0399744971119742, -33.45882012016671]
+
 
     def __init__(self):
         r_arm = Arm(Side.RIGHT)
@@ -263,6 +266,15 @@ class Robot:
                                          abs_ee_poses[arm_index], joint_poses[arm_index], Object())
         return states
 
+    @staticmethod
+    def is_hand_holding_object(arm_index):
+        position = Robot.get_gripper_position(arm_index)
+        closed = 0.002
+        open = 0.078
+        if closed < position < open:
+            return True
+        return False
+
     def move_base(self, base_pose):
         '''Moves the base to the desired position'''
         # Setup the goal
@@ -287,10 +299,36 @@ class Robot:
         # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
         self.status = ExecutionStatus.EXECUTING
         rospy.loginfo("Tucking arms for navigation.")
-        goal = TuckArmsGoal()
-        goal.tuck_left = True
-        goal.tuck_right = True
-        self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+        right_has_object = Robot.is_hand_holding_object(0)
+        left_has_object = Robot.is_hand_holding_object(1)
+        if not right_has_object and not left_has_object:
+            rospy.loginfo("Hands are not holding objects, will tuck arms completely")
+            goal = TuckArmsGoal()
+            goal.tuck_left = True
+            goal.tuck_right = True
+            self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+        elif right_has_object and not left_has_object:
+            rospy.loginfo("Left hand has no object, right hand has object. Tucking arms accordingly.")
+            goal = TuckArmsGoal()
+            goal.tuck_left = True
+            goal.tuck_right = False
+            self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+            Robot.arms[0].move_to_joints(Robot.r_tucked_with_object_pose, 1)
+            time.sleep(2)
+        elif left_has_object and not right_has_object:
+            rospy.loginfo("Right hand has no object, left hand has object. Tucking arms accordingly.")
+            goal = TuckArmsGoal()
+            goal.tuck_left = False
+            goal.tuck_right = True
+            self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
+            Robot.arms[1].move_to_joints(Robot.l_tucked_with_object_pose, 1)
+            time.sleep(2)
+        else:
+            rospy.loginfo("Both hands have objects. Tucking arms accordingly.")
+            Robot.arms[0].move_to_joints(Robot.r_tucked_with_object_pose, 1)
+            Robot.arms[1].move_to_joints(Robot.l_tucked_with_object_pose, 1)
+            time.sleep(2)
+
 
         pose_stamped = PoseStamped()
         pose_stamped.header.stamp = rospy.Time.now()

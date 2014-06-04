@@ -47,6 +47,7 @@ class BaseStep(Step):
                     robot.status = ExecutionStatus.PREEMPTED
                     rospy.logerr('Execution of base step failed, execution preempted by user.')
                     raise StoppedByUserError()
+                robot.status = ExecutionStatus.OBSTRUCTED
                 raise BaseObstructedError()
             if not self.is_while:
                 return
