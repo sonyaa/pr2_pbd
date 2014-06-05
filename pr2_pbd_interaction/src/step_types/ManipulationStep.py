@@ -78,8 +78,8 @@ class ManipulationStep(Step):
                             rospy.logwarn("Unknown strategy " + str(step_to_execute.strategy))
             else:
                 rospy.loginfo('Ignoring conditions for manipulation step')
-            step_to_execute.update_objects()
-            step_to_execute.initialize_viz()
+            self.update_objects()
+            self.initialize_viz()
             if not robot.solve_ik_for_manipulation_step(step_to_execute):
                 rospy.logwarn('Problems in finding IK solutions...')
                 robot.status = ExecutionStatus.NO_IK
@@ -119,10 +119,10 @@ class ManipulationStep(Step):
         self.arm_steps.append(arm_step.copy())
         if arm_step.armTarget.rArm.refFrame == ArmState.OBJECT:
             r_object = arm_step.armTarget.rArm.refFrameObject
-            self.objects.append(r_object)
+        self.objects.append(r_object)
         if arm_step.armTarget.lArm.refFrame == ArmState.OBJECT:
             l_object = arm_step.armTarget.lArm.refFrameObject
-            self.objects.append(l_object)
+        self.objects.append(l_object)
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
             self.conditions[0].add_object(r_object)
             self.conditions[0].add_object(l_object)
@@ -279,9 +279,16 @@ class ManipulationStep(Step):
         if len(self.arm_steps) > 0 and index < len(self.arm_steps):
             self.arm_steps[index].ignore_conditions = ignore_conditions
 
-    def reference_change_cb(self, uid, new_ref_obj):
+    def reference_change_cb(self, uid, new_ref, new_ref_obj):
+        if new_ref == ArmState.OBJECT:
+            self.objects[uid] = new_ref_obj
+        else:
+            self.objects[uid] = None
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            self.conditions[0].objects[uid] = new_ref_obj
+            if new_ref == ArmState.OBJECT:
+                self.conditions[0].objects[uid] = new_ref_obj
+            else:
+                self.conditions[0].objects[uid] = None
             rospy.loginfo("Changed reference object in SpecificObjectCondition")
 
     def copy(self):

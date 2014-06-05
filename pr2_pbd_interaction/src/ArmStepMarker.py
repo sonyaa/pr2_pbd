@@ -197,7 +197,7 @@ class ArmStepMarker:
             else:
                 self.action_step.armTrajectory.lRefFrameObject = new_ref_obj
                 self.action_step.armTrajectory.lRefFrame = new_ref
-        ArmStepMarker._reference_change_cb(self.get_uid(), new_ref_obj)
+        ArmStepMarker._reference_change_cb(self.get_uid(), new_ref, new_ref_obj)
 
     def _is_hand_open(self):
         '''Checks if the gripper is open for the action step'''

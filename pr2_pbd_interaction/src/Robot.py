@@ -103,7 +103,7 @@ class Robot:
         # This will take long, create a thread
         self.preempt = False
         self.z_offset = z_offset
-        self.action = action.copy()
+        self.action = action
         thread = threading.Thread(group=None, target=self.execute_action,
                                   name='skill_execution_thread')
         thread.start()
