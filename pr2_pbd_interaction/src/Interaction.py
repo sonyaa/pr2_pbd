@@ -63,7 +63,7 @@ class Interaction:
             Command.STOP_EXECUTION: Response(self.stop_execution, None),
             Command.DELETE_ALL_STEPS: Response(self.delete_all_steps, None),
             Command.DELETE_LAST_STEP: Response(self.delete_last_step, None),
-            Command.DELETE_LAST_ARM_STEP: Response(self.delete_last_arm_step, None),
+            Command.DELETE_LAST_POSE: Response(self.delete_last_arm_step, None),
             Command.FREEZE_RIGHT_ARM: Response(self.freeze_arm, 0),
             Command.FREEZE_LEFT_ARM: Response(self.freeze_arm, 1),
             Command.CREATE_NEW_ACTION: Response(self.create_action, None),
@@ -72,7 +72,7 @@ class Interaction:
             Command.PREV_ACTION: Response(self.previous_action, None),
             Command.SAVE_ACTION: Response(self.save_action, None),
             Command.SAVE_POSE: Response(self.save_arm_step, None),
-            Command.SAVE_BASE_POSE: Response(self.save_base_step, None),
+            Command.SAVE_LOCATION: Response(self.save_base_step, None),
             Command.RECORD_OBJECT_POSE: Response(
                 self.record_object_pose, None),
             Command.START_RECORDING_MOTION: Response(

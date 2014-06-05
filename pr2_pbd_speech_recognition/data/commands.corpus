@@ -7,7 +7,7 @@ close-left-hand
 stop-execution
 undo-last-command
 delete-all-steps
-delete-last-step
+delete-last-pose
 freeze-right-arm
 freeze-left-arm
 record-object-pose
@@ -19,7 +19,7 @@ previous-action
 save-action
 edit-action
 save-pose
-save-base-pose
+save-location
 start-recording-motion
 stop-recording-motion
 execute-generated-action

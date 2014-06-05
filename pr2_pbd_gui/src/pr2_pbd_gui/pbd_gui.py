@@ -89,7 +89,7 @@ class PbDGUI(Plugin):
         self.commands[Command.NEXT_ACTION] = 'Next action'
         self.commands[Command.PREV_ACTION] = 'Previous action'
         self.commands[Command.SAVE_POSE] = 'Save arm pose'
-        self.commands[Command.SAVE_BASE_POSE] = 'Save base pose'
+        self.commands[Command.SAVE_LOCATION] = 'Save base location'
         #adding record motion
         self.commands[Command.START_RECORDING_MOTION] = 'Record motion'
         self.commands[Command.STOP_RECORDING_MOTION] = 'Stop recording motion'
@@ -107,7 +107,7 @@ class PbDGUI(Plugin):
         self.commands[Command.STOP_EXECUTION] = 'Stop execution'
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last step'
-        self.commands[Command.DELETE_LAST_ARM_STEP] = 'Delete last arm pose'
+        self.commands[Command.DELETE_LAST_POSE] = 'Delete last arm pose'
         #self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
         self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
         self.commands[Command.SAVE_ACTION] = 'Save action'
@@ -149,7 +149,7 @@ class PbDGUI(Plugin):
         stepsButtonGrid.addWidget(self.create_button(Command.STOP_EXECUTION))
         stepsButtonGrid.addWidget(self.create_button(Command.DELETE_ALL_STEPS))
         stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_STEP))
-        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_ARM_STEP))
+        stepsButtonGrid.addWidget(self.create_button(Command.DELETE_LAST_POSE))
         #stepsButtonGrid.addWidget(self.create_button(Command.REPEAT_LAST_STEP))
 
         actionNameGrid = QtGui.QHBoxLayout()
@@ -168,7 +168,7 @@ class PbDGUI(Plugin):
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
         misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
-        misc_grid.addWidget(self.create_button(Command.SAVE_BASE_POSE))
+        misc_grid.addWidget(self.create_button(Command.SAVE_LOCATION))
         misc_grid.addWidget(self.create_button(Command.SAVE_POSE))
         misc_grid.addStretch(1)
 
