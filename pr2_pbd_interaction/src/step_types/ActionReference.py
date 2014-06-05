@@ -123,6 +123,8 @@ class ActionReference(Step):
 
     def select_step(self, step_id):
         # self.get_lock().acquire()
+        rospy.loginfo(self.selected_step_id)
+        rospy.loginfo(step_id)
         if self.selected_step_id != step_id:
             self.reset_viz()
             self.selected_step_id = step_id
@@ -195,8 +197,7 @@ class ActionReference(Step):
     def reset_viz(self):
         # self.get_lock().acquire()
         if len(self.steps) > 0 and self.selected_step_id >= 0:
-            if not isinstance(self.steps[self.selected_step_id], ActionReference):
-                self.steps[self.selected_step_id].reset_viz()
+            self.steps[self.selected_step_id].reset_viz()
         self.interactive_marker_server.clear()
         self.interactive_marker_server.applyChanges()
         # self.get_lock().release()
