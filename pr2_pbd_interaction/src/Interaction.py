@@ -423,7 +423,7 @@ class Interaction:
             if (Interaction._is_programming):
                 base_pose = self.robot.get_base_state()
                 self.session.add_step_to_action(BaseStep(base_pose))
-                return [RobotSpeech.STEP_RECORDED, GazeGoal.NOD]
+                return [RobotSpeech.BASE_STEP_RECORDED, GazeGoal.NOD]
             else:
                 action_name = self.session.get_action_name(self.session.current_action_index)
                 if action_name is None:
