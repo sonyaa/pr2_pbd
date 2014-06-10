@@ -293,10 +293,10 @@ class Robot:
         #nav_goal.goal_id.stamp = nav_goal.header.stamp
         #nav_goal.goal_id.id = 1
         current_pose = self.get_base_state()
-        rospy.loginfo('Current base pose:')
-        rospy.loginfo(current_pose)
-        rospy.loginfo('Sending base to pose:')
-        rospy.loginfo(base_pose)
+        #rospy.loginfo('Current base pose:')
+        #rospy.loginfo(current_pose)
+        #rospy.loginfo('Sending base to pose:')
+        #rospy.loginfo(base_pose)
         if World.pose_distance(current_pose, base_pose) < 0.2:
             rospy.loginfo("Don't need to move the base, we're already there.")
             return True

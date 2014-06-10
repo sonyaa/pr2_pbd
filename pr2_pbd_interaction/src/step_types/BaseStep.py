@@ -13,7 +13,7 @@ class BaseStep(Step):
     def __init__(self, *args, **kwargs):  #(self, end_pose):
         Step.__init__(self, *args, **kwargs)
         self.end_pose = args[0]
-        self.marker = None
+        self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
 
 
     def execute(self):
