@@ -21,7 +21,7 @@ class CommandRecognizer:
 		Command.UNDO, 
 		Command.DELETE_ALL_STEPS,
 		Command.DELETE_LAST_STEP,
-		Command.DELETE_LAST_ARM_STEP,
+		Command.DELETE_LAST_POSE,
 		Command.FREEZE_RIGHT_ARM, 
 		Command.FREEZE_LEFT_ARM, 
 		Command.RECORD_OBJECT_POSE, 
@@ -31,7 +31,8 @@ class CommandRecognizer:
 		Command.PREV_ACTION, 
 		Command.SAVE_ACTION, 
 		Command.EDIT_ACTION, 
-		Command.SAVE_POSE, 
+		Command.SAVE_POSE,
+		Command.SAVE_LOCATION,
 		Command.START_RECORDING_MOTION, 
 		Command.STOP_RECORDING_MOTION]
 
