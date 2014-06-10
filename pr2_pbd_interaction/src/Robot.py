@@ -256,8 +256,8 @@ class Robot:
             base_pose.position = Point(position[0], position[1], position[2])
             base_pose.orientation = Quaternion(orientation[0], orientation[1],
                                                orientation[2], orientation[3])
-            rospy.loginfo('Current base pose:')
-            rospy.loginfo(base_pose)
+            #rospy.loginfo('Current base pose:')
+            #rospy.loginfo(base_pose)
             return base_pose
         except (tf.LookupException, tf.ConnectivityException,
                 tf.ExtrapolationException):
