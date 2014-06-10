@@ -40,7 +40,7 @@ class BaseStepMarker:
         self.im_server.erase(self._get_name())
         self.im_server.applyChanges()
 
-    def _update_menu(self):
+    def update_menu(self):
         '''Recreates the menu when something has changed'''
         self._menu_handler = MenuHandler()
         self._menu_handler.insert('Move base here', callback=self.move_to_cb)
@@ -59,7 +59,7 @@ class BaseStepMarker:
     def set_target_pose(self, target):
         '''Sets the new pose for the base step'''
         self.action_step.end_pose = target
-        self._update_menu()
+        self.update_menu()
         self.is_edited = False
 
     def get_target_pose(self):

@@ -1,9 +1,23 @@
 #!/usr/bin/env python
 import rospy
+import yaml
 from BaseStepMarker import BaseStepMarker
 from Exceptions import BaseObstructedError, ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from step_types.Step import Step
+
+
+def base_step_constructor(loader, node):
+    fields = loader.construct_mapping(node, deep=True)
+    b_step = BaseStep(fields['end_pose'])
+    b_step.strategy = fields['strategy']
+    b_step.is_while = fields['is_while']
+    b_step.ignore_conditions = fields['ignore_conditions']
+    b_step.conditions = fields['conditions']
+    return b_step
+
+
+yaml.add_constructor(u'!BaseStep', base_step_constructor)
 
 
 class BaseStep(Step):
@@ -14,7 +28,6 @@ class BaseStep(Step):
         Step.__init__(self, *args, **kwargs)
         self.end_pose = args[0]
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
-
 
     def execute(self):
         from Robot import Robot
@@ -58,6 +71,7 @@ class BaseStep(Step):
         """Initialize visualization"""
         self.reset_viz()
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
+        self.marker.update_menu()
         self.update_viz()
 
     def update_viz(self):
@@ -65,7 +79,8 @@ class BaseStep(Step):
 
     def reset_viz(self):
         """Removes all visualization from RViz"""
-        self.marker.destroy()
+        if self.marker is not None:
+            self.marker.destroy()
         self.marker = None
 
     def marker_click_cb(self, is_selected):
@@ -90,3 +105,14 @@ class BaseStep(Step):
     def reset_targets(self):
         """Resets requests after reaching a previous target"""
         self.marker.pose_reached()
+
+
+def base_step_representer(dumper, data):
+    return dumper.represent_mapping(u'!BaseStep', {'strategy': data.strategy,
+                                                   'is_while': data.is_while,
+                                                   'ignore_conditions': data.ignore_conditions,
+                                                   'conditions': data.conditions,
+                                                   'end_pose': data.end_pose})
+
+
+yaml.add_representer(BaseStep, base_step_representer)
