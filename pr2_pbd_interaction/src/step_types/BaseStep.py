@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+from BaseStepMarker import BaseStepMarker
 from Exceptions import BaseObstructedError, ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from step_types.Step import Step
@@ -12,6 +13,7 @@ class BaseStep(Step):
     def __init__(self, *args, **kwargs):  #(self, end_pose):
         Step.__init__(self, *args, **kwargs)
         self.end_pose = args[0]
+        self.marker = None
 
 
     def execute(self):
@@ -51,3 +53,22 @@ class BaseStep(Step):
                 raise BaseObstructedError()
             if not self.is_while:
                 return
+
+    def initialize_viz(self):
+        """Initialize visualization"""
+        self.reset_viz()
+        self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
+        self.update_viz()
+
+    def update_viz(self):
+        self.marker.update_viz()
+
+    def reset_viz(self):
+        """Removes all visualization from RViz"""
+        self.marker.destroy()
+        self.marker = None
+
+    def marker_click_cb(self, is_selected):
+        """Callback for when the marker is clicked."""
+        self.marker.is_control_visible = is_selected
+        self.marker.update_viz()
