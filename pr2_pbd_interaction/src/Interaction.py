@@ -648,19 +648,25 @@ class Interaction:
         if (self.session.n_actions() > 0):
             action = self.session.get_current_action()
             action.update_viz()
-            r_target = self.session.get_requested_targets(0)
-            if (r_target != None):
+            r_target = self.session.get_requested_arm_targets(0)
+            if r_target is not None:
                 self.robot.start_move_arm_to_pose(r_target, 0)
-                action.reset_targets(0)
-            l_target = self.session.get_requested_targets(1)
-            if (l_target != None):
+                self.session.reset_arm_targets(0)
+            l_target = self.session.get_requested_arm_targets(1)
+            if l_target is not None:
                 self.robot.start_move_arm_to_pose(l_target, 1)
-                action.reset_targets(1)
+                self.session.reset_arm_targets(1)
+
+            b_target = self.session.get_requested_base_target()
+            if b_target is not None:
+                self.robot.start_move_base_to_pose(b_target)
+                self.session.reset_base_target()
 
             self.session.delete_requested_steps()
 
-            states = self._get_arm_states()
-            self.session.change_requested_steps(states[0], states[1])
+            arm_states = self._get_arm_states()
+            base_state = self.robot.get_base_state()
+            self.session.change_requested_steps(arm_states[0], arm_states[1], base_state)
 
             if (is_world_changed):
                 rospy.loginfo('The world has changed.')

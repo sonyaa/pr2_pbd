@@ -210,11 +210,19 @@ class Robot:
             return arm_state, True
 
     def start_move_arm_to_pose(self, arm_state, arm_index):
-        '''Creates a thread for moving to a target pose'''
+        '''Creates a thread for moving the arm to a target pose'''
         self.preempt = False
         thread = threading.Thread(group=None, target=self.move_arm_to_pose,
                                   args=(arm_state, arm_index,),
                                   name='move_to_arm_state_thread')
+        thread.start()
+
+    def start_move_base_to_pose(self, base_pose):
+        '''Creates a thread for moving the base to a target pose'''
+        self.preempt = False
+        thread = threading.Thread(group=None, target=self.move_base,
+                                  args=(base_pose,),
+                                  name='move_to_base_pose_thread')
         thread.start()
 
     def move_arm_to_pose(self, arm_state, arm_index):

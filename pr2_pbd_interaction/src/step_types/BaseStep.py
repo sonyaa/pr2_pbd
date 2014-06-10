@@ -72,3 +72,21 @@ class BaseStep(Step):
         """Callback for when the marker is clicked."""
         self.marker.is_control_visible = is_selected
         self.marker.update_viz()
+
+    def change_requested_steps(self, base_pose):
+        """Change a base step to the current location
+        if requested through the interactive marker menu"""
+        if self.marker.is_edited:
+            self.marker.set_target_pose(base_pose)
+
+    def get_requested_targets(self):
+        """Get base step that might have been requested from
+        the interactive marker menus"""
+        pose = None
+        if self.marker.is_requested:
+            pose = self.marker.get_target_pose()
+        return pose
+
+    def reset_targets(self):
+        """Resets requests after reaching a previous target"""
+        self.marker.pose_reached()

@@ -5,17 +5,12 @@ roslib.load_manifest('pr2_pbd_interaction')
 
 import numpy
 import rospy
-import tf
-from step_types.ArmStep import ArmStep
-from pr2_pbd_interaction.msg import ArmState, Object, GripperState
 from geometry_msgs.msg import Quaternion, Vector3, Point, Pose
 from std_msgs.msg import Header, ColorRGBA
 from visualization_msgs.msg import Marker, InteractiveMarker
 from visualization_msgs.msg import InteractiveMarkerControl
 from visualization_msgs.msg import InteractiveMarkerFeedback
 from interactive_markers.menu_handler import MenuHandler
-from Robot import Robot
-from World import World
 
 
 class BaseStepMarker:

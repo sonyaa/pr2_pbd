@@ -7,7 +7,7 @@ import rospy
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
-from step_types import ArmStep
+from step_types import ArmStep, BaseStep
 from step_types.ActionReference import ActionReference
 from step_types.ManipulationStep import ManipulationStep
 
@@ -441,11 +441,32 @@ class Session:
             rospy.logwarn('No skills created yet.')
             return 0
 
-    def get_requested_targets(self, arm_index):
+    def get_requested_arm_targets(self, arm_index):
         if self.n_actions() > 0:
             cur_step = self.get_current_step()
             if cur_step is not None and isinstance(cur_step, ManipulationStep):
                 return cur_step.get_requested_targets(arm_index)
+        return None
+
+    def get_requested_base_target(self):
+        if self.n_actions() > 0:
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, BaseStep):
+                return cur_step.get_requested_targets()
+        return None
+
+    def reset_arm_targets(self, arm_index):
+        if self.n_actions() > 0:
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, ManipulationStep):
+                return cur_step.reset_targets(arm_index)
+        return None
+
+    def reset_base_target(self):
+        if self.n_actions() > 0:
+            cur_step = self.get_current_step()
+            if cur_step is not None and isinstance(cur_step, BaseStep):
+                return cur_step.reset_targets()
         return None
 
     def delete_requested_steps(self):
@@ -454,10 +475,12 @@ class Session:
             if cur_step is not None and isinstance(cur_step, ManipulationStep):
                 cur_step.delete_requested_steps()
 
-    def change_requested_steps(self, r_state, l_state):
+    def change_requested_steps(self, r_state, l_state, base_state):
         if self.n_actions() > 0:
             cur_step = self.get_current_step()
             if cur_step is not None and isinstance(cur_step, ManipulationStep):
                 cur_step.change_requested_steps(r_state, l_state)
+            if cur_step is not None and isinstance(cur_step, BaseStep):
+                cur_step.change_requested_steps(base_state)
 
 
