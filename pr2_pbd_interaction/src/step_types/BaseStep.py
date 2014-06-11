@@ -72,7 +72,7 @@ class BaseStep(Step):
         self.reset_viz()
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
         self.marker.update_menu()
-        self.update_viz()
+        self.marker.update_viz()
 
     def update_viz(self):
         self.marker.update_viz()

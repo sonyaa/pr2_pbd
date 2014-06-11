@@ -95,12 +95,12 @@ class BaseStepMarker:
                         id=0, scale=Vector3(0, 0, 0.05),
                         text='Base step',
                         color=ColorRGBA(r, g, b, 1.0),
-                        header=Header(frame_id='base_link'),
+                        header=Header(frame_id='map'),
                         pose=Pose(text_pos, Quaternion(0, 0, 0, 1))))
 
         int_marker = InteractiveMarker()
         int_marker.name = self._get_name()
-        int_marker.header.frame_id = 'base_link'
+        int_marker.header.frame_id = 'map'
         int_marker.pose = pose
         int_marker.scale = 0.2
         self._add_3dof_marker(int_marker, True)
