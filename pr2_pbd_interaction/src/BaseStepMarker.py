@@ -100,7 +100,7 @@ class BaseStepMarker:
         int_marker.name = self._get_name()
         int_marker.header.frame_id = 'map'
         int_marker.pose = pose
-        int_marker.scale = 0.4
+        int_marker.scale = 0.7
         self._add_3dof_marker(int_marker, True)
 
         int_marker.controls.append(menu_control)
