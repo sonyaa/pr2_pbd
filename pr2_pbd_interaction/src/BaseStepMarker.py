@@ -21,7 +21,6 @@ class BaseStepMarker:
     def __init__(self, action_step, marker_click_cb, im_server):
         self.action_step = action_step
         self.is_requested = False
-        self.is_deleted = False
         self.is_control_visible = False
         self.is_edited = False
 
@@ -46,7 +45,6 @@ class BaseStepMarker:
         self._menu_handler.insert('Move base here', callback=self.move_to_cb)
         self._menu_handler.insert('Move to current base location',
                             callback=self.move_pose_to_cb)
-        self._menu_handler.insert('Delete', callback=self.delete_step_cb)
         self._update_viz_core()
         self._menu_handler.apply(self.im_server, self._get_name())
         self.im_server.applyChanges()
@@ -125,10 +123,6 @@ class BaseStepMarker:
         else:
             rospy.loginfo('Unknown event' + str(feedback.event_type))
 
-    def delete_step_cb(self, dummy):
-        '''Callback for when delete is requested'''
-        self.is_deleted = True
-
     def move_to_cb(self, dummy):
         '''Callback for when moving to a pose is requested'''
         self.is_requested = True
@@ -149,8 +143,8 @@ class BaseStepMarker:
 
     def _add_3dof_marker(self, int_marker, is_fixed):
         '''Adds a 3 DoF control marker to the interactive marker'''
-        control = self._make_6dof_control('rotate_x',
-                        Quaternion(1, 0, 0, 1), False, is_fixed)
+        control = self._make_6dof_control('rotate_z',
+                        Quaternion(0, 0, 1, 1), False, is_fixed)
         int_marker.controls.append(control)
         control = self._make_6dof_control('move_x',
                         Quaternion(1, 0, 0, 1), True, is_fixed)

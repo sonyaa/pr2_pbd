@@ -353,9 +353,14 @@ class Robot:
         nav_goal.target_pose = pose_stamped
         # Client sends the goal to the Server
         self.nav_action_client.send_goal(nav_goal)
+        elapsed_time = 0
         while (self.nav_action_client.get_state() == GoalStatus.ACTIVE
                or self.nav_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.01)
+            elapsed_time += 0.01
+            if elapsed_time > 30:
+                rospy.loginfo('Timeout waiting for base navigation to finish')
+                break
             if self.preempt:
                 rospy.logwarn('Execution stopped by user, cannot move base to pose')
                 return False
