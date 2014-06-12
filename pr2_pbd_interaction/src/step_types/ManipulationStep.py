@@ -205,7 +205,7 @@ class ManipulationStep(Step):
     def reset_viz(self):
         self.lock.acquire()
         World.get_world().remove_fake_objects()
-        World.get_world().clear_all_objects()
+        #World.get_world().clear_all_objects()
         self.marker_sequence.reset_viz()
         self.lock.release()
 
