@@ -100,7 +100,7 @@ class BaseStepMarker:
         int_marker.name = self._get_name()
         int_marker.header.frame_id = 'map'
         int_marker.pose = pose
-        int_marker.scale = 0.2
+        int_marker.scale = 0.4
         self._add_3dof_marker(int_marker, True)
 
         int_marker.controls.append(menu_control)
@@ -144,7 +144,7 @@ class BaseStepMarker:
     def _add_3dof_marker(self, int_marker, is_fixed):
         '''Adds a 3 DoF control marker to the interactive marker'''
         control = self._make_6dof_control('rotate_z',
-                        Quaternion(0, 0, 1, 1), False, is_fixed)
+                        Quaternion(0, 1, 0, 1), False, is_fixed)
         int_marker.controls.append(control)
         control = self._make_6dof_control('move_x',
                         Quaternion(1, 0, 0, 1), True, is_fixed)
