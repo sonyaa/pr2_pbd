@@ -15,7 +15,7 @@ from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
-from geometry_msgs.msg import Pose, Point, PoseStamped, Quaternion
+from geometry_msgs.msg import Pose, Point, PoseStamped, Quaternion, Twist, Vector3
 from Response import Response
 from World import World
 from Arm import Arm, ArmMode
@@ -33,8 +33,16 @@ class Robot:
     arms = []
     robot = None
     r_tucked_with_object_pose = [-0.0175476818422744, 1.1720448201611564, -1.3268105758514066, -1.288722079574422, -31.28968470078213, -2.0089650532319836, -5.841424529413016]
+
+    #NAVIGATE_R_POS = [-0.3594077470836499, 0.971353000916152, -1.9647276598906076, -1.431900313132731, -1.1839177367219755, -0.09817772642188527, -1.622044624784374]
     #l_tucked_with_object_pose = [0.058297695494463064, 0.8952726777787402, 1.5610673959992847, -1.9950583804146542, 15.589646214067146, -1.0399744971119742, -33.45882012016671]
     l_tucked_with_object_pose = [0.058297695494463064, 1.1720448201611564, 1.3268105758514066, -1.288722079574422, 15.589646214067146, -1.0399744971119742, -33.45882012016671]
+
+    #l_tucked_with_object_pose = [0.04014114629328325, 1.0329086176696876, 1.5482390098896939, -1.538017244576857, -6.7181573150253024, -0.09421239912308044, 87.79342441711326]
+    #r_tucked_with_object_pose = [0.054793713231851005, 1.293828847790333, -1.5800364314292505, -1.5937539684595152, 0.0480516740641113, -0.09404437901242257, 15.646428218144145]
+
+    r_tucked_with_two_objects = []
+    l_tucked_with_two_objects = []
 
 
     def __init__(self):
@@ -284,30 +292,7 @@ class Robot:
             return True
         return False
 
-    def move_base(self, base_pose):
-        '''Moves the base to the desired position'''
-        # Setup the goal
-        #nav_goal = MoveBaseActionGoal()
-        #nav_goal.header.stamp = (rospy.Time.now() +
-        #                                     rospy.Duration(0.1))
-        #nav_goal.goal_id.stamp = nav_goal.header.stamp
-        #nav_goal.goal_id.id = 1
-        current_pose = self.get_base_state()
-        #rospy.loginfo('Current base pose:')
-        #rospy.loginfo(current_pose)
-        #rospy.loginfo('Sending base to pose:')
-        #rospy.loginfo(base_pose)
-        if World.pose_distance(current_pose, base_pose) < 0.2:
-            rospy.loginfo("Don't need to move the base, we're already there.")
-            return True
-
-        #Remember arm states and tuck arms
-        states = self._get_absolute_arm_states()
-        armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
-        arms_status = self.status
-        # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
-        self.status = ExecutionStatus.EXECUTING
-        rospy.loginfo("Tucking arms for navigation.")
+    def tuck_arms_with_objects(self):
         right_has_object = Robot.is_hand_holding_object(0)
         left_has_object = Robot.is_hand_holding_object(1)
         if not right_has_object and not left_has_object:
@@ -336,11 +321,38 @@ class Robot:
             time.sleep(2)
         else:
             rospy.loginfo("Both hands have objects. Tucking arms accordingly.")
-            Robot.arms[0].move_to_joints(Robot.r_tucked_with_object_pose, 1)
+            Robot.arms[0].move_to_joints(Robot.r_tucked_with_two_objects, 1)
             time.sleep(2)
-            Robot.arms[1].move_to_joints(Robot.l_tucked_with_object_pose, 1)
+            Robot.arms[1].move_to_joints(Robot.l_tucked_with_two_objects, 1)
             time.sleep(2)
 
+
+    def move_base(self, base_pose):
+        '''Moves the base to the desired position'''
+        # Setup the goal
+        #nav_goal = MoveBaseActionGoal()
+        #nav_goal.header.stamp = (rospy.Time.now() +
+        #                                     rospy.Duration(0.1))
+        #nav_goal.goal_id.stamp = nav_goal.header.stamp
+        #nav_goal.goal_id.id = 1
+        current_pose = self.get_base_state()
+        #rospy.loginfo('Current base pose:')
+        #rospy.loginfo(current_pose)
+        #rospy.loginfo('Sending base to pose:')
+        #rospy.loginfo(base_pose)
+        if World.pose_distance(current_pose, base_pose) < 0.2:
+            rospy.loginfo("Don't need to move the base, we're already there.")
+            return True
+
+        #Remember arm states and tuck arms
+        states = self._get_absolute_arm_states()
+        armTarget = ArmTarget(states[0], states[1], 0.1, 0.1)
+        arms_status = self.status
+        # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
+        self.status = ExecutionStatus.EXECUTING
+        rospy.loginfo("Tucking arms for navigation.")
+        self.tuck_arms_with_objects()
+        Robot.spin_base(1)
 
         pose_stamped = PoseStamped()
         pose_stamped.header.stamp = rospy.Time.now()
@@ -358,10 +370,12 @@ class Robot:
                or self.nav_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.01)
             elapsed_time += 0.01
-            if elapsed_time > 30:
+            if elapsed_time > 60:
                 rospy.loginfo('Timeout waiting for base navigation to finish')
+                self.nav_action_client.cancel_goal()
                 break
             if self.preempt:
+                self.nav_action_client.cancel_goal()
                 rospy.logwarn('Execution stopped by user, cannot move base to pose')
                 return False
         rospy.loginfo('Done with base navigation.')
@@ -382,6 +396,23 @@ class Robot:
             return False
         else:
             return True
+
+    @staticmethod
+    def spin_base(rotate_count):
+        """ Spin 360 * rotate_count degrees clockwise """
+        rospy.loginfo("Orienting...")
+        if not rotate_count:
+            rotate_count = 2
+        topic_name = '/base_controller/command'
+        base_publisher = rospy.Publisher(topic_name, Twist)
+
+        twist_msg = Twist()
+        twist_msg.linear = Vector3(0.0, 0.0, 0.0)
+        twist_msg.angular = Vector3(0.0, 0.0, 0.5)
+        start_time = rospy.get_rostime()
+        while rospy.get_rostime() < start_time + rospy.Duration(15.0 * rotate_count):
+            base_publisher.publish(twist_msg)
+
 
     @staticmethod
     def _get_time_to_pose(pose, arm_index):
