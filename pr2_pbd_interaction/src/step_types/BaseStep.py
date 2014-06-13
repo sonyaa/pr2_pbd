@@ -75,7 +75,8 @@ class BaseStep(Step):
         self.marker.update_viz()
 
     def update_viz(self):
-        self.marker.update_viz()
+        if self.marker is not None:
+            self.marker.update_viz()
 
     def reset_viz(self):
         """Removes all visualization from RViz"""
