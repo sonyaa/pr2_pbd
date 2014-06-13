@@ -8,7 +8,7 @@ from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 from step_types import ArmStep, BaseStep
-from step_types.ActionReference import ActionReference
+from step_types.Action import ActionReference
 from step_types.ManipulationStep import ManipulationStep
 
 
