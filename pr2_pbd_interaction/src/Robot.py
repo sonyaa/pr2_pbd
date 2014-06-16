@@ -387,10 +387,10 @@ class Robot:
             nav_goal = MoveBaseGoal()
             nav_goal.target_pose.header.frame_id = "base_link"
             nav_goal.target_pose.header.stamp = rospy.Time.now()
-            nav_goal.target_pose.pose.position.x = -0.2
+            nav_goal.target_pose.pose.position.x = -0.5
             nav_goal.target_pose.pose.orientation.w = 1.0
             self.nav_action_client.send_goal(nav_goal)
-            self.nav_action_client.wait_for_result(5)
+            self.nav_action_client.wait_for_result(rospy.Duration(5.0))
 
         # Untuck arms and move to where they were.
         rospy.loginfo("Untucking arms and moving them back after navigation.")
@@ -407,10 +407,10 @@ class Robot:
             nav_goal = MoveBaseGoal()
             nav_goal.target_pose.header.frame_id = "base_link"
             nav_goal.target_pose.header.stamp = rospy.Time.now()
-            nav_goal.target_pose.pose.position.x = 0.2
+            nav_goal.target_pose.pose.position.x = 0.5
             nav_goal.target_pose.pose.orientation.w = 1.0
             self.nav_action_client.send_goal(nav_goal)
-            self.nav_action_client.wait_for_result(5)
+            self.nav_action_client.wait_for_result(rospy.Duration(5.0))
 
         # Verify that base succeeded
         if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
