@@ -384,7 +384,7 @@ class Robot:
 
         if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
             rospy.loginfo('Moving back a bit to untuck arms safely')
-            self.base_action(-0.25, 0, 0, 0, 0, 0)
+            self.base_action(-0.3, 0, 0, 0, 0, 0, 1)
 
         # Untuck arms and move to where they were.
         rospy.loginfo("Untucking arms and moving them back after navigation.")
@@ -398,7 +398,7 @@ class Robot:
 
         if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
             rospy.loginfo('Moving forward to the goal')
-            self.base_action(0.25, 0, 0, 0, 0, 0)
+            self.base_action(0.3, 0, 0, 0, 0, 0, 1)
 
         # Verify that base succeeded
         if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
@@ -407,7 +407,7 @@ class Robot:
         else:
             return True
 
-    def base_action(self, x, y, z, theta_x, theta_y, theta_z):
+    def base_action(self, x, y, z, theta_x, theta_y, theta_z, time_length):
         """ Function for moving the base directly (without planning).
         """
         topic_name = '/base_controller/command'
@@ -417,7 +417,12 @@ class Robot:
         twist_msg.linear = Vector3(x, y, z)
         twist_msg.angular = Vector3(theta_x, theta_y, theta_z)
 
-        base_publisher.publish(twist_msg)
+        start_time = rospy.get_rostime()
+        while rospy.get_rostime() < start_time + rospy.Duration(time_length):
+            if self.preempt:
+                rospy.logwarn('Execution stopped by user, stopping base movement.')
+                return
+            base_publisher.publish(twist_msg)
 
     def spin_base(self, rotate_count):
         """ Spin 360 * rotate_count degrees clockwise """
