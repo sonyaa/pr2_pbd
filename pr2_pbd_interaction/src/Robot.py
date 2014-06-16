@@ -355,7 +355,6 @@ class Robot:
         self.status = ExecutionStatus.EXECUTING
         rospy.loginfo("Tucking arms for navigation.")
         self.tuck_arms_with_objects()
-        self.spin_base(1)
 
         pose_stamped = PoseStamped()
         pose_stamped.header.stamp = rospy.Time.now()
@@ -383,6 +382,16 @@ class Robot:
                 return False
         rospy.loginfo('Done with base navigation.')
 
+        if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
+            rospy.loginfo('Moving back a bit to untuck arms safely')
+            nav_goal = MoveBaseGoal()
+            nav_goal.target_pose.header.frame_id = "base_link"
+            nav_goal.target_pose.header.stamp = rospy.Time.now()
+            nav_goal.target_pose.pose.position.x = -0.2
+            nav_goal.target_pose.pose.orientation.w = 1.0
+            self.nav_action_client.send_goal(nav_goal)
+            self.nav_action_client.wait_for_result(5)
+
         # Untuck arms and move to where they were.
         rospy.loginfo("Untucking arms and moving them back after navigation.")
         goal = TuckArmsGoal()
@@ -392,6 +401,16 @@ class Robot:
         # Return to remembered pose.
         self.status = arms_status
         self.move_to_joints(armTarget.rArm, armTarget.lArm)
+
+        if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
+            rospy.loginfo('Moving forward to the goal')
+            nav_goal = MoveBaseGoal()
+            nav_goal.target_pose.header.frame_id = "base_link"
+            nav_goal.target_pose.header.stamp = rospy.Time.now()
+            nav_goal.target_pose.pose.position.x = 0.2
+            nav_goal.target_pose.pose.orientation.w = 1.0
+            self.nav_action_client.send_goal(nav_goal)
+            self.nav_action_client.wait_for_result(5)
 
         # Verify that base succeeded
         if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
