@@ -19,7 +19,7 @@ from pr2_pbd_speech_recognition.msg import Command
 from sound_play.msg import SoundRequest
 from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
-from step_types.ActionReference import ActionReference
+from step_types.Action import Action
 from step_types.BaseStep import BaseStep
 from step_types.ManipulationStep import ManipulationStep
 from step_types.ObjectDetectionStep import ObjectDetectionStep
@@ -300,7 +300,7 @@ class PbDGUI(Plugin):
             elif isinstance(sub_act, ObjectDetectionStep):
                 typeLabel.setText("Object detection")
                 viewBtn.setEnabled(False)
-            elif isinstance(sub_act, ActionReference):
+            elif isinstance(sub_act, Action):
                 typeLabel.setText("Preprogrammed: " + sub_act.name)
                 viewBtn.setText("Switch to action")
                 viewBtn.clicked.connect(functools.partial(self.show_action, sub_act.name))
@@ -384,7 +384,7 @@ class PbDGUI(Plugin):
                 actIcon.selected = True
                 actIcon.updateView()
         if (state.action_str != ""):
-            self.action = ActionReference.from_string(state.action_str)  #state['action_str'])
+            self.action = Action.from_string(state.action_str)  #state['action_str'])
             self.disp_action(self.action)
 
     def n_actions(self):
@@ -456,7 +456,7 @@ class PbDGUI(Plugin):
                 typeLabel.setText(header_text % "Navigation")
             elif isinstance(step, ObjectDetectionStep):
                 typeLabel.setText(header_text % "Object detection")
-            elif isinstance(step, ActionReference):
+            elif isinstance(step, Action):
                 typeLabel.setText(header_text % "Action")
             else:
                 rospy.logwarn("Unknown action step type " + str(type(step)))

@@ -2,9 +2,11 @@
 import threading
 from Exceptions import ConditionError, StoppedByUserError
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from World import World
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_pbd_interaction.msg._Strategy import Strategy
+from step_types.ObjectDetectionStep import ObjectDetectionStep
 from step_types.ManipulationStep import ManipulationStep
 from step_types.Step import Step
 
@@ -18,7 +20,7 @@ import rospy
 import yaml
 
 
-class ActionReference(Step):
+class Action(Step):
     """ Class for referencing a previously saved action by its name or id.
     """
     #TODO: the directory stuff should probably be moved to another place - Session?
@@ -176,14 +178,20 @@ class ActionReference(Step):
         self.reset_viz()
         self.get_lock().acquire()
         if len(self.steps) > 0 and self.selected_step_id >= 0:
-            if not isinstance(self.steps[self.selected_step_id], ActionReference):
-                self.steps[self.selected_step_id].initialize_viz()
+            selected_step = self.steps[self.selected_step_id]
+            if not isinstance(selected_step, Action):
+                selected_step.initialize_viz()
+            if not isinstance(selected_step, ObjectDetectionStep) and not isinstance(selected_step, ManipulationStep):
+                World.get_world().clear_all_objects()
+            elif isinstance(selected_step, ManipulationStep):
+                if not (self.selected_step_id >= 1 and isinstance(self.steps[self.selected_step_id-1], ObjectDetectionStep)):
+                    World.get_world().clear_all_objects()
         self.get_lock().release()
 
     def update_viz(self):
         self.get_lock().acquire()
         if len(self.steps) > 0 and self.selected_step_id >= 0:
-            if not isinstance(self.steps[self.selected_step_id], ActionReference):
+            if not isinstance(self.steps[self.selected_step_id], Action):
                 self.steps[self.selected_step_id].update_viz()
         self.get_lock().release()
 
@@ -222,15 +230,15 @@ class ActionReference(Step):
 
     @staticmethod
     def get_file(action):
-        return ActionReference.ACTION_DIRECTORY + str(action) + ActionReference.FILE_EXTENSION
+        return Action.ACTION_DIRECTORY + str(action) + Action.FILE_EXTENSION
 
     @staticmethod
     def get_saved_actions():
-        actions = map(ActionReference.load,
-                   filter(lambda f: f.endswith(ActionReference.FILE_EXTENSION),
+        actions = map(Action.load,
+                   filter(lambda f: f.endswith(Action.FILE_EXTENSION),
                           filter(isfile,
-                                 map(partial(join, ActionReference.ACTION_DIRECTORY),
-                                     listdir(ActionReference.ACTION_DIRECTORY)))))
+                                 map(partial(join, Action.ACTION_DIRECTORY),
+                                     listdir(Action.ACTION_DIRECTORY)))))
         actions.sort(key=lambda action: action.id)
         return actions
 
@@ -238,11 +246,11 @@ class ActionReference(Step):
     def load(act_f_id):
         file_path = ""
         if type(act_f_id) is int:
-            file_path = ActionReference.get_file(act_f_id)
+            file_path = Action.get_file(act_f_id)
         else:
             file_path = act_f_id
         act_file = open(file_path, 'r')
-        act = ActionReference.from_string(act_file)
+        act = Action.from_string(act_file)
         act_file.close()
         return act
 
@@ -265,12 +273,12 @@ class ActionReference(Step):
         return yaml.dump(self)
 
     def copy(self):
-        return ActionReference.from_string(self.to_string())
+        return Action.from_string(self.to_string())
 
 
 def action_step_constructor(loader, node):
     fields = loader.construct_mapping(node, deep=True)
-    step = ActionReference(fields)
+    step = Action(fields)
     step.strategy = fields['strategy']
     step.is_while = fields['is_while']
     step.ignore_conditions = fields['ignore_conditions']
@@ -294,4 +302,4 @@ def action_step_representer(dumper, data):
                                                      'name': data.name,
                                                      'id': data.id})
 
-yaml.add_representer(ActionReference, action_step_representer)
+yaml.add_representer(Action, action_step_representer)

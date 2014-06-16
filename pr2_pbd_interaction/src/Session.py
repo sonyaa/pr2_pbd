@@ -8,7 +8,7 @@ from pr2_pbd_interaction.msg import ExperimentState
 from pr2_pbd_interaction.srv import GetExperimentState
 from pr2_pbd_interaction.srv import GetExperimentStateResponse
 from step_types import ArmStep, BaseStep
-from step_types.Action import ActionReference
+from step_types.Action import Action
 from step_types.ManipulationStep import ManipulationStep
 
 
@@ -26,9 +26,9 @@ class Session:
         self._selected_arm_step = -1
 
         #TODO: read data_dir name from parameters?
-        if not os.path.exists(ActionReference.ACTION_DIRECTORY):
-            os.makedirs(ActionReference.ACTION_DIRECTORY)
-        self.actions = ActionReference.get_saved_actions()
+        if not os.path.exists(Action.ACTION_DIRECTORY):
+            os.makedirs(Action.ACTION_DIRECTORY)
+        self.actions = Action.get_saved_actions()
         self.current_action_index = 0 if len(self.actions) > 0 else None
         if self.current_action_index is not None:
             self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
@@ -38,7 +38,7 @@ class Session:
         for act in self.actions:
             new_steps = []
             for step in act.steps:
-                if isinstance(step, ActionReference):
+                if isinstance(step, Action):
                     for other_act in self.actions:
                         if other_act.id == step.id:
                             new_steps.append(other_act)
@@ -197,7 +197,7 @@ class Session:
             self.actions[self.current_action_index].reset_viz()
         self._selected_step = -1
         self._selected_arm_step = -1
-        newAct = ActionReference(name="Unnamed " + str(len(self.actions)))
+        newAct = Action(name="Unnamed " + str(len(self.actions)))
         newAct.save()
         self.actions.append(newAct)
         self.current_action_index = len(self.actions) - 1
