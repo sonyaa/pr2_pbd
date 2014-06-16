@@ -1072,6 +1072,7 @@ Visualization Manager:
           Object Detection: true
           Object Recognition: true
           Value: true
+        PoseArray: true
         PublishClickCamera: true
         Robot:
           InvisibleRobot: true
@@ -1168,6 +1169,7 @@ Visualization Manager:
           Object Detection: true
           Object Recognition: true
           Value: true
+        PoseArray: true
         Robot:
           InvisibleRobot: true
           RobotModel: true
@@ -1180,6 +1182,13 @@ Visualization Manager:
       Enabled: true
       Name: Map
       Topic: /map
+      Value: true
+    - Arrow Length: 0.3
+      Class: rviz/PoseArray
+      Color: 255; 25; 0
+      Enabled: true
+      Name: PoseArray
+      Topic: /particlecloud
       Value: true
   Enabled: true
   Global Options:
@@ -1240,5 +1249,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1338
-  X: 158
+  X: 151
   Y: 93
