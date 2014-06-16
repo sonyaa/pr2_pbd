@@ -384,13 +384,7 @@ class Robot:
 
         if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
             rospy.loginfo('Moving back a bit to untuck arms safely')
-            nav_goal = MoveBaseGoal()
-            nav_goal.target_pose.header.frame_id = "base_link"
-            nav_goal.target_pose.header.stamp = rospy.Time.now()
-            nav_goal.target_pose.pose.position.x = -0.5
-            nav_goal.target_pose.pose.orientation.w = 1.0
-            self.nav_action_client.send_goal(nav_goal)
-            self.nav_action_client.wait_for_result(rospy.Duration(5.0))
+            self.base_action(-0.25, 0, 0, 0, 0, 0)
 
         # Untuck arms and move to where they were.
         rospy.loginfo("Untucking arms and moving them back after navigation.")
@@ -404,13 +398,7 @@ class Robot:
 
         if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
             rospy.loginfo('Moving forward to the goal')
-            nav_goal = MoveBaseGoal()
-            nav_goal.target_pose.header.frame_id = "base_link"
-            nav_goal.target_pose.header.stamp = rospy.Time.now()
-            nav_goal.target_pose.pose.position.x = 0.5
-            nav_goal.target_pose.pose.orientation.w = 1.0
-            self.nav_action_client.send_goal(nav_goal)
-            self.nav_action_client.wait_for_result(rospy.Duration(5.0))
+            self.base_action(0.25, 0, 0, 0, 0, 0)
 
         # Verify that base succeeded
         if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
@@ -418,6 +406,18 @@ class Robot:
             return False
         else:
             return True
+
+    def base_action(self, x, y, z, theta_x, theta_y, theta_z):
+        """ Function for moving the base directly (without planning).
+        """
+        topic_name = '/base_controller/command'
+        base_publisher = rospy.Publisher(topic_name, Twist)
+
+        twist_msg = Twist()
+        twist_msg.linear = Vector3(x, y, z)
+        twist_msg.angular = Vector3(theta_x, theta_y, theta_z)
+
+        base_publisher.publish(twist_msg)
 
     def spin_base(self, rotate_count):
         """ Spin 360 * rotate_count degrees clockwise """
