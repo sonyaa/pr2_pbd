@@ -353,8 +353,12 @@ class Robot:
         arms_status = self.status
         # Pretend that we're in the execution, so the robot's gaze doesn't follow the arms.
         self.status = ExecutionStatus.EXECUTING
+        rospy.loginfo('Moving back a bit to tuck arms safely')
+        self.base_action(-0.3, 0, 0, 0, 0, 0, 1)
         rospy.loginfo("Tucking arms for navigation.")
         self.tuck_arms_with_objects()
+        rospy.loginfo('Moving forward to the starting point')
+        self.base_action(0.3, 0, 0, 0, 0, 0, 1)
 
         pose_stamped = PoseStamped()
         pose_stamped.header.stamp = rospy.Time.now()
@@ -372,7 +376,7 @@ class Robot:
                or self.nav_action_client.get_state() == GoalStatus.PENDING):
             time.sleep(0.01)
             elapsed_time += 0.01
-            if elapsed_time > 60:
+            if elapsed_time > 120:
                 rospy.loginfo('Timeout waiting for base navigation to finish')
                 self.nav_action_client.cancel_goal()
                 break
