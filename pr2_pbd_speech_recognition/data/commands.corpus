@@ -10,8 +10,8 @@ delete-all-steps
 delete-last-pose
 freeze-right-arm
 freeze-left-arm
-record-object-pose
-record-marker-pose
+record-objects-on-table
+record-objects-in-front
 create-new-action
 execute-action
 next-action

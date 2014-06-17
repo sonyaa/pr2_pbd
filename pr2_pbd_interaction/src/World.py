@@ -673,9 +673,9 @@ class World:
             self._tf_broadcaster.sendTransform(pos, rot,
                                                rospy.Time.now(), name, parent)
 
-    def update_object_pose(self):
+    def update_object_pose(self, gaze_goal=GazeGoal.LOOK_DOWN):
         ''' Function to externally update an object pose'''
-        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
+        Response.perform_gaze_action(gaze_goal)
         while (Response.gaze_client.get_state() == GoalStatus.PENDING or
                        Response.gaze_client.get_state() == GoalStatus.ACTIVE):
             time.sleep(0.1)

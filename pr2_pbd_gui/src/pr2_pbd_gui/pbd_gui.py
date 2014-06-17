@@ -109,7 +109,8 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last step'
         self.commands[Command.DELETE_LAST_POSE] = 'Delete last arm pose'
         #self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
-        self.commands[Command.RECORD_OBJECT_POSE] = 'Record object poses'
+        self.commands[Command.RECORD_OBJECTS_ON_TABLE] = 'Record objects on table'
+        self.commands[Command.RECORD_OBJECTS_IN_FRONT] = 'Record objects in front'
         self.commands[Command.SAVE_ACTION] = 'Save action'
 
         self.currentAction = -1
@@ -166,10 +167,10 @@ class PbDGUI(Plugin):
         actionNameGrid.addWidget(ch_name_but)
 
         misc_grid = QtGui.QHBoxLayout()
-        misc_grid.addWidget(self.create_button(Command.TEST_MICROPHONE))
-        misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
-        misc_grid.addWidget(self.create_button(Command.SAVE_LOCATION))
         misc_grid.addWidget(self.create_button(Command.SAVE_POSE))
+        misc_grid.addWidget(self.create_button(Command.SAVE_LOCATION))
+        misc_grid.addWidget(self.create_button(Command.RECORD_OBJECTS_ON_TABLE))
+        misc_grid.addWidget(self.create_button(Command.RECORD_OBJECTS_IN_FRONT))
         misc_grid.addStretch(1)
 
         misc_grid2 = QtGui.QHBoxLayout()
