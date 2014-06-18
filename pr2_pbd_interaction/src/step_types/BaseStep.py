@@ -29,7 +29,8 @@ class BaseStep(Step):
     def __init__(self, *args, **kwargs):  #(self, end_pose):
         from Robot import Robot
         Step.__init__(self, *args, **kwargs)
-        self.head_position = Robot.get_head_position()
+        # If len(Robot.arms)>0, it means that the robot was initialized. Otherwise fall back on default.
+        self.head_position = Robot.get_head_position() if len(Robot.arms) > 0 else Point(1,0,1)
         self.end_pose = args[0]
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
 

@@ -69,6 +69,8 @@ class RobotSpeech:
     EXECUTION_ERROR_CONDITION_FAIL = 'Condition was not satisfied. Cannot execute action.'
     RENAMED_ACTION = 'Renamed action'
     ACTION_STEP_ADDED = 'Added action step'
+    LOOKING_DOWN = 'Looking down'
+    LOOKING_FORWARD = 'Looking forward'
 
     def __init__(self):
         #self.speech_publisher = rospy.Publisher('robotsound', SoundRequest)

@@ -75,10 +75,10 @@ class Interaction:
             Command.SAVE_LOCATION: Response(self.save_base_step, None),
             Command.RECORD_OBJECT_POSE: Response(
                 self.record_object_pose, None),
-            Command.LOOK_DOWN: Response(
-                self.look_down, None),
-            Command.LOOK_FORWARD: Response(
-                self.look_forward, None),
+            Command.LOOK_DOWN: Response(Interaction.empty_response,
+                                              [RobotSpeech.LOOKING_DOWN, GazeGoal.LOOK_DOWN]),
+            Command.LOOK_FORWARD: Response(Interaction.empty_response,
+                                              [RobotSpeech.LOOKING_FORWARD, GazeGoal.LOOK_FORWARD]),
             Command.START_RECORDING_MOTION: Response(
                 self.start_recording, None),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None)
@@ -712,15 +712,6 @@ class Interaction:
                     return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
-
-    def look_down(self, dummy=None):
-        """Makes the robot look down"""
-        self.robot.move_head_to_goal(GazeGoal.LOOK_DOWN)
-
-    def look_forward(self, dummy=None):
-        """Makes the robot look forward"""
-        self.robot.move_head_to_goal(GazeGoal.LOOK_FORWARD)
-
 
     def save_experiment_state(self):
         """Saves session state"""

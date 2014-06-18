@@ -475,19 +475,6 @@ class Robot:
         headGoal.target.point = point
         self.headActionClient.send_goal(headGoal)
 
-    def move_head_to_goal(self, gaze_goal):
-        rospy.loginfo("Moving head to goal")
-        Response.perform_gaze_action(gaze_goal)
-        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
-                       Response.gaze_client.get_state() == GoalStatus.ACTIVE):
-            time.sleep(0.1)
-        rospy.loginfo("Goal status: " + str(Response.gaze_client.get_state()))
-
-        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logerr('Could not move head to desired goal')
-            return False
-        return True
-
 
     @staticmethod
     def _get_time_to_pose(pose, arm_index):
