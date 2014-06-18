@@ -280,11 +280,11 @@ class Robot:
     @staticmethod
     def get_head_position():
         try:
-            ref_frame = "/base_link"
+            ref_frame = "/head_tilt_link"
             time = World.tf_listener.getLatestCommonTime(ref_frame,
-                                                         "/head_tilt_link")
+                                                         "/base_link")
             (position, orientation) = World.tf_listener.lookupTransform(
-                ref_frame, "/head_tilt_link", time)
+                ref_frame, "/base_link", time)
             head_position = Point(position[0], position[1], position[2])
             return head_position
         except (tf.LookupException, tf.ConnectivityException,
@@ -474,6 +474,8 @@ class Robot:
         headGoal.min_duration = rospy.Duration(1.0)
         headGoal.target.point = point
         self.headActionClient.send_goal(headGoal)
+        time.sleep(1.5)
+
 
 
     @staticmethod
