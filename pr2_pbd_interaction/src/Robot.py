@@ -2,6 +2,7 @@
 
 from actionlib.simple_action_client import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
+from control_msgs.msg import PointHeadAction, PointHeadGoal
 import roslib
 import tf
 
@@ -72,6 +73,11 @@ class Robot:
         self.tuck_arms_client = SimpleActionClient('tuck_arms', TuckArmsAction)
         self.tuck_arms_client.wait_for_server()
         rospy.loginfo('Got response from tuck arms action server.')
+
+        ## Action client for sending commands to the head.
+        self.headActionClient = SimpleActionClient('/head_traj_controller/point_head_action', PointHeadAction)
+        self.headActionClient.wait_for_server()
+        rospy.loginfo('Head action client has responded.')
 
     @staticmethod
     def get_robot():
@@ -271,6 +277,21 @@ class Robot:
             rospy.logwarn('Something wrong with transform request for base state.')
             return None
 
+    @staticmethod
+    def get_head_position():
+        try:
+            ref_frame = "/base_link"
+            time = World.tf_listener.getLatestCommonTime(ref_frame,
+                                                         "/head_tilt_link")
+            (position, orientation) = World.tf_listener.lookupTransform(
+                ref_frame, "/head_tilt_link", time)
+            head_position = Point(position[0], position[1], position[2])
+            return head_position
+        except (tf.LookupException, tf.ConnectivityException,
+                tf.ExtrapolationException):
+            rospy.logwarn('Something wrong with transform request for head state.')
+            return None
+
     def _get_absolute_arm_states(self):
         abs_ee_poses = [Robot.get_ee_state(0),
                         Robot.get_ee_state(1)]
@@ -445,6 +466,27 @@ class Robot:
                 rospy.logwarn('Execution stopped by user, stopping orientation.')
                 return
             base_publisher.publish(twist_msg)
+
+    def move_head_to_point(self, point):
+        rospy.loginfo("Moving head to point")
+        headGoal = PointHeadGoal()
+        headGoal.target.header.frame_id = 'base_link'
+        headGoal.min_duration = rospy.Duration(1.0)
+        headGoal.target.point = point
+        self.headActionClient.send_goal(headGoal)
+
+    def move_head_to_goal(self, gaze_goal):
+        rospy.loginfo("Moving head to goal")
+        Response.perform_gaze_action(gaze_goal)
+        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
+                       Response.gaze_client.get_state() == GoalStatus.ACTIVE):
+            time.sleep(0.1)
+        rospy.loginfo("Goal status: " + str(Response.gaze_client.get_state()))
+
+        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
+            rospy.logerr('Could not move head to desired goal')
+            return False
+        return True
 
 
     @staticmethod

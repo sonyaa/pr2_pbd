@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from geometry_msgs.msg import Point
 import rospy
 import yaml
 from BaseStepMarker import BaseStepMarker
@@ -14,6 +15,7 @@ def base_step_constructor(loader, node):
     b_step.is_while = fields['is_while']
     b_step.ignore_conditions = fields['ignore_conditions']
     b_step.conditions = fields['conditions']
+    b_step.head_position = fields.get('head_position', Point(1,0,1))
     return b_step
 
 
@@ -25,13 +27,16 @@ class BaseStep(Step):
     '''
 
     def __init__(self, *args, **kwargs):  #(self, end_pose):
+        from Robot import Robot
         Step.__init__(self, *args, **kwargs)
+        self.head_position = Robot.get_head_position()
         self.end_pose = args[0]
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
 
     def execute(self):
         from Robot import Robot
         robot = Robot.get_robot()
+        robot.move_head_to_point(self.head_position)
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             if not self.ignore_conditions:

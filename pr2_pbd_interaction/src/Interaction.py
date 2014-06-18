@@ -73,10 +73,12 @@ class Interaction:
             Command.SAVE_ACTION: Response(self.save_action, None),
             Command.SAVE_POSE: Response(self.save_arm_step, None),
             Command.SAVE_LOCATION: Response(self.save_base_step, None),
-            Command.RECORD_OBJECTS_ON_TABLE: Response(
-                self.record_object_pose_down, None),
-            Command.RECORD_OBJECTS_IN_FRONT: Response(
-                self.record_object_pose_forward, None),
+            Command.RECORD_OBJECT_POSE: Response(
+                self.record_object_pose, None),
+            Command.LOOK_DOWN: Response(
+                self.look_down, None),
+            Command.LOOK_FORWARD: Response(
+                self.look_forward, None),
             Command.START_RECORDING_MOTION: Response(
                 self.start_recording, None),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None)
@@ -699,30 +701,25 @@ class Interaction:
 
         self.robot.status = ExecutionStatus.NOT_EXECUTING
 
-    def record_object_pose_down(self, dummy=None):
-        """Makes the robot look down for a table and objects"""
+    def record_object_pose(self, dummy=None):
+        """Makes the robot look for a table and objects"""
         if self.session.n_actions() > 0:
             if (Interaction._is_programming):
-                if self.world.update_object_pose(GazeGoal.LOOK_DOWN):
-                    self.session.add_step_to_action(ObjectDetectionStep(GazeGoal.LOOK_DOWN))
+                if self.world.update_object_pose():
+                    self.session.add_step_to_action(ObjectDetectionStep())
                     return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
                 else:
                     return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
+    def look_down(self, dummy=None):
+        """Makes the robot look down"""
+        self.robot.move_head_to_goal(GazeGoal.LOOK_DOWN)
 
-    def record_object_pose_forward(self, dummy=None):
-        """Makes the robot look for objects/markers in front of it"""
-        if self.session.n_actions() > 0:
-            if (Interaction._is_programming):
-                if self.world.update_object_pose(GazeGoal.LOOK_FORWARD):
-                    self.session.add_step_to_action(ObjectDetectionStep(GazeGoal.LOOK_FORWARD))
-                    return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
-                else:
-                    return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]
-        else:
-            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
+    def look_forward(self, dummy=None):
+        """Makes the robot look forward"""
+        self.robot.move_head_to_goal(GazeGoal.LOOK_FORWARD)
 
 
     def save_experiment_state(self):

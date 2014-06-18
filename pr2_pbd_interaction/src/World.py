@@ -673,19 +673,9 @@ class World:
             self._tf_broadcaster.sendTransform(pos, rot,
                                                rospy.Time.now(), name, parent)
 
-    def update_object_pose(self, gaze_goal=GazeGoal.LOOK_DOWN):
+    def update_object_pose(self):
         ''' Function to externally update an object pose'''
-        Response.perform_gaze_action(gaze_goal)
-        while (Response.gaze_client.get_state() == GoalStatus.PENDING or
-                       Response.gaze_client.get_state() == GoalStatus.ACTIVE):
-            time.sleep(0.1)
-        rospy.loginfo("Goal status: " + str(Response.gaze_client.get_state()))
-
-        if (Response.gaze_client.get_state() != GoalStatus.SUCCEEDED):
-            rospy.logerr('Could not look down to take table snapshot')
-            return False
-
-        rospy.loginfo('Looking at table now.')
+        rospy.loginfo('Looking for objects now.')
         goal = UserCommandGoal(UserCommandGoal.RESET, False)
         self._object_action_client.send_goal(goal)
         while (self._object_action_client.get_state() == GoalStatus.ACTIVE or

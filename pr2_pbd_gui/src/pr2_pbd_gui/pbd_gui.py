@@ -108,9 +108,9 @@ class PbDGUI(Plugin):
         self.commands[Command.DELETE_ALL_STEPS] = 'Delete all'
         self.commands[Command.DELETE_LAST_STEP] = 'Delete last step'
         self.commands[Command.DELETE_LAST_POSE] = 'Delete last arm pose'
-        #self.commands[Command.REPEAT_LAST_STEP] = 'Repeat last step'
-        self.commands[Command.RECORD_OBJECTS_ON_TABLE] = 'Record objects on table'
-        self.commands[Command.RECORD_OBJECTS_IN_FRONT] = 'Record objects in front'
+        self.commands[Command.RECORD_OBJECT_POSE] = 'Record object pose'
+        self.commands[Command.LOOK_DOWN] = 'Look down'
+        self.commands[Command.LOOK_FORWARD] = 'Look forward'
         self.commands[Command.SAVE_ACTION] = 'Save action'
 
         self.currentAction = -1
@@ -169,8 +169,7 @@ class PbDGUI(Plugin):
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.SAVE_POSE))
         misc_grid.addWidget(self.create_button(Command.SAVE_LOCATION))
-        misc_grid.addWidget(self.create_button(Command.RECORD_OBJECTS_ON_TABLE))
-        misc_grid.addWidget(self.create_button(Command.RECORD_OBJECTS_IN_FRONT))
+        misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
         misc_grid.addStretch(1)
 
         misc_grid2 = QtGui.QHBoxLayout()
@@ -186,6 +185,11 @@ class PbDGUI(Plugin):
         misc_grid3.addWidget(self.create_button(Command.CLOSE_RIGHT_HAND))
         misc_grid3.addWidget(self.create_button(Command.CLOSE_LEFT_HAND))
         misc_grid3.addStretch(1)
+
+        misc_grid3a = QtGui.QHBoxLayout()
+        misc_grid3a.addWidget(self.create_button(Command.LOOK_DOWN))
+        misc_grid3a.addWidget(self.create_button(Command.LOOK_FORWARD))
+        misc_grid3a.addStretch(1)
 
         misc_grid4 = QtGui.QHBoxLayout()
         misc_grid4.addWidget(self.create_button(Command.PREV_ACTION))
@@ -216,6 +220,7 @@ class PbDGUI(Plugin):
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         allWidgetsBox.addLayout(misc_grid2)
         allWidgetsBox.addLayout(misc_grid3)
+        allWidgetsBox.addLayout(misc_grid3a)
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))
         allWidgetsBox.addLayout(misc_grid4)
         allWidgetsBox.addItem(QtGui.QSpacerItem(100, 20))

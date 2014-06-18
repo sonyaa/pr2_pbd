@@ -12,12 +12,15 @@ class ObjectDetectionStep(Step):
     """
 
     def __init__(self, *args, **kwargs):
+        from Robot import Robot
         Step.__init__(self, *args, **kwargs)
         self.gaze_goal = args[0]
+        self.head_position = Robot.get_head_position()
 
     def execute(self):
         from Robot import Robot
         robot = Robot.get_robot()
+        robot.move_head_to_point(self.head_position)
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             if not self.ignore_conditions:
