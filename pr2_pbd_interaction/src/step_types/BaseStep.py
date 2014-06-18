@@ -118,7 +118,8 @@ def base_step_representer(dumper, data):
                                                    'is_while': data.is_while,
                                                    'ignore_conditions': data.ignore_conditions,
                                                    'conditions': data.conditions,
-                                                   'end_pose': data.end_pose})
+                                                   'end_pose': data.end_pose,
+                                                   'head_position': data.head_position})
 
 
 yaml.add_representer(BaseStep, base_step_representer)
