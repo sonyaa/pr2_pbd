@@ -382,11 +382,15 @@ class World:
                     rospy.loginfo('Previously detected object at the same' +
                                   'location, will not add this object.')
                     return False
+                if id is not None and World.objects[i].get_name() == "marker" + str(id):
+                    rospy.loginfo('Previously added marker with the same id, will not add this object.')
+                    return False
             n_objects = len(World.objects)
             new_object = WorldObject(pose, n_objects,
                                      dimensions, is_recognized)
             if id is not None:
-                new_object.assign_name("marker_" + str(id))
+                new_object.assign_name("marker" + str(id))
+                new_object.is_marker = True
             World.objects.append(new_object)
             int_marker = self._get_object_marker(len(World.objects) - 1)
             World.objects[-1].int_marker = int_marker

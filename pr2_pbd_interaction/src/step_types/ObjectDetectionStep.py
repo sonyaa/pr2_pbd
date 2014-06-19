@@ -14,7 +14,6 @@ class ObjectDetectionStep(Step):
     def __init__(self, *args, **kwargs):
         from Robot import Robot
         Step.__init__(self, *args, **kwargs)
-        self.gaze_goal = args[0]
         self.head_position = Robot.get_head_position()
 
     def execute(self):
@@ -46,7 +45,7 @@ class ObjectDetectionStep(Step):
                 raise StoppedByUserError()
             # call object detection
             world = World.get_world()
-            if not world.update_object_pose(self.gaze_goal):
+            if not world.update_object_pose():
                 if robot.preempt:
                     robot.status = ExecutionStatus.PREEMPTED
                     rospy.logerr('Execution of object detection step failed, execution preempted by user.')
