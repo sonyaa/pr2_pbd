@@ -419,7 +419,10 @@ class Robot:
         self.tuck_arms_client.send_goal_and_wait(goal, rospy.Duration(30.0), rospy.Duration(5.0))
         # Return to remembered pose.
         self.status = arms_status
-        self.move_to_joints(armTarget.rArm, armTarget.lArm)
+        Robot.arms[0].move_to_joints(armTarget.rArm.joint_pose, 1)
+        time.sleep(2)
+        Robot.arms[1].move_to_joints(armTarget.lArm.joint_pose, 1)
+        time.sleep(2)
 
         if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
             rospy.loginfo('Moving forward to the goal')
