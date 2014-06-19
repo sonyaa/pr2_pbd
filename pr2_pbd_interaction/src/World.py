@@ -554,6 +554,14 @@ class World:
         return len(World.objects) > 0
 
     @staticmethod
+    def has_marker_objects():
+        '''Function that checks if there are any markers'''
+        for o in World.objects:
+            if o.is_marker:
+                return True
+        return False
+
+    @staticmethod
     def has_non_marker_objects():
         '''Function that checks if there are any objects'''
         for o in World.objects:
@@ -703,9 +711,12 @@ class World:
         rospy.loginfo('STATUS: ' +
                       self._object_action_client.get_goal_status_text())
 
-        if (self._object_action_client.get_state() != GoalStatus.SUCCEEDED):
+        if self._object_action_client.get_state() != GoalStatus.SUCCEEDED:
             rospy.logerr('Could not segment.')
             self.is_looking_for_markers = False
+            if World.has_marker_objects():
+                rospy.loginfo("But found some markers, will return that")
+                return True
             return False
 
         # Do recognition
@@ -736,6 +747,9 @@ class World:
         else:
             rospy.logerr('Could not recognize.')
             self.is_looking_for_markers = False
+            if World.has_marker_objects():
+                rospy.loginfo("But found some markers, will return that")
+                return True
             return False
 
     def clear_all_objects(self):
