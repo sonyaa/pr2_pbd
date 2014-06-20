@@ -110,7 +110,7 @@ class ManipulationStep(Step):
                 return
             # If the manipulation step needs objects and we're in a while loop, look for objects again.
             elif len(step_to_execute.conditions) > 0 and isinstance(step_to_execute.conditions[0], SpecificObjectCondition):
-                robot.move_head_to_point(self.head_position)
+                robot.move_head_to_point(self.head_position, time_to_wait=3)
                 world = World.get_world()
                 if not world.update_object_pose():
                     rospy.logwarn("Object detection failed.")

@@ -470,14 +470,14 @@ class Robot:
                 return
             base_publisher.publish(twist_msg)
 
-    def move_head_to_point(self, point):
+    def move_head_to_point(self, point, time_to_wait=1.5):
         rospy.loginfo("Moving head to point")
         headGoal = PointHeadGoal()
         headGoal.target.header.frame_id = 'base_link'
-        headGoal.min_duration = rospy.Duration(1.0)
+        headGoal.min_duration = rospy.Duration(time_to_wait-0.5)
         headGoal.target.point = point
         self.headActionClient.send_goal(headGoal)
-        time.sleep(1.5)
+        time.sleep(time_to_wait)
 
 
 
