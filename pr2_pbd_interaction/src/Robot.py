@@ -465,10 +465,9 @@ class Robot:
                 return
             base_publisher.publish(twist_msg)
 
-    def move_head_to_point(self, point, time_to_wait=1.5):
+    def move_head_to_point(self, point):
         rospy.loginfo("Moving head to point")
         Response.look_at_point(point)
-        time.sleep(time_to_wait)
 
     @staticmethod
     def _get_time_to_pose(pose, arm_index):

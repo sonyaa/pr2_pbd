@@ -60,7 +60,6 @@ class ManipulationStep(Step):
     def execute(self):
         from Robot import Robot
         robot = Robot.get_robot()
-        robot.move_head_to_point(self.head_position)
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             step_to_execute = self.copy()
@@ -110,7 +109,7 @@ class ManipulationStep(Step):
                 return
             # If the manipulation step needs objects and we're in a while loop, look for objects again.
             elif len(step_to_execute.conditions) > 0 and isinstance(step_to_execute.conditions[0], SpecificObjectCondition):
-                robot.move_head_to_point(self.head_position, time_to_wait=3)
+                robot.move_head_to_point(self.head_position)
                 world = World.get_world()
                 if not world.update_object_pose():
                     rospy.logwarn("Object detection failed.")
