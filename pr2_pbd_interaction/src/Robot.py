@@ -74,11 +74,6 @@ class Robot:
         self.tuck_arms_client.wait_for_server()
         rospy.loginfo('Got response from tuck arms action server.')
 
-        ## Action client for sending commands to the head.
-        self.headActionClient = SimpleActionClient('/head_traj_controller/point_head_action', PointHeadAction)
-        self.headActionClient.wait_for_server()
-        rospy.loginfo('Head action client has responded.')
-
     @staticmethod
     def get_robot():
         if Robot.robot is None:
@@ -472,14 +467,8 @@ class Robot:
 
     def move_head_to_point(self, point, time_to_wait=1.5):
         rospy.loginfo("Moving head to point")
-        headGoal = PointHeadGoal()
-        headGoal.target.header.frame_id = 'base_link'
-        headGoal.min_duration = rospy.Duration(1)
-        headGoal.target.point = point
-        self.headActionClient.send_goal(headGoal)
+        Response.look_at_point(point)
         time.sleep(time_to_wait)
-
-
 
     @staticmethod
     def _get_time_to_pose(pose, arm_index):
