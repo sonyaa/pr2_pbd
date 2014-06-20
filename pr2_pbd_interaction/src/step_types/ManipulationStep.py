@@ -21,6 +21,7 @@ def manipulation_step_constructor(loader, node):
     m_step.conditions = fields['conditions']
     m_step.arm_steps = fields['arm_steps']
     m_step.objects = fields.get('objects', [])
+    m_step.head_position = fields.get('head_position')
     # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
     # except arm steps and basic step members
     if len(Robot.arms) == 2:  # if the robot is initialized, construct ArmStepMarkerSequence
@@ -48,6 +49,7 @@ class ManipulationStep(Step):
             # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
             # except arm steps and basic step members
             return
+        self.head_position = Robot.get_head_position()
         self.lock = threading.Lock()
         self.conditions = [SpecificObjectCondition()]
         self.step_click_cb = Session.get_session().selected_arm_step_cb
@@ -58,6 +60,7 @@ class ManipulationStep(Step):
     def execute(self):
         from Robot import Robot
         robot = Robot.get_robot()
+        robot.move_head_to_point(self.head_position)
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             step_to_execute = self.copy()
@@ -107,6 +110,7 @@ class ManipulationStep(Step):
                 return
             # If the manipulation step needs objects and we're in a while loop, look for objects again.
             elif len(step_to_execute.conditions) > 0 and isinstance(step_to_execute.conditions[0], SpecificObjectCondition):
+                robot.move_head_to_point(self.head_position)
                 world = World.get_world()
                 if not world.update_object_pose():
                     rospy.logwarn("Object detection failed.")
@@ -310,6 +314,7 @@ def manipulation_step_representer(dumper, data):
                                                            'ignore_conditions': data.ignore_conditions,
                                                            'conditions': data.conditions,
                                                            'arm_steps': data.arm_steps,
-                                                           'objects': data.objects})
+                                                           'objects': data.objects,
+                                                           'head_position': data.head_position})
 
 yaml.add_representer(ManipulationStep, manipulation_step_representer)
