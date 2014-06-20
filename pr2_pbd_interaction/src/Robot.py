@@ -474,7 +474,7 @@ class Robot:
         rospy.loginfo("Moving head to point")
         headGoal = PointHeadGoal()
         headGoal.target.header.frame_id = 'base_link'
-        headGoal.min_duration = rospy.Duration(time_to_wait-0.5)
+        headGoal.min_duration = rospy.Duration(1)
         headGoal.target.point = point
         self.headActionClient.send_goal(headGoal)
         time.sleep(time_to_wait)
