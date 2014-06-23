@@ -257,8 +257,8 @@ class World:
                 rospy.logwarn('Found some objects, but not similar enough.')
                 return None
             else:
-                rospy.loginfo('Most similar to new object '
-                              + str(chosen_obj_index))
+                rospy.loginfo('Most similar to object '
+                              + ref_frame_list[chosen_obj_index].name)
                 return ref_frame_list[chosen_obj_index]
 
     @staticmethod
@@ -544,12 +544,13 @@ class World:
         int_marker.controls.append(button_control)
         return int_marker
 
-    @staticmethod
-    def get_frame_list():
+    def get_frame_list(self):
         '''Function that returns the list of ref. frames'''
+        self._lock.acquire()
         objects = []
         for i in range(len(World.objects)):
             objects.append(World.objects[i].object)
+        self._lock.release()
         return objects
 
     @staticmethod
