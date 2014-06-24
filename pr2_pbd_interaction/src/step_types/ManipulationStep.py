@@ -2,6 +2,7 @@
 import functools
 import threading
 import yaml
+import time
 from ArmStepMarkerSequence import ArmStepMarkerSequence
 from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
 from World import World
@@ -114,6 +115,8 @@ class ManipulationStep(Step):
                 if not world.update_object_pose():
                     rospy.logwarn("Object detection failed.")
                     return
+                # Wait for all objects to be detected.
+                time.sleep(1)
 
     def add_arm_step(self, arm_step):
         self.lock.acquire()
@@ -158,6 +161,7 @@ class ManipulationStep(Step):
         self.lock.acquire()
         has_real_objects = True
         world_objects = World.get_world().get_frame_list()
+        rospy.loginfo([x.name for x in world_objects])
         action_objects = None
         map_of_objects_old_to_new = None
         if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
@@ -167,6 +171,8 @@ class ManipulationStep(Step):
                                                                     threshold=self.conditions[0].similarity_threshold)
             if map_of_objects_old_to_new is None and len(unique_action_objects) > 0:
                 world_objects = self.get_unique_objects()
+                rospy.loginfo('fake objects')
+                rospy.loginfo([x.name for x in world_objects])
                 map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
                 has_real_objects = False
         self.marker_sequence.update_objects(action_objects, world_objects, map_of_objects_old_to_new, has_real_objects)
