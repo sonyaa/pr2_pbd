@@ -124,6 +124,8 @@ class Robot:
             self.action.execute()
         except Exception as e:
             rospy.logerr("Execution of an action failed: " + str(e))
+            if self.status == ExecutionStatus.EXECUTING:
+                self.status = ExecutionStatus.OTHER_ERROR
         else:
             self.status = ExecutionStatus.SUCCEEDED
 

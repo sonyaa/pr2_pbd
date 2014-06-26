@@ -695,6 +695,9 @@ class Interaction:
         elif (self.robot.status == ExecutionStatus.OBJECT_DETECTION_FAILED):
             Response.say(RobotSpeech.OBJECT_NOT_DETECTED)
             Response.perform_gaze_action(GazeGoal.SHAKE)
+        elif (self.robot.status == ExecutionStatus.OTHER_ERROR):
+            Response.say(RobotSpeech.EXECUTION_ERROR_OTHER)
+            Response.perform_gaze_action(GazeGoal.SHAKE)
         else:
             Response.say(RobotSpeech.EXECUTION_ERROR_NOIK)
             Response.perform_gaze_action(GazeGoal.SHAKE)

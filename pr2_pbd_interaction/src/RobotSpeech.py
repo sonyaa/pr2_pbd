@@ -33,6 +33,7 @@ class RobotSpeech:
     SKILL_EMPTY = 'Action has no poses to delete.'
     EXECUTION_ERROR_NOIK = 'Unreachable poses. Cannot execute action'
     EXECUTION_ERROR_NOPOSES = 'Not enough poses in action'
+    EXECUTION_ERROR_OTHER = 'Cannot execute action'
     ERROR_NEXT_SKILL = 'No actions after action'
     ERROR_PREV_SKILL = 'No actions before action'
     ERROR_NO_SKILLS = 'No actions created yet.'
