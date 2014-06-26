@@ -268,14 +268,19 @@ class World:
         if len(object_list) == 0 or len(ref_frame_list) == 0:
             return None
         markers_dict = {}
-        for ref_frame in ref_frame_list:
-            name = ref_frame.name
-            if name.startswith("marker"):
-                markers_dict[name] = ref_frame
-        ref_frame_list = [x for x in ref_frame_list if x.name not in markers_dict.keys()]
-        object_list = [x for x in object_list if x.name not in markers_dict.keys()]
+        marker_names = []
+        for obj in object_list:
+            object_name = obj.name
+            if object_name.startswith("marker"):
+                marker_names.append(object_name)
+                for ref_frame in ref_frame_list:
+                    if ref_frame.name == object_name:
+                        markers_dict[object_name] = ref_frame
+                        break
+        ref_frame_list = [x for x in ref_frame_list if x.name not in marker_names]
+        object_list = [x for x in object_list if x.name not in marker_names]
         if len(object_list) == 0 or len(ref_frame_list) == 0:
-            return markers_dict
+            return markers_dict if len(markers_dict) > 0 else None
         orderings = []
         World.permute(object_list, orderings)
         costs = []
