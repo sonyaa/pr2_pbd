@@ -273,10 +273,14 @@ class World:
             object_name = obj.name
             if object_name.startswith("marker"):
                 marker_names.append(object_name)
+                found_match = False
                 for ref_frame in ref_frame_list:
                     if ref_frame.name == object_name:
                         markers_dict[object_name] = ref_frame
+                        found_match = True
                         break
+                if not found_match:
+                    return None
         ref_frame_list = [x for x in ref_frame_list if x.name not in marker_names]
         object_list = [x for x in object_list if x.name not in marker_names]
         if len(object_list) == 0 or len(ref_frame_list) == 0:
