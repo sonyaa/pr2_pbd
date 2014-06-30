@@ -46,10 +46,6 @@
   </node>
 
   <!-- This allows the robot to recognize AR markers -->
-  <-- <include file="$(find ar_track_alvar)/launch/pr2_indiv.launch">
-    <arg name="output_frame" value="/base_link" />
-  </include> -->
-
   <include file="$(find ar_kinect)/launch/ar_kinect.launch" />
 
       
