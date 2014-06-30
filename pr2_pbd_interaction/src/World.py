@@ -29,7 +29,7 @@ from interactive_markers.menu_handler import MenuHandler
 from actionlib_msgs.msg import GoalStatus
 import actionlib
 from math import pi, sin, cos
-from ar_pose.msg import ARMarkers
+from ar_track_alvar.msg import AlvarMarkers
 
 # Local stuff
 from pr2_pbd_interaction.msg import Object, ArmState
@@ -113,8 +113,8 @@ class World:
         rospy.Subscriber('tabletop_segmentation_markers',
                          Marker, self.receieve_table_marker)
         self.relative_frame_threshold = 0.4
-        rospy.Subscriber("ar_pose_markers",
-                         ARMarkers, self.receive_ar_markers)
+        rospy.Subscriber("ar_pose_marker",
+                         AlvarMarkers, self.receive_ar_markers)
         self.is_looking_for_markers = False
         self.marker_dims = Vector3(0.04, 0.04, 0.01)
         World.world = self

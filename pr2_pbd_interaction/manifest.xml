@@ -37,7 +37,7 @@
   <depend package="tf_throttle"/>
   <depend package="trajectory_filter_server"/>
   <depend package="visualization_msgs"/>
-  <depend package="ar_pose"/>
+  <depend package="ar_track_alvar"/>
 </package>
 
 
