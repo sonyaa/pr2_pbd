@@ -428,6 +428,7 @@ class PbDGUI(Plugin):
                 typeLabel.setText(header_text % "Manipulation")
                 arm_steps_grid = QtGui.QGridLayout()
                 self.editingBox.addLayout(arm_steps_grid)
+                self.editingBox.addStretch(1)
                 arm_steps_grid.addWidget(QtGui.QLabel('Right arm', self._widget), 0, 0)
                 arm_steps_grid.addWidget(QtGui.QLabel('Position', self._widget), 0, 1)
                 arm_steps_grid.setColumnMinimumWidth(2, 10)
@@ -453,11 +454,9 @@ class PbDGUI(Plugin):
                     arm_steps_grid.addWidget(QtGui.QLabel(abs_string_l, self._widget), ind + 1, 5)
                     arm_steps_grid.addWidget(view_l_button, ind + 1, 6)
                     arm_steps_grid.addWidget(del_pose_button, ind + 1, 8)
-                edit_arm_steps_layout = QtGui.QHBoxLayout()
                 edit_arm_steps_btn = QtGui.QPushButton('Edit arm steps', self._widget)
                 edit_arm_steps_btn.clicked.connect(self.edit_arm_steps)
-                edit_arm_steps_layout.addWidget(edit_arm_steps_btn)
-                self.editingBox.addLayout(edit_arm_steps_layout)
+                arm_steps_grid.addWidget(edit_arm_steps_btn, arm_steps_grid.rowCount() + 1, 0, 1, 3)
             elif isinstance(step, BaseStep):
                 typeLabel.setText(header_text % "Navigation")
             elif isinstance(step, ObjectDetectionStep):
@@ -471,6 +470,7 @@ class PbDGUI(Plugin):
             delete_button.clicked.connect(functools.partial(self.delete_step, self.currentStep))
             header_layout.addWidget(typeLabel)
             header_layout.addWidget(delete_button)
+            header_layout.addItem(QtGui.QSpacerItem(50, 100))
             conditions_layout = QtGui.QHBoxLayout()
             conditions_layout.addWidget(QtGui.QLabel("Step has " + str(len(step.conditions)) + " conditions."))
             conditions_edit_btn = QtGui.QPushButton('Edit conditions', self._widget)
