@@ -52,8 +52,8 @@ class ObjectDetectionStep(Step):
                     rospy.logerr('Execution of object detection step failed, execution preempted by user.')
                     raise StoppedByUserError()
                 rospy.logwarn("Object detection failed.")
-                robot.status = ExecutionStatus.OBJECT_DETECTION_FAILED
-                raise NoObjectError()
+                # robot.status = ExecutionStatus.OBJECT_DETECTION_FAILED
+                # raise NoObjectError()
             time.sleep(1)
             if not self.is_while:
                 return
