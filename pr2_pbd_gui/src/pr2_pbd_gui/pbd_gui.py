@@ -500,15 +500,25 @@ class PbDGUI(Plugin):
     def clear_editing_area(self):
         while self.editingBox.count() > 0:
             layout = self.editingBox.itemAt(0).layout()
-            self.editingBox.removeItem(layout)
-            if layout is not None:
-                while layout.count() > 0:
-                    widget = layout.itemAt(0).widget()
-                    layout.removeWidget(widget)
-                    if widget is not None:
-                        widget.deleteLater()
-                        del widget
-                del layout
+            if layout != 0:
+                self.editingBox.removeItem(self.editingBox.itemAt(0))
+                if layout is not None:
+                    while layout.count() > 0:
+                        widget = layout.itemAt(0).widget()
+                        if widget != 0:
+                            layout.removeWidget(widget)
+                            if widget is not None:
+                                widget.deleteLater()
+                                del widget
+                        else:
+                            item = layout.itemAt(0)
+                            layout.removeItem(item)
+                            del item
+                    del layout
+            else:
+                item = self.editingBox.itemAt(0)
+                self.editingBox.removeItem(item)
+                del item
 
     def edit_conditions(self):
         self.is_edit_conditions = True
