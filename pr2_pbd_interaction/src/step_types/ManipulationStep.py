@@ -9,7 +9,7 @@ from World import World
 from condition_types.IKCondition import IKCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 import rospy
-from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode, Strategy
+from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode, Strategy, StepExecutionStatus
 from step_types.Step import Step
 
 
@@ -99,7 +99,8 @@ class ManipulationStep(Step):
                 rospy.logwarn('Problems in finding IK solutions...')
                 robot.status = ExecutionStatus.NO_IK
                 rospy.logerr("Execution of a manipulation step failed, unreachable poses.")
-                raise UnreachablePoseError()
+                self.execution_status = StepExecutionStatus.FAILED
+                return
             else:
                 Robot.set_arm_mode(0, ArmMode.HOLD)
                 Robot.set_arm_mode(1, ArmMode.HOLD)
@@ -114,10 +115,14 @@ class ManipulationStep(Step):
                         rospy.loginfo('Step ' + str(i) + ' of manipulation step is complete.')
                     except:
                         rospy.logerr("Execution of a manipulation step failed")
-                        raise
+                        self.execution_status = StepExecutionStatus.FAILED
+                        return
 
             Robot.arms[0].reset_movement_history()
             Robot.arms[1].reset_movement_history()
+
+            self.execution_status = StepExecutionStatus.SUCCEEDED
+
             if not self.is_while:
                 return
             # If the manipulation step needs objects and we're in a while loop, look for objects again.

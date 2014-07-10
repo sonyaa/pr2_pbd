@@ -6,6 +6,7 @@ from Exceptions import ArmObstructedError, ConditionError, StoppedByUserError
 from Response import Response
 from condition_types.GripperCondition import GripperCondition
 from pr2_pbd_interaction.msg import ExecutionStatus, ArmState, ArmTrajectory, ArmTarget, GripperAction, Strategy
+from pr2_pbd_interaction.msg._StepExecutionStatus import StepExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
 from step_types.Step import Step
 
@@ -53,6 +54,7 @@ class ArmStep(Step):
                             raise ConditionError()
                         elif strategy == Strategy.SKIP_STEP:
                             rospy.loginfo("Strategy is to skip step, skipping.")
+                            self.execution_status = StepExecutionStatus.SKIPPED
                             return
                         elif strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
@@ -78,8 +80,9 @@ class ArmStep(Step):
                         robot.status = ExecutionStatus.PREEMPTED
                         rospy.logerr('Execution of arm step failed, execution preempted by user.')
                         raise StoppedByUserError()
-                    robot.status = ExecutionStatus.OBSTRUCTED
-                    raise ArmObstructedError()
+                    rospy.logwarn('Arms failed to reach target')
+                    self.execution_status = StepExecutionStatus.FAILED
+                    return
             # If arm trajectory action
             elif (self.type == ArmStep.ARM_TRAJECTORY):
                 rospy.loginfo('Will perform arm trajectory action step.')
@@ -90,8 +93,9 @@ class ArmStep(Step):
                         robot.status = ExecutionStatus.PREEMPTED
                         rospy.logerr('Execution of arm step failed, execution preempted by user.')
                         raise StoppedByUserError()
-                    robot.status = ExecutionStatus.OBSTRUCTED
-                    raise ArmObstructedError()
+                    rospy.logwarn('Arms failed to reach target')
+                    self.execution_status = StepExecutionStatus.FAILED
+                    return
 
                 #  Then execute the trajectory
                 Robot.arms[0].exectute_joint_traj(self.armTrajectory.r_arm,
@@ -110,8 +114,8 @@ class ArmStep(Step):
                         (not Robot.arms[1].is_successful())):
                     rospy.logwarn('Aborting execution; ' +
                                   'arms failed to follow trajectory.')
-                    robot.status = ExecutionStatus.OBSTRUCTED
-                    raise ArmObstructedError()
+                    self.execution_status = StepExecutionStatus.FAILED
+                    return
 
             # If hand action do it for both sides
             if (self.gripperAction.rGripper !=
@@ -133,6 +137,8 @@ class ArmStep(Step):
                        Robot.arms[1].is_gripper_moving()):
                 time.sleep(0.01)
             rospy.loginfo('Hands done moving.')
+
+            self.execution_status = StepExecutionStatus.SUCCEEDED
 
             # Verify that both grippers succeeded
             if ((not Robot.arms[0].is_gripper_at_goal()) or

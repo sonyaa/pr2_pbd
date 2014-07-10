@@ -3,6 +3,7 @@ from geometry_msgs.msg import Point
 import rospy
 from Exceptions import ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
+from pr2_pbd_interaction.msg._StepExecutionStatus import StepExecutionStatus
 from step_types.Step import Step
 
 
@@ -35,6 +36,7 @@ class HeadStep(Step):
                             raise ConditionError()
                         elif strategy == Strategy.SKIP_STEP:
                             rospy.loginfo("Strategy is to skip step, skipping.")
+                            self.execution_status = StepExecutionStatus.SKIPPED
                             return
                         elif strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
@@ -52,5 +54,8 @@ class HeadStep(Step):
                 raise StoppedByUserError()
             # send a request to Robot to move to head_position
             robot.move_head_to_point(self.head_position)
+
+            self.execution_status = StepExecutionStatus.SUCCEEDED
+
             if not self.is_while:
                 return

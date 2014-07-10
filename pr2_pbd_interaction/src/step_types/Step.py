@@ -2,6 +2,7 @@
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 import rospy
 from visualization_msgs.msg import MarkerArray
+from condition_types.PreviousStepCondition import PreviousStepCondition
 from pr2_pbd_interaction.msg import Strategy
 
 
@@ -19,6 +20,8 @@ class Step:
         self.ignore_conditions = False
         self.conditions = []
         self.condition_order = xrange(len(self.conditions))
+        self.prev_step_status = None
+        self.execution_status = None
         if Step.interactive_marker_server is None:
             im_server = InteractiveMarkerServer('programmed_actions')
             Step.interactive_marker_server = im_server
@@ -40,6 +43,15 @@ class Step:
 
     def set_condition_order(self, order):
         self.condition_order = order
+
+    def set_previous_step_status(self, status):
+        self.prev_step_status = status
+        for condition in self.conditions:
+            if isinstance(condition, PreviousStepCondition):
+                condition.set_prev_step_status(status)
+
+    def get_execution_status(self):
+        return self.execution_status
 
     def execute(self):
         pass

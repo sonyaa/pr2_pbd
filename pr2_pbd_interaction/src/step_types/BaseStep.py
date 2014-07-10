@@ -5,6 +5,7 @@ import yaml
 from BaseStepMarker import BaseStepMarker
 from Exceptions import BaseObstructedError, ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
+from pr2_pbd_interaction.msg._StepExecutionStatus import StepExecutionStatus
 from step_types.Step import Step
 
 
@@ -51,6 +52,7 @@ class BaseStep(Step):
                             raise ConditionError()
                         elif strategy == Strategy.SKIP_STEP:
                             rospy.loginfo("Strategy is to skip step, skipping.")
+                            self.execution_status = StepExecutionStatus.SKIPPED
                             return
                         elif strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
@@ -72,8 +74,13 @@ class BaseStep(Step):
                     robot.status = ExecutionStatus.PREEMPTED
                     rospy.logerr('Execution of base step failed, execution preempted by user.')
                     raise StoppedByUserError()
-                robot.status = ExecutionStatus.OBSTRUCTED
-                raise BaseObstructedError()
+
+                rospy.logwarn('Base failed to reach target')
+                self.execution_status = StepExecutionStatus.FAILED
+                return
+
+            self.execution_status = StepExecutionStatus.SUCCEEDED
+
             if not self.is_while:
                 return
 

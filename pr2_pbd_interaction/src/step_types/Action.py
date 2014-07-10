@@ -5,6 +5,7 @@ from interactive_markers.interactive_marker_server import InteractiveMarkerServe
 from World import World
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 from pr2_pbd_interaction.msg import ExecutionStatus
+from pr2_pbd_interaction.msg._StepExecutionStatus import StepExecutionStatus
 from pr2_pbd_interaction.msg._Strategy import Strategy
 from step_types.ManipulationStep import ManipulationStep
 from step_types.Step import Step
@@ -55,6 +56,7 @@ class Action(Step):
                             raise ConditionError()
                         elif strategy == Strategy.SKIP_STEP:
                             rospy.loginfo("Strategy is to skip step, skipping.")
+                            self.execution_status = StepExecutionStatus.SKIPPED
                             return
                         elif strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
@@ -65,7 +67,11 @@ class Action(Step):
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:
                 rospy.loginfo('Ignoring conditions for action step')
-            for (i, step) in enumerate(self.steps):
+            cur_status = None
+            for i in xrange(len(self.steps)):
+                step = self.steps[i]
+                if cur_status is not None:
+                    step.set_previous_step_status(cur_status)
                 if robot.preempt:
                     # robot.preempt = False
                     robot.status = ExecutionStatus.PREEMPTED
@@ -74,10 +80,14 @@ class Action(Step):
                 try:
                     if robot.status == ExecutionStatus.EXECUTING:
                         step.execute()
-                    rospy.loginfo('Step ' + str(i) + ' of action step is complete.')
+                        cur_status = step.get_execution_status()
+                        rospy.loginfo('Step ' + str(i) + ' of action step is complete. Status is ' + str(cur_status))
                 except:
                     rospy.logerr("Execution of an action failed")
-                    raise
+                    self.execution_status = StepExecutionStatus.FAILED
+
+            self.execution_status = StepExecutionStatus.SUCCEEDED
+
             if not self.is_while:
                 return
 
