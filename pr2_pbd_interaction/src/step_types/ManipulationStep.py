@@ -6,6 +6,7 @@ import time
 from ArmStepMarkerSequence import ArmStepMarkerSequence
 from Exceptions import ConditionError, UnreachablePoseError, StoppedByUserError
 from World import World
+from condition_types.IKCondition import IKCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 import rospy
 from pr2_pbd_interaction.msg import ArmState, ExecutionStatus, ArmMode, Strategy
@@ -52,7 +53,8 @@ class ManipulationStep(Step):
             return
         self.head_position = Robot.get_head_position()
         self.lock = threading.Lock()
-        self.conditions = [SpecificObjectCondition()]
+        self.conditions = [SpecificObjectCondition(), IKCondition()]
+        self.condition_order = xrange(len(self.conditions))
         self.step_click_cb = Session.get_session().selected_arm_step_cb
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
                                                      self.step_click_cb, self.reference_change_cb)
@@ -64,18 +66,27 @@ class ManipulationStep(Step):
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             if not self.ignore_conditions:
-                for condition in self.conditions:
+                for condition in [self.conditions[i] for i in self.condition_order]:
+                    if isinstance(condition, IKCondition):
+                        condition.set_step(self.copy())
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing manipulation step.")
                         if self.is_while:
+                            #TODO
                             return
-                        if self.strategy == Strategy.FAIL_FAST:
+                        strategy = condition.available_strategies[condition.current_strategy_index]
+                        if strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
-                        elif self.strategy == Strategy.CONTINUE:
-                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                        elif strategy == Strategy.SKIP_STEP:
+                            rospy.loginfo("Strategy is to skip step, skipping.")
                             return
+                        elif strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, ignoring condition failure.")
+                        elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
+                            rospy.loginfo("Strategy is to go to previous step.")
+                            #TODO
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:
@@ -84,6 +95,7 @@ class ManipulationStep(Step):
             self.initialize_viz()
             step_to_execute = self.copy()
             if not robot.solve_ik_for_manipulation_step(step_to_execute):
+                # Shouldn't get here, this was supposed to be checked by IKCondition.
                 rospy.logwarn('Problems in finding IK solutions...')
                 robot.status = ExecutionStatus.NO_IK
                 rospy.logerr("Execution of a manipulation step failed, unreachable poses.")

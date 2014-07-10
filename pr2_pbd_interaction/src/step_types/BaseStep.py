@@ -29,30 +29,34 @@ class BaseStep(Step):
     def __init__(self, *args, **kwargs):  #(self, end_pose):
         from Robot import Robot
         Step.__init__(self, *args, **kwargs)
-        # If len(Robot.arms)>0, it means that the robot was initialized. Otherwise fall back on default.
-        self.head_position = Robot.get_head_position() if len(Robot.arms) > 0 else Point(1,0,1)
         self.end_pose = args[0]
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)
 
     def execute(self):
         from Robot import Robot
         robot = Robot.get_robot()
-        robot.move_head_to_point(self.head_position)
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             if not self.ignore_conditions:
-                for condition in self.conditions:
+                for condition in [self.conditions[i] for i in self.condition_order]:
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing base step.")
                         if self.is_while:
+                            #TODO
                             return
-                        if self.strategy == Strategy.FAIL_FAST:
+                        strategy = condition.available_strategies[condition.current_strategy_index]
+                        if strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
-                        elif self.strategy == Strategy.CONTINUE:
-                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                        elif strategy == Strategy.SKIP_STEP:
+                            rospy.loginfo("Strategy is to skip step, skipping.")
                             return
+                        elif strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, ignoring condition failure.")
+                        elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
+                            rospy.loginfo("Strategy is to go to previous step.")
+                            #TODO
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:

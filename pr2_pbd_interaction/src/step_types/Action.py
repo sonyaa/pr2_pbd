@@ -6,7 +6,6 @@ from World import World
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_pbd_interaction.msg._Strategy import Strategy
-from step_types.ObjectDetectionStep import ObjectDetectionStep
 from step_types.ManipulationStep import ManipulationStep
 from step_types.Step import Step
 
@@ -43,18 +42,25 @@ class Action(Step):
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             if not self.ignore_conditions:
-                for condition in self.conditions:
+                for condition in [self.conditions[i] for i in self.condition_order]:
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing action.")
                         if self.is_while:
+                            #TODO
                             return
-                        if self.strategy == Strategy.FAIL_FAST:
+                        strategy = condition.available_strategies[condition.current_strategy_index]
+                        if strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
-                        elif self.strategy == Strategy.CONTINUE:
-                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                        elif strategy == Strategy.SKIP_STEP:
+                            rospy.loginfo("Strategy is to skip step, skipping.")
                             return
+                        elif strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, ignoring condition failure.")
+                        elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
+                            rospy.loginfo("Strategy is to go to previous step.")
+                            #TODO
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:
@@ -181,11 +187,8 @@ class Action(Step):
             selected_step = self.steps[self.selected_step_id]
             if not isinstance(selected_step, Action):
                 selected_step.initialize_viz()
-            if not isinstance(selected_step, ObjectDetectionStep) and not isinstance(selected_step, ManipulationStep):
+            if not isinstance(selected_step, ManipulationStep):
                 World.get_world().clear_all_objects()
-            elif isinstance(selected_step, ManipulationStep):
-                if not (self.selected_step_id >= 1 and isinstance(self.steps[self.selected_step_id-1], ObjectDetectionStep)):
-                    World.get_world().clear_all_objects()
         self.get_lock().release()
 
     def update_viz(self):

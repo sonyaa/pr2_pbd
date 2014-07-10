@@ -2,6 +2,7 @@
 import rospy
 from World import World
 from condition_types.Condition import Condition
+from pr2_pbd_interaction.msg import Strategy
 
 
 class SpecificObjectCondition(Condition):
@@ -13,6 +14,9 @@ class SpecificObjectCondition(Condition):
         Condition.__init__(self, *args, **kwargs)
         self.objects = []
         self.similarity_threshold = 0.075
+        self.available_strategies = [Strategy.FAIL_FAST, Strategy.CONTINUE, Strategy.SKIP_STEP]
+        self.current_strategy_index = 0
+        self.head_position = None
 
     def clear(self):
         self.objects = []
@@ -43,6 +47,13 @@ class SpecificObjectCondition(Condition):
 
     def check(self):
         # look at the state of the world, verify that the world objects are similar to ours
+        from Robot import Robot
+        robot = Robot.get_robot()
+        world = World.get_world()
+        robot.move_head_to_point(self.head_position)
+        if not world.update_object_pose():
+            rospy.logwarn("Object detection failed.")
+            return False
         if self.is_empty() or len(self.get_unique_objects()) == 0:
             rospy.loginfo("SpecificObjectCondition satisfied because no objects are required")
             return True

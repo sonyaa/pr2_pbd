@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from condition_types.Condition import Condition
+from pr2_pbd_interaction.msg._Strategy import Strategy
 
 
 class GripperCondition(Condition):
@@ -16,6 +17,8 @@ class GripperCondition(Condition):
             self.r_gripper_position = args[0]
             self.l_gripper_position = args[1]
         self.threshold = 0.015
+        self.available_strategies = [Strategy.FAIL_FAST, Strategy.CONTINUE]
+        self.current_strategy_index = 0
 
     def set_gripper_positions(self, r_gripper, l_gripper):
         self.r_gripper_position = r_gripper

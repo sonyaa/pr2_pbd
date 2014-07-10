@@ -22,7 +22,6 @@ from pr2_pbd_interaction.srv import GetExperimentState
 from step_types.Action import Action
 from step_types.BaseStep import BaseStep
 from step_types.ManipulationStep import ManipulationStep
-from step_types.ObjectDetectionStep import ObjectDetectionStep
 from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 
@@ -303,9 +302,6 @@ class PbDGUI(Plugin):
                 typeLabel.setText("Manipulation")
             elif isinstance(sub_act, BaseStep):
                 typeLabel.setText("Navigation")
-            elif isinstance(sub_act, ObjectDetectionStep):
-                typeLabel.setText("Object detection")
-                viewBtn.setEnabled(False)
             elif isinstance(sub_act, Action):
                 typeLabel.setText("Preprogrammed: " + sub_act.name)
                 viewBtn.setText("Switch to action")
@@ -459,8 +455,6 @@ class PbDGUI(Plugin):
                 arm_steps_grid.addWidget(edit_arm_steps_btn, arm_steps_grid.rowCount() + 1, 0, 1, 3)
             elif isinstance(step, BaseStep):
                 typeLabel.setText(header_text % "Navigation")
-            elif isinstance(step, ObjectDetectionStep):
-                typeLabel.setText(header_text % "Object detection")
             elif isinstance(step, Action):
                 typeLabel.setText(header_text % "Action")
             else:

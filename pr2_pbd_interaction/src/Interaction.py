@@ -8,7 +8,6 @@ from Exceptions import *
 from condition_types.GripperCondition import GripperCondition
 from step_types.ArmStep import ArmStep
 from step_types.BaseStep import BaseStep
-from step_types.ObjectDetectionStep import ObjectDetectionStep
 
 
 # Generic libraries
@@ -709,7 +708,8 @@ class Interaction:
         if self.session.n_actions() > 0:
             if (Interaction._is_programming):
                 if self.world.update_object_pose():
-                    self.session.add_step_to_action(ObjectDetectionStep())
+                    self.session.selected_step = -1
+                    self.session.get_current_action().selected_step_id = -1
                     return [RobotSpeech.START_STATE_RECORDED, GazeGoal.NOD]
                 else:
                     return [RobotSpeech.OBJECT_NOT_DETECTED, GazeGoal.SHAKE]

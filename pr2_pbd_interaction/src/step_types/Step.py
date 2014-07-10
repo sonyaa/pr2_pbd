@@ -18,6 +18,7 @@ class Step:
         self.is_while = False
         self.ignore_conditions = False
         self.conditions = []
+        self.condition_order = xrange(len(self.conditions))
         if Step.interactive_marker_server is None:
             im_server = InteractiveMarkerServer('programmed_actions')
             Step.interactive_marker_server = im_server
@@ -36,6 +37,9 @@ class Step:
 
     def remove_condition(self, index):
         self.conditions.pop(index)
+
+    def set_condition_order(self, order):
+        self.condition_order = order
 
     def execute(self):
         pass

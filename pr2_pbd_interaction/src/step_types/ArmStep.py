@@ -40,18 +40,25 @@ class ArmStep(Step):
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
             if not self.ignore_conditions:
-                for condition in self.conditions:
+                for condition in [self.conditions[i] for i in self.condition_order]:
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing arm step.")
                         if self.is_while:
+                            #TODO
                             return
-                        if self.strategy == Strategy.FAIL_FAST:
+                        strategy = condition.available_strategies[condition.current_strategy_index]
+                        if strategy == Strategy.FAIL_FAST:
                             rospy.loginfo("Strategy is to fail-fast, stopping.")
                             robot.status = ExecutionStatus.CONDITION_FAILED
                             raise ConditionError()
-                        elif self.strategy == Strategy.CONTINUE:
-                            rospy.loginfo("Strategy is to continue, skipping this step.")
+                        elif strategy == Strategy.SKIP_STEP:
+                            rospy.loginfo("Strategy is to skip step, skipping.")
                             return
+                        elif strategy == Strategy.CONTINUE:
+                            rospy.loginfo("Strategy is to continue, ignoring condition failure.")
+                        elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
+                            rospy.loginfo("Strategy is to go to previous step.")
+                            #TODO
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:

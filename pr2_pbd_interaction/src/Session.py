@@ -22,7 +22,7 @@ class Session:
         self._is_reload = rospy.get_param('/pr2_pbd_interaction/isReload')
 
         self._exp_number = None
-        self._selected_step = -1
+        self.selected_step = -1
         self._selected_arm_step = -1
 
         #TODO: read data_dir name from parameters?
@@ -31,7 +31,7 @@ class Session:
         self.actions = Action.get_saved_actions()
         self.current_action_index = 0 if len(self.actions) > 0 else None
         if self.current_action_index is not None:
-            self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
+            self.selected_step = self.actions[self.current_action_index].get_selected_step_id()
             self.actions[self.current_action_index].initialize_viz()
 
         #link actions in action list to themselves
@@ -102,7 +102,7 @@ class Session:
             map(lambda act: act.name, self.actions),
             map(lambda act: act.id, self.actions),
             -1 if self.current_action_index is None else self.current_action_index,
-            -1 if self._selected_step is None else self._selected_step,
+            -1 if self.selected_step is None else self.selected_step,
             -1 if self._selected_arm_step is None else self._selected_arm_step)
 
     def _get_ref_frames(self, arm_index):
@@ -127,7 +127,7 @@ class Session:
 
     def select_action_step(self, step_id):
         self.actions[self.current_action_index].select_step(step_id)
-        self._selected_step = step_id
+        self.selected_step = step_id
 
 
     def select_arm_step(self, step_id):
@@ -195,7 +195,7 @@ class Session:
         '''Creates new action'''
         if self.n_actions() > 0:
             self.actions[self.current_action_index].reset_viz()
-        self._selected_step = -1
+        self.selected_step = -1
         self._selected_arm_step = -1
         newAct = Action(name="Unnamed " + str(len(self.actions)))
         newAct.save()
@@ -258,16 +258,15 @@ class Session:
         '''Add a new step to the current action'''
         if (self.n_actions() > 0):
             if isinstance(step, ArmStep):
-                current_step = self.get_current_step()
-                if isinstance(current_step, ManipulationStep):
-                    current_step.add_arm_step(step)
+                if self.selected_step != -1 and isinstance(self.get_current_step(), ManipulationStep):
+                    self.get_current_step().add_arm_step(step)
                 else:
                     new_step = ManipulationStep()
                     new_step.add_arm_step(step)
                     self.actions[self.current_action_index].add_step(new_step)
             else:
                 self.actions[self.current_action_index].add_step(step)
-            self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
+            self.selected_step = self.actions[self.current_action_index].get_selected_step_id()
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
@@ -277,7 +276,7 @@ class Session:
                 if act.name == act_name), None)
         if (act != None):
             self.actions[self.current_action_index].add_step(act)
-            self._selected_step = self.actions[self.current_action_index].get_selected_step_id()
+            self.selected_step = self.actions[self.current_action_index].get_selected_step_id()
             self._update_experiment_state()
             return True
         else:
@@ -337,8 +336,8 @@ class Session:
         """
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].delete_step(step_id)
-            if self._selected_step == step_id:
-                self._selected_step = -1
+            if self.selected_step == step_id:
+                self.selected_step = -1
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()

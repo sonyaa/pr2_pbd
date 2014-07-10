@@ -1,3 +1,5 @@
 uint8 FAIL_FAST=0
 uint8 CONTINUE=1
+uint8 SKIP_STEP=2
+uint8 GO_TO_PREVIOUS_STEP=3
 uint8 mode
