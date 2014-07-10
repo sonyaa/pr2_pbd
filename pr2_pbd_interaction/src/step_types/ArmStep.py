@@ -119,14 +119,14 @@ class ArmStep(Step):
                 rospy.loginfo('Will perform right gripper action ' +
                               str(self.gripperAction.rGripper))
                 Robot.arms[0].set_gripper(self.gripperAction.rGripper)
-                Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
+                # Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
 
             if (self.gripperAction.lGripper !=
                     Robot.arms[1].get_gripper_state()):
                 rospy.loginfo('Will perform LEFT gripper action ' +
                               str(self.gripperAction.lGripper))
                 Robot.arms[1].set_gripper(self.gripperAction.lGripper)
-                Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
+                # Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
 
             # Wait for grippers to be done
             while (Robot.arms[0].is_gripper_moving() or

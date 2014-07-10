@@ -575,10 +575,10 @@ class Robot:
 
         moving_arm = Robot._get_most_moving_arm()
         if (moving_arm != self.attended_arm and not self.is_executing()):
-            if (moving_arm == -1):
-                Response.perform_gaze_action(GazeGoal.LOOK_FORWARD)
-            elif (moving_arm == 0):
-                Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
-            else:
-                Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
+            # if (moving_arm == -1):
+            #     Response.perform_gaze_action(GazeGoal.LOOK_FORWARD)
+            # elif (moving_arm == 0):
+            #     Response.perform_gaze_action(GazeGoal.FOLLOW_RIGHT_EE)
+            # else:
+            #     Response.perform_gaze_action(GazeGoal.FOLLOW_LEFT_EE)
             self.attended_arm = moving_arm
