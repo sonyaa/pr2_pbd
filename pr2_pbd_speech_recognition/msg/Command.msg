@@ -22,6 +22,7 @@ string PREV_ACTION = previous-action
 string SAVE_ACTION = save-action
 string EDIT_ACTION = edit-action
 string SAVE_POSE = save-pose
+string SAVE_HEAD_POSE = save-head-pose
 string SAVE_LOCATION = save-location
 string START_RECORDING_MOTION = start-recording-motion
 string STOP_RECORDING_MOTION = stop-recording-motion

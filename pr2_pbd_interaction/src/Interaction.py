@@ -2,12 +2,14 @@
 from geometry_msgs.msg import Pose, Point, Quaternion
 
 import roslib
+
 roslib.load_manifest('pr2_pbd_interaction')
 import tf
 from Exceptions import *
 from condition_types.GripperCondition import GripperCondition
 from step_types.ArmStep import ArmStep
 from step_types.BaseStep import BaseStep
+from step_types.HeadStep import HeadStep
 
 
 # Generic libraries
@@ -74,10 +76,9 @@ class Interaction:
             Command.SAVE_LOCATION: Response(self.save_base_step, None),
             Command.RECORD_OBJECT_POSE: Response(
                 self.record_object_pose, None),
-            Command.LOOK_DOWN: Response(Interaction.empty_response,
-                                              [RobotSpeech.LOOKING_DOWN, GazeGoal.LOOK_DOWN]),
-            Command.LOOK_FORWARD: Response(Interaction.empty_response,
-                                              [RobotSpeech.LOOKING_FORWARD, GazeGoal.LOOK_FORWARD]),
+            Command.LOOK_DOWN: Response(self.look_down, None),
+            Command.LOOK_FORWARD: Response(self.look_down, None),
+            Command.SAVE_HEAD_POSE: Response(self.save_head_step, None),
             Command.START_RECORDING_MOTION: Response(
                 self.start_recording, None),
             Command.STOP_RECORDING_MOTION: Response(self.stop_recording, None)
@@ -436,6 +437,41 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
+    def look_down(self):
+        '''Makes the head look down and saves head pose'''
+        Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
+        speech_response = RobotSpeech.LOOKING_DOWN
+        if (Interaction._is_programming and self.session.n_actions() > 0):
+            self.save_head_step()
+            speech_response = (speech_response + ' ' +
+                               RobotSpeech.HEAD_STEP_RECORDED)
+        return [speech_response, None]
+
+    def look_forward(self):
+        '''Makes the head look forward and saves head pose'''
+        Response.perform_gaze_action(GazeGoal.LOOK_FORWARD)
+        speech_response = RobotSpeech.LOOKING_FORWARD
+        if (Interaction._is_programming and self.session.n_actions() > 0):
+            self.save_head_step()
+            speech_response = (speech_response + ' ' +
+                               RobotSpeech.HEAD_STEP_RECORDED)
+        return [speech_response, None]
+
+    def save_head_step(self, dummy=None):
+        """Saves current head state as an action step"""
+        if (self.session.n_actions() > 0):
+            if (Interaction._is_programming):
+                head_state = self.robot.get_head_position()
+                step = HeadStep(head_state)
+                self.session.add_step_to_action(step)
+            else:
+                action_name = self.session.get_action_name(self.session.current_action_index)
+                if action_name is None:
+                    action_name = str(self.session.current_action_index)
+                return ['Action ' + action_name +
+                        RobotSpeech.ERROR_NOT_IN_EDIT, GazeGoal.SHAKE]
+        else:
+            return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
     def _get_arm_states(self):
         '''Returns the current arms states in the right format'''

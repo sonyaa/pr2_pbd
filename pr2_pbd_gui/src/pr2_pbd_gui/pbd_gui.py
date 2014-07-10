@@ -89,6 +89,7 @@ class PbDGUI(Plugin):
         self.commands[Command.PREV_ACTION] = 'Previous action'
         self.commands[Command.SAVE_POSE] = 'Save arm pose'
         self.commands[Command.SAVE_LOCATION] = 'Save base location'
+        self.commands[Command.SAVE_HEAD_POSE] = 'Save head pose'
         #adding record motion
         self.commands[Command.START_RECORDING_MOTION] = 'Record motion'
         self.commands[Command.STOP_RECORDING_MOTION] = 'Stop recording motion'
@@ -168,6 +169,7 @@ class PbDGUI(Plugin):
         misc_grid = QtGui.QHBoxLayout()
         misc_grid.addWidget(self.create_button(Command.SAVE_POSE))
         misc_grid.addWidget(self.create_button(Command.SAVE_LOCATION))
+        misc_grid.addWidget(self.create_button(Command.SAVE_HEAD_POSE))
         misc_grid.addWidget(self.create_button(Command.RECORD_OBJECT_POSE))
         misc_grid.addStretch(1)
 

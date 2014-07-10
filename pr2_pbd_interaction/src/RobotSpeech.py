@@ -23,6 +23,7 @@ class RobotSpeech:
     LEFT_HAND_OPENING = 'Opening left hand.'
     LEFT_HAND_CLOSING = 'Closing left hand.'
     STEP_RECORDED = 'Pose saved.'
+    HEAD_STEP_RECORDED = 'Head pose saved.'
     BASE_STEP_RECORDED = 'Location saved.'
     POSE_DELETED = 'Last pose deleted'
     POSE_RESUMED = 'Pose resumed'
