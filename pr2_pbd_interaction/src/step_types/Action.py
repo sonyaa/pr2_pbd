@@ -20,6 +20,11 @@ import rospy
 import yaml
 
 
+class ActionData:
+    def __init__(self):
+        self.go_back = False
+
+
 class Action(Step):
     """ Class for referencing a previously saved action by its name or id.
     """
@@ -35,8 +40,9 @@ class Action(Step):
         self.selected_step_id = -1
         self.lock = threading.Lock()
         #TODO: only lock locks when you really need to
+        self.action_data = ActionData()
 
-    def execute(self):
+    def execute(self, action_data):
         from Robot import Robot
 
         robot = Robot.get_robot()
@@ -62,13 +68,15 @@ class Action(Step):
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
                         elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
                             rospy.loginfo("Strategy is to go to previous step.")
-                            #TODO
+                            action_data.go_back = True
+                            return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:
                 rospy.loginfo('Ignoring conditions for action step')
             cur_status = None
-            for i in xrange(len(self.steps)):
+            i = 0
+            while i < len(self.steps):
                 step = self.steps[i]
                 if cur_status is not None:
                     step.set_previous_step_status(cur_status)
@@ -79,9 +87,15 @@ class Action(Step):
                     raise StoppedByUserError()
                 try:
                     if robot.status == ExecutionStatus.EXECUTING:
-                        step.execute()
+                        step.execute(self.action_data)
                         cur_status = step.get_execution_status()
                         rospy.loginfo('Step ' + str(i) + ' of action step is complete. Status is ' + str(cur_status))
+                        if self.action_data.go_back:
+                            i -= 1
+                            rospy.loginfo('Going back to previous step: step number ' + str(i))
+                        else:
+                            i += 1
+
                 except:
                     rospy.logerr("Execution of an action failed")
                     self.execution_status = StepExecutionStatus.FAILED

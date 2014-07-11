@@ -60,7 +60,7 @@ class ManipulationStep(Step):
                                                      self.step_click_cb, self.reference_change_cb)
         self.objects = []
 
-    def execute(self):
+    def execute(self, action_data):
         from Robot import Robot
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
@@ -86,7 +86,8 @@ class ManipulationStep(Step):
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
                         elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
                             rospy.loginfo("Strategy is to go to previous step.")
-                            #TODO
+                            action_data.go_back = True
+                            return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))
             else:

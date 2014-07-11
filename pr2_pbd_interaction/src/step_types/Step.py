@@ -53,7 +53,7 @@ class Step:
     def get_execution_status(self):
         return self.execution_status
 
-    def execute(self):
+    def execute(self, action_data):
         pass
 
     def initialize_viz(self):
