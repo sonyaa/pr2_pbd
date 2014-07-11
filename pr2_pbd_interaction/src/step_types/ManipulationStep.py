@@ -18,13 +18,11 @@ def manipulation_step_constructor(loader, node):
 
     fields = loader.construct_mapping(node, deep=True)
     m_step = ManipulationStep()
-    m_step.strategy = fields['strategy']
     m_step.is_while = fields['is_while']
     m_step.ignore_conditions = fields['ignore_conditions']
     m_step.conditions = fields['conditions']
     m_step.arm_steps = fields['arm_steps']
     m_step.objects = fields.get('objects', [])
-    m_step.head_position = fields.get('head_position')
     # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
     # except arm steps and basic step members
     if len(Robot.arms) == 2:  # if the robot is initialized, construct ArmStepMarkerSequence
@@ -344,7 +342,6 @@ class ManipulationStep(Step):
     def copy(self):
         copy = ManipulationStep()
         copy.conditions = self.conditions
-        copy.strategy = self.strategy
         copy.is_while = self.is_while
         copy.ignore_conditions = self.ignore_conditions
         copy.objects = self.objects
@@ -354,12 +351,10 @@ class ManipulationStep(Step):
 
 
 def manipulation_step_representer(dumper, data):
-    return dumper.represent_mapping(u'!ManipulationStep', {'strategy': data.strategy,
-                                                           'is_while': data.is_while,
+    return dumper.represent_mapping(u'!ManipulationStep', {'is_while': data.is_while,
                                                            'ignore_conditions': data.ignore_conditions,
                                                            'conditions': data.conditions,
                                                            'arm_steps': data.arm_steps,
-                                                           'objects': data.objects,
-                                                           'head_position': data.head_position})
+                                                           'objects': data.objects})
 
 yaml.add_representer(ManipulationStep, manipulation_step_representer)

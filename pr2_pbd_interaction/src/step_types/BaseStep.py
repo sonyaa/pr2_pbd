@@ -12,11 +12,9 @@ from step_types.Step import Step
 def base_step_constructor(loader, node):
     fields = loader.construct_mapping(node, deep=True)
     b_step = BaseStep(fields['end_pose'])
-    b_step.strategy = fields['strategy']
     b_step.is_while = fields['is_while']
     b_step.ignore_conditions = fields['ignore_conditions']
     b_step.conditions = fields['conditions']
-    b_step.head_position = fields.get('head_position', Point(1,0,1))
     return b_step
 
 
@@ -126,12 +124,10 @@ class BaseStep(Step):
 
 
 def base_step_representer(dumper, data):
-    return dumper.represent_mapping(u'!BaseStep', {'strategy': data.strategy,
-                                                   'is_while': data.is_while,
+    return dumper.represent_mapping(u'!BaseStep', {'is_while': data.is_while,
                                                    'ignore_conditions': data.ignore_conditions,
                                                    'conditions': data.conditions,
-                                                   'end_pose': data.end_pose,
-                                                   'head_position': data.head_position})
+                                                   'end_pose': data.end_pose})
 
 
 yaml.add_representer(BaseStep, base_step_representer)
