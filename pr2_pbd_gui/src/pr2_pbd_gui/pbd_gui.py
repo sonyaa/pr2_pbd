@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import functools
 import roslib
-from condition_types.PreviousStepNotFailedCondition import PreviousStepNotFailedCondition
-from condition_types.PreviousStepNotSkippedCondition import PreviousStepNotSkippedCondition
-from step_types.HeadStep import HeadStep
 
 roslib.load_manifest('pr2_pbd_gui')
 
@@ -25,9 +22,12 @@ from pr2_pbd_interaction.srv import GetExperimentState
 from step_types.Action import Action
 from step_types.BaseStep import BaseStep
 from step_types.ManipulationStep import ManipulationStep
+from step_types.HeadStep import HeadStep
 from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
 from condition_types.IKCondition import IKCondition
+from condition_types.PreviousStepNotFailedCondition import PreviousStepNotFailedCondition
+from condition_types.PreviousStepNotSkippedCondition import PreviousStepNotSkippedCondition
 
 
 class ClickableLabel(QtGui.QLabel):
