@@ -28,7 +28,6 @@ class BaseStep(Step):
     '''
 
     def __init__(self, *args, **kwargs):  #(self, end_pose):
-        from Robot import Robot
         Step.__init__(self, *args, **kwargs)
         self.end_pose = args[0]
         self.marker = BaseStepMarker(self, self.marker_click_cb, self.interactive_marker_server)

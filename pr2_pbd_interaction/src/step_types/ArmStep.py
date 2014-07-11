@@ -18,7 +18,8 @@ class ArmStep(Step):
     ARM_TRAJECTORY = 1
     def __init__(self, *args, **kwargs):
         Step.__init__(self, *args, **kwargs)
-        self.conditions = [GripperCondition()]
+        self.conditions = self.conditions.append(GripperCondition())
+        self.condition_order = xrange(len(self.conditions))
         self.type = ArmStep.ARM_TARGET
         self.armTarget = None
         self.armTrajectory = None
@@ -26,14 +27,19 @@ class ArmStep(Step):
         self.postCond = None
 
     def set_gripper_condition_poses(self, r_gripper, l_gripper):
-        if len(self.conditions) == 0:
-            self.conditions.append(GripperCondition())
-        self.conditions[0].set_gripper_positions(r_gripper, l_gripper)
+        for condition in self.conditions:
+            if isinstance(condition, GripperCondition):
+                condition.set_gripper_positions(r_gripper, l_gripper)
+                break
 
     def set_gripper_condition(self, condition):
-        if len(self.conditions) == 0:
-            self.conditions.append(GripperCondition())
-        self.conditions[0] = condition
+        to_remove = None
+        for condition in self.conditions:
+            if isinstance(condition, GripperCondition):
+                to_remove = condition
+        if to_remove is not None:
+            self.conditions.remove(to_remove)
+        self.conditions.append(condition)
 
     def execute(self, action_data):
         from Robot import Robot
@@ -187,7 +193,6 @@ class ArmStep(Step):
         ## WARNING: the following is not really copying
         copy.conditions = self.conditions[:]
         copy.postCond = self.postCond
-        copy.strategy = self.strategy
         copy.is_while = self.is_while
         copy.ignore_conditions = self.ignore_conditions
         return copy

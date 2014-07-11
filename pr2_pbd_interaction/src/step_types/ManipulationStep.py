@@ -15,6 +15,7 @@ from step_types.Step import Step
 
 def manipulation_step_constructor(loader, node):
     from Robot import Robot
+
     fields = loader.construct_mapping(node, deep=True)
     m_step = ManipulationStep()
     m_step.strategy = fields['strategy']
@@ -45,6 +46,7 @@ class ManipulationStep(Step):
     def __init__(self, *args, **kwargs):
         from Session import Session
         from Robot import Robot
+
         Step.__init__(self, *args, **kwargs)
         self.arm_steps = []
         if len(Robot.arms) < 2:
@@ -53,7 +55,7 @@ class ManipulationStep(Step):
             return
         self.head_position = Robot.get_head_position()
         self.lock = threading.Lock()
-        self.conditions = [SpecificObjectCondition(), IKCondition()]
+        self.conditions = self.conditions.extend([SpecificObjectCondition(), IKCondition()])
         self.condition_order = xrange(len(self.conditions))
         self.step_click_cb = Session.get_session().selected_arm_step_cb
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
@@ -62,6 +64,7 @@ class ManipulationStep(Step):
 
     def execute(self, action_data):
         from Robot import Robot
+
         robot = Robot.get_robot()
         # If self.is_while, execute everything in a loop until a condition fails. Else execute everything once.
         while True:
@@ -127,14 +130,20 @@ class ManipulationStep(Step):
             if not self.is_while:
                 return
             # If the manipulation step needs objects and we're in a while loop, look for objects again.
-            elif len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-                robot.move_head_to_point(self.head_position)
-                world = World.get_world()
-                if not world.update_object_pose():
-                    rospy.logwarn("Object detection failed.")
-                    return
-                # Wait for all objects to be detected.
-                time.sleep(1)
+            else:
+                need_objects = False
+                for condition in self.conditions:
+                    if isinstance(condition, SpecificObjectCondition):
+                        if not condition.is_empty():
+                            need_objects = True
+                if need_objects:
+                    robot.move_head_to_point(self.head_position)
+                    world = World.get_world()
+                    if not world.update_object_pose():
+                        rospy.logwarn("Object detection failed.")
+                        return
+                    # Wait for all objects to be detected.
+                    time.sleep(1)
 
     def add_arm_step(self, arm_step):
         self.lock.acquire()
@@ -147,9 +156,11 @@ class ManipulationStep(Step):
         if arm_step.armTarget.lArm.refFrame == ArmState.OBJECT:
             l_object = arm_step.armTarget.lArm.refFrameObject
         self.objects.append(l_object)
-        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            self.conditions[0].add_object(r_object)
-            self.conditions[0].add_object(l_object)
+        for condition in self.conditions:
+            if isinstance(condition, SpecificObjectCondition):
+                condition.add_object(r_object)
+                condition.add_object(l_object)
+                break
         cur_step = self.arm_steps[len(self.arm_steps) - 1]
         world_objects = World.get_world().get_frame_list()
         self.marker_sequence.add_arm_step(cur_step, world_objects)
@@ -182,17 +193,20 @@ class ManipulationStep(Step):
         rospy.loginfo([x.name for x in world_objects])
         action_objects = None
         map_of_objects_old_to_new = None
-        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            action_objects = self.conditions[0].get_objects()
-            unique_action_objects = self.conditions[0].get_unique_objects()
-            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
-                                                                    threshold=self.conditions[0].similarity_threshold)
-            if map_of_objects_old_to_new is None and len(unique_action_objects) > 0:
-                world_objects = self.get_unique_objects()
-                rospy.loginfo('fake objects')
-                rospy.loginfo([x.name for x in world_objects])
-                map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
-                has_real_objects = False
+        for condition in self.conditions:
+            if isinstance(condition, SpecificObjectCondition):
+                action_objects = condition.get_objects()
+                unique_action_objects = condition.get_unique_objects()
+                map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
+                                                                              threshold=self.conditions[
+                                                                                  0].similarity_threshold)
+                if map_of_objects_old_to_new is None and len(unique_action_objects) > 0:
+                    world_objects = self.get_unique_objects()
+                    rospy.loginfo('fake objects')
+                    rospy.loginfo([x.name for x in world_objects])
+                    map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects)
+                    has_real_objects = False
+                break
         self.marker_sequence.update_objects(action_objects, world_objects, map_of_objects_old_to_new, has_real_objects)
         self.lock.release()
 
@@ -206,11 +220,13 @@ class ManipulationStep(Step):
             has_real_objects = False
         action_objects = None
         map_of_objects_old_to_new = None
-        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            action_objects = self.conditions[0].get_objects()
-            unique_action_objects = self.conditions[0].get_unique_objects()
-            map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
-                                                                    threshold=self.conditions[0].similarity_threshold)
+        for condition in self.conditions:
+            if isinstance(condition, SpecificObjectCondition):
+                action_objects = condition.get_objects()
+                unique_action_objects = condition.get_unique_objects()
+                map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
+                                                                              threshold=condition.similarity_threshold)
+                break
         self.marker_sequence.initialize_viz(self.arm_steps, action_objects, world_objects,
                                             map_of_objects_old_to_new, has_real_objects)
         self.lock.release()
@@ -261,12 +277,14 @@ class ManipulationStep(Step):
             rospy.loginfo('Deleting arm step ' + str(to_delete))
             self.arm_steps.pop(to_delete)
             # Deleting two objects that correspond to rArm and lArm for specified step.
-            if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-                if len(self.conditions[0].objects) > 2*to_delete:
-                    self.conditions[0].objects.pop(2*to_delete+1)
-                    self.conditions[0].objects.pop(2*to_delete)
-                else:
-                    rospy.logwarn('Condition for manipulation step has invalid number of objects.')
+            for condition in self.conditions:
+                if isinstance(condition, SpecificObjectCondition):
+                    if len(condition.objects) > 2 * to_delete:
+                        condition.objects.pop(2 * to_delete + 1)
+                        condition.objects.pop(2 * to_delete)
+                    else:
+                        rospy.logwarn('Condition for manipulation step has invalid number of objects.')
+                    break
         self.lock.release()
 
     def delete_arm_step(self, step_id):
@@ -277,12 +295,14 @@ class ManipulationStep(Step):
         self.arm_steps.pop(step_id)
         rospy.loginfo('Deleting arm step ' + str(step_id))
         # Deleting two objects that correspond to rArm and lArm for specified step.
-        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            if len(self.conditions[0].objects) > 2*step_id:
-                self.conditions[0].objects.pop(2*step_id+1)
-                self.conditions[0].objects.pop(2*step_id)
-            else:
-                rospy.logwarn('Condition for manipulation step has invalid number of objects.')
+        for condition in self.conditions:
+            if isinstance(condition, SpecificObjectCondition):
+                if len(condition.objects) > 2 * step_id:
+                    condition.objects.pop(2 * step_id + 1)
+                    condition.objects.pop(2 * step_id)
+                else:
+                    rospy.logwarn('Condition for manipulation step has invalid number of objects.')
+                break
         self.lock.release()
 
     def delete_last_step_and_update_viz(self):
@@ -312,12 +332,14 @@ class ManipulationStep(Step):
             self.objects[uid] = new_ref_obj
         else:
             self.objects[uid] = None
-        if len(self.conditions) > 0 and isinstance(self.conditions[0], SpecificObjectCondition):
-            if new_ref == ArmState.OBJECT:
-                self.conditions[0].objects[uid] = new_ref_obj
-            else:
-                self.conditions[0].objects[uid] = None
-            rospy.loginfo("Changed reference object in SpecificObjectCondition")
+        for condition in self.conditions:
+            if isinstance(condition, SpecificObjectCondition):
+                if new_ref == ArmState.OBJECT:
+                    condition.objects[uid] = new_ref_obj
+                else:
+                    condition.objects[uid] = None
+                rospy.loginfo("Changed reference object in SpecificObjectCondition")
+                break
 
     def copy(self):
         copy = ManipulationStep()

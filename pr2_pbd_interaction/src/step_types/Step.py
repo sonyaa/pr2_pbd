@@ -3,6 +3,8 @@ from interactive_markers.interactive_marker_server import InteractiveMarkerServe
 import rospy
 from visualization_msgs.msg import MarkerArray
 from condition_types.PreviousStepCondition import PreviousStepCondition
+from condition_types.PreviousStepNotFailedCondition import PreviousStepNotFailedCondition
+from condition_types.PreviousStepNotSkippedCondition import PreviousStepNotSkippedCondition
 from pr2_pbd_interaction.msg import Strategy
 
 
@@ -18,7 +20,7 @@ class Step:
         # If self.is_while, execute step in a loop until a condition fails. Else execute step once.
         self.is_while = False
         self.ignore_conditions = False
-        self.conditions = []
+        self.conditions = [PreviousStepNotFailedCondition(), PreviousStepNotSkippedCondition()]
         self.condition_order = xrange(len(self.conditions))
         self.prev_step_status = None
         self.execution_status = None
@@ -32,7 +34,7 @@ class Step:
     def set_is_while(self, is_while):
         self.is_while = is_while
 
-    def set_strategy(self, condition_index, strategy_index):
+    def set_condition_strategy(self, condition_index, strategy_index):
         if condition_index < len(self.conditions):
             self.conditions[condition_index].set_strategy_index(strategy_index)
             rospy.loginfo("Changing strategy for condition " + str(condition_index) + " to " + str(strategy_index))

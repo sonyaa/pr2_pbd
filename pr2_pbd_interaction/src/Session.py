@@ -319,7 +319,7 @@ class Session:
         """
         if (self.n_actions() > 0):
             current_step = self.get_current_step()
-            current_step.set_strategy(condition_index, strategy_index)
+            current_step.set_condition_strategy(condition_index, strategy_index)
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
