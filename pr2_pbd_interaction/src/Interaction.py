@@ -464,6 +464,7 @@ class Interaction:
                 head_state = self.robot.get_head_position()
                 step = HeadStep(head_state)
                 self.session.add_step_to_action(step)
+                return [RobotSpeech.HEAD_STEP_RECORDED, None]
             else:
                 action_name = self.session.get_action_name(self.session.current_action_index)
                 if action_name is None:
