@@ -314,12 +314,12 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
-    def set_current_step_strategy(self, strategy):
-        """ Sets the condition failure strategy for the current step.
+    def set_current_step_condition_strategy(self, condition_index, strategy_index):
+        """ Sets the failure strategy for the specified condition of the current step.
         """
         if (self.n_actions() > 0):
             current_step = self.get_current_step()
-            current_step.set_strategy(strategy)
+            current_step.set_strategy(condition_index, strategy_index)
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()

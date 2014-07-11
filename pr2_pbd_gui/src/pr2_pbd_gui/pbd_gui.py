@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import functools
 import roslib
+from condition_types.PreviousStepNotFailedCondition import PreviousStepNotFailedCondition
+from condition_types.PreviousStepNotSkippedCondition import PreviousStepNotSkippedCondition
+from step_types.HeadStep import HeadStep
 
 roslib.load_manifest('pr2_pbd_gui')
 
@@ -24,6 +27,7 @@ from step_types.BaseStep import BaseStep
 from step_types.ManipulationStep import ManipulationStep
 from condition_types.GripperCondition import GripperCondition
 from condition_types.SpecificObjectCondition import SpecificObjectCondition
+from condition_types.IKCondition import IKCondition
 
 
 class ClickableLabel(QtGui.QLabel):
@@ -112,6 +116,12 @@ class PbDGUI(Plugin):
         self.commands[Command.LOOK_DOWN] = 'Look down'
         self.commands[Command.LOOK_FORWARD] = 'Look forward'
         self.commands[Command.SAVE_ACTION] = 'Save action'
+
+        self.strategies = dict()
+        self.strategies[Strategy.FAIL_FAST] = 'Fail-fast'
+        self.strategies[Strategy.CONTINUE] = 'Continue'
+        self.strategies[Strategy.SKIP_STEP] = 'Skip step'
+        self.strategies[Strategy.GO_TO_PREVIOUS_STEP] = 'Go to previous step'
 
         self.currentAction = -1
         self.currentStep = -1
@@ -304,6 +314,9 @@ class PbDGUI(Plugin):
                 typeLabel.setText("Manipulation")
             elif isinstance(sub_act, BaseStep):
                 typeLabel.setText("Navigation")
+            elif isinstance(sub_act, HeadStep):
+                typeLabel.setText("Head movement")
+                viewBtn.setEnabled(False)
             elif isinstance(sub_act, Action):
                 typeLabel.setText("Preprogrammed: " + sub_act.name)
                 viewBtn.setText("Switch to action")
@@ -457,6 +470,8 @@ class PbDGUI(Plugin):
                 arm_steps_grid.addWidget(edit_arm_steps_btn, arm_steps_grid.rowCount() + 1, 0, 1, 3)
             elif isinstance(step, BaseStep):
                 typeLabel.setText(header_text % "Navigation")
+            elif isinstance(step, HeadStep):
+                typeLabel.setText(header_text % "Head movement")
             elif isinstance(step, Action):
                 typeLabel.setText(header_text % "Action")
             else:
@@ -473,18 +488,6 @@ class PbDGUI(Plugin):
             conditions_edit_btn.clicked.connect(self.edit_conditions)
             conditions_layout.addWidget(conditions_edit_btn)
             self.editingBox.addLayout(conditions_layout)
-            strategy_layout = QtGui.QHBoxLayout()
-            strategy_layout.addWidget(QtGui.QLabel("If condition fails:", self._widget))
-            strategy_selector = QtGui.QComboBox(self._widget)
-            strategy_selector.addItem("Fail-fast")
-            strategy_selector.addItem("Continue")
-            if step.strategy == Strategy.FAIL_FAST:
-                strategy_selector.setCurrentIndex(0)
-            elif step.strategy == Strategy.CONTINUE:
-                strategy_selector.setCurrentIndex(1)
-            strategy_selector.currentIndexChanged.connect(self.change_strategy)
-            strategy_layout.addWidget(strategy_selector)
-            self.editingBox.addLayout(strategy_layout)
             while_layout = QtGui.QHBoxLayout()
             is_loop_checkbox = QtGui.QCheckBox("Make this a 'while' loop", self._widget)
             if step.is_while:
@@ -551,6 +554,19 @@ class PbDGUI(Plugin):
                     cond_layout.addWidget(threshold_edit_btn)
                 elif isinstance(condition, GripperCondition):
                     typeLabel.setText("%s: GripperCondition" % str(ind+1))
+                elif isinstance(condition, IKCondition):
+                    typeLabel.setText("%s: IKCondition" % str(ind+1))
+                elif isinstance(condition, PreviousStepNotFailedCondition):
+                    typeLabel.setText("%s: PreviousStepNotFailedCondition" % str(ind+1))
+                elif isinstance(condition, PreviousStepNotSkippedCondition):
+                    typeLabel.setText("%s: PreviousStepNotSkippedCondition" % str(ind+1))
+                cond_layout.addWidget(QtGui.QLabel("If condition fails:", self._widget))
+                strategy_selector = QtGui.QComboBox(self._widget)
+                for strategy in condition.available_strategies:
+                    strategy_selector.addItem(self.strategies[strategy])
+                strategy_selector.setCurrentIndex(condition.current_strategy_index)
+                strategy_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind))
+                cond_layout.addWidget(strategy_selector)
                 self.editingBox.addLayout(cond_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
@@ -640,15 +656,8 @@ class PbDGUI(Plugin):
             gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_ARM_STEP_CONDITIONS, param=ind)
             self.gui_cmd_publisher.publish(gui_cmd)
 
-    def change_strategy(self, index):
-        if index == 0:
-            param = Strategy.FAIL_FAST
-        elif index == 1:
-            param = Strategy.CONTINUE
-        else:
-            rospy.logwarn('Unknown strategy selector index ' + str(index))
-            return
-        gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=param)
+    def change_strategy(self, condition_index, strategy_index):
+        gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=condition_index, param2=strategy_index)
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def edit_button_pressed(self, step_index):

@@ -32,8 +32,12 @@ class Step:
     def set_is_while(self, is_while):
         self.is_while = is_while
 
-    def set_strategy(self, strategy):
-        self.strategy = strategy
+    def set_strategy(self, condition_index, strategy_index):
+        if condition_index < len(self.conditions):
+            self.conditions[condition_index].set_strategy_index(strategy_index)
+            rospy.loginfo("Changing strategy for condition " + str(condition_index) + " to " + str(strategy_index))
+        else:
+            rospy.logwarn("Invalid condition index: " + str(condition_index))
 
     def add_condition(self, condition):
         self.conditions.append(condition)
