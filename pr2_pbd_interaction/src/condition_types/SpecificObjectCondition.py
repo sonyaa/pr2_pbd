@@ -47,6 +47,9 @@ class SpecificObjectCondition(Condition):
 
     def check(self):
         # look at the state of the world, verify that the world objects are similar to ours
+        if self.is_empty() or len(self.get_unique_objects()) == 0:
+            rospy.loginfo("SpecificObjectCondition satisfied because no objects are required")
+            return True
         from Robot import Robot
         robot = Robot.get_robot()
         world = World.get_world()
@@ -54,9 +57,6 @@ class SpecificObjectCondition(Condition):
         if not world.update_object_pose():
             rospy.logwarn("Object detection failed.")
             return False
-        if self.is_empty() or len(self.get_unique_objects()) == 0:
-            rospy.loginfo("SpecificObjectCondition satisfied because no objects are required")
-            return True
         world_objects = World.get_world().get_frame_list()
         map_of_objects_old_to_new = World.get_map_of_most_similar_obj(self.get_unique_objects(),
                                                                       world_objects, self.similarity_threshold)
