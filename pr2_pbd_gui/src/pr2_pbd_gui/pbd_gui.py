@@ -542,7 +542,7 @@ class PbDGUI(Plugin):
                 cond_layout.addWidget(condition_label)
                 if_true_selector = QtGui.QComboBox(self._widget)
                 cond_layout.addWidget(if_true_selector)
-                cond_layout.addWidget(QtGui.QLabel(", otherwise ", self._widget))
+                cond_layout.addWidget(QtGui.QLabel("otherwise ", self._widget))
                 if_false_selector = QtGui.QComboBox(self._widget)
                 cond_layout.addWidget(if_false_selector)
                 self.editingBox.addLayout(cond_layout)
@@ -550,16 +550,6 @@ class PbDGUI(Plugin):
                 bad_selector = if_false_selector
                 if isinstance(condition, SpecificObjectCondition):
                     condition_label.setText("%s: If specific object is found" % str(ind+1))
-                    threshold_label = QtGui.QLabel("Object similarity threshold (default is 0.075): ", self._widget)
-                    cond_layout.addItem(QtGui.QSpacerItem(30, 10))
-                    cond_layout.addWidget(threshold_label)
-                    threshold_edit = QtGui.QLineEdit(self._widget)
-                    threshold_edit.setText(str(condition.similarity_threshold))
-                    threshold_edit.setInputMask("9.90000")
-                    cond_layout.addWidget(threshold_edit)
-                    threshold_edit_btn = QtGui.QPushButton("Set", self._widget)
-                    threshold_edit_btn.clicked.connect(self.set_object_condition_threshold)
-                    cond_layout.addWidget(threshold_edit_btn)
                 elif isinstance(condition, GripperCondition):
                     condition_label.setText("%s: If gripper is in the same position: " % str(ind+1))
                 elif isinstance(condition, IKCondition):
@@ -579,6 +569,20 @@ class PbDGUI(Plugin):
                     bad_selector.addItem(self.strategies[strategy])
                 bad_selector.setCurrentIndex(condition.current_strategy_index)
                 bad_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind))
+            for ind, condition in enumerate(step.conditions):
+                if isinstance(condition, SpecificObjectCondition):
+                    object_threshold_layout = QtGui.QHBoxLayout()
+                    threshold_label = QtGui.QLabel("Object similarity threshold (default is 0.075): ", self._widget)
+                    object_threshold_layout.addItem(QtGui.QSpacerItem(30, 10))
+                    object_threshold_layout.addWidget(threshold_label)
+                    threshold_edit = QtGui.QLineEdit(self._widget)
+                    threshold_edit.setText(str(condition.similarity_threshold))
+                    threshold_edit.setInputMask("9.90000")
+                    object_threshold_layout.addWidget(threshold_edit)
+                    threshold_edit_btn = QtGui.QPushButton("Set", self._widget)
+                    threshold_edit_btn.clicked.connect(self.set_object_condition_threshold)
+                    object_threshold_layout.addWidget(threshold_edit_btn)
+                    self.editingBox.addLayout(object_threshold_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
             if step.ignore_conditions:
