@@ -53,7 +53,7 @@ class ManipulationStep(Step):
             return
         self.head_position = Robot.get_head_position()
         self.lock = threading.Lock()
-        self.conditions = self.conditions.extend([SpecificObjectCondition(), IKCondition()])
+        self.conditions.extend([SpecificObjectCondition(), IKCondition()])
         self.condition_order = xrange(len(self.conditions))
         self.step_click_cb = Session.get_session().selected_arm_step_cb
         self.marker_sequence = ArmStepMarkerSequence(Step.interactive_marker_server, Step.marker_publisher,
