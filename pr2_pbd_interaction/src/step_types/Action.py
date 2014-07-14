@@ -42,7 +42,7 @@ class Action(Step):
         #TODO: only lock locks when you really need to
         self.action_data = ActionData()
 
-    def execute(self, action_data):
+    def execute(self, action_data=None):
         from Robot import Robot
 
         robot = Robot.get_robot()
@@ -68,7 +68,10 @@ class Action(Step):
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
                         elif strategy == Strategy.GO_TO_PREVIOUS_STEP:
                             rospy.loginfo("Strategy is to go to previous step.")
-                            action_data.go_back = True
+                            if action_data is not None:
+                                action_data.go_back = True
+                            else:
+                                rospy.logwarn("Cannot go to previous step, no action data provided.")
                             return
                         else:
                             rospy.logwarn("Unknown strategy " + str(self.strategy))

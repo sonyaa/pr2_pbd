@@ -11,7 +11,7 @@ class PreviousStepCondition(Condition):
 
     def __init__(self, *args, **kwargs):
         Condition.__init__(self, *args, **kwargs)
-        self.prev_step = None
+        self.prev_step_status = None
         if len(args) > 0:
             self.prev_step_status = args[0]
         self.available_strategies = [Strategy.FAIL_FAST, Strategy.CONTINUE, Strategy.SKIP_STEP,
