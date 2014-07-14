@@ -656,7 +656,7 @@ class Interaction:
                     rospy.loginfo('Will not ignore conditions for arm step ' + str(step_no))
                 elif (command.command == GuiCommand.SET_STRATEGY):
                     condition_index = command.param
-                    strategy_index = command.param2
+                    strategy_index = command.param_list[0]
                     self.session.set_current_step_condition_strategy(condition_index, strategy_index)
                     rospy.loginfo('Changed condition failure strategy for the current step')
                 elif (command.command == GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD):

@@ -538,36 +538,47 @@ class PbDGUI(Plugin):
             self.editingBox.addLayout(num_layout)
             for ind, condition in enumerate(step.conditions):
                 cond_layout = QtGui.QHBoxLayout()
-                typeLabel = QtGui.QLabel(self._widget)
-                cond_layout.addWidget(typeLabel)
+                condition_label = QtGui.QLabel(self._widget)
+                cond_layout.addWidget(condition_label)
+                if_true_selector = QtGui.QComboBox(self._widget)
+                cond_layout.addWidget(if_true_selector)
+                cond_layout.addWidget(QtGui.QLabel(", otherwise ", self._widget))
+                if_false_selector = QtGui.QComboBox(self._widget)
+                cond_layout.addWidget(if_false_selector)
+                self.editingBox.addLayout(cond_layout)
+                good_selector = if_true_selector
+                bad_selector = if_false_selector
                 if isinstance(condition, SpecificObjectCondition):
-                    typeLabel.setText("%s: SpecificObjectCondition" % str(ind+1))
+                    condition_label.setText("%s: If specific object is found" % str(ind+1))
                     threshold_label = QtGui.QLabel("Object similarity threshold (default is 0.075): ", self._widget)
                     cond_layout.addItem(QtGui.QSpacerItem(30, 10))
                     cond_layout.addWidget(threshold_label)
                     threshold_edit = QtGui.QLineEdit(self._widget)
                     threshold_edit.setText(str(condition.similarity_threshold))
-                    threshold_edit.setInputMask("9.900000000")
+                    threshold_edit.setInputMask("9.90000")
                     cond_layout.addWidget(threshold_edit)
                     threshold_edit_btn = QtGui.QPushButton("Set", self._widget)
                     threshold_edit_btn.clicked.connect(self.set_object_condition_threshold)
                     cond_layout.addWidget(threshold_edit_btn)
                 elif isinstance(condition, GripperCondition):
-                    typeLabel.setText("%s: GripperCondition" % str(ind+1))
+                    condition_label.setText("%s: If gripper is in the same position: " % str(ind+1))
                 elif isinstance(condition, IKCondition):
-                    typeLabel.setText("%s: IKCondition" % str(ind+1))
+                    condition_label.setText("%s: If IK solutions are found: " % str(ind+1))
                 elif isinstance(condition, PreviousStepNotFailedCondition):
-                    typeLabel.setText("%s: PreviousStepNotFailedCondition" % str(ind+1))
+                    condition_label.setText("%s: If previous step has failed: " % str(ind+1))
+                    good_selector = if_false_selector
+                    bad_selector = if_true_selector
                 elif isinstance(condition, PreviousStepNotSkippedCondition):
-                    typeLabel.setText("%s: PreviousStepNotSkippedCondition" % str(ind+1))
-                cond_layout.addWidget(QtGui.QLabel("If condition fails:", self._widget))
-                strategy_selector = QtGui.QComboBox(self._widget)
+                    condition_label.setText("%s: If previous step was skipped: " % str(ind+1))
+                    good_selector = if_false_selector
+                    bad_selector = if_true_selector
+                good_selector.addItem("Continue")
+                good_selector.setCurrentIndex(0)
+                good_selector.setEnabled(False)
                 for strategy in condition.available_strategies:
-                    strategy_selector.addItem(self.strategies[strategy])
-                strategy_selector.setCurrentIndex(condition.current_strategy_index)
-                strategy_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind))
-                cond_layout.addWidget(strategy_selector)
-                self.editingBox.addLayout(cond_layout)
+                    bad_selector.addItem(self.strategies[strategy])
+                bad_selector.setCurrentIndex(condition.current_strategy_index)
+                bad_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind))
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
             if step.ignore_conditions:
@@ -657,7 +668,7 @@ class PbDGUI(Plugin):
             self.gui_cmd_publisher.publish(gui_cmd)
 
     def change_strategy(self, condition_index, strategy_index):
-        gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=condition_index, param2=strategy_index)
+        gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=condition_index, param_list=[strategy_index])
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def edit_button_pressed(self, step_index):

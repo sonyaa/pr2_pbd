@@ -14,5 +14,5 @@ string SET_NO_IGNORE_ARM_STEP_CONDITIONS = set-no-ignore-arm-step-conditions
 string SET_OBJECT_SIMILARITY_THRESHOLD = set-object-similarity-threshold
 string command
 uint8 param
-uint8 param2
+uint8[] param_list
 float32 param_float
