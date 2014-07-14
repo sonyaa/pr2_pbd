@@ -439,7 +439,6 @@ class PbDGUI(Plugin):
                 typeLabel.setText(header_text % "Manipulation")
                 arm_steps_grid = QtGui.QGridLayout()
                 self.editingBox.addLayout(arm_steps_grid)
-                self.editingBox.addStretch(1)
                 arm_steps_grid.addWidget(QtGui.QLabel('Right arm', self._widget), 0, 0)
                 arm_steps_grid.addWidget(QtGui.QLabel('Position', self._widget), 0, 1)
                 arm_steps_grid.setColumnMinimumWidth(2, 10)
@@ -481,8 +480,9 @@ class PbDGUI(Plugin):
             delete_button.clicked.connect(functools.partial(self.delete_step, self.currentStep))
             header_layout.addWidget(typeLabel)
             header_layout.addWidget(delete_button)
-            header_layout.addItem(QtGui.QSpacerItem(50, 100))
+            header_layout.addItem(QtGui.QSpacerItem(0, 100))
             conditions_layout = QtGui.QHBoxLayout()
+            conditions_layout.addItem(QtGui.QSpacerItem(0, 100))
             conditions_layout.addWidget(QtGui.QLabel("Step has " + str(len(step.conditions)) + " conditions."))
             conditions_edit_btn = QtGui.QPushButton('Edit conditions', self._widget)
             conditions_edit_btn.clicked.connect(self.edit_conditions)
@@ -495,6 +495,7 @@ class PbDGUI(Plugin):
             is_loop_checkbox.clicked.connect(self.set_loop)
             while_layout.addWidget(is_loop_checkbox)
             self.editingBox.addLayout(while_layout)
+            self.editingBox.addStretch(1)
 
     def clear_editing_area(self):
         while self.editingBox.count() > 0:
@@ -532,6 +533,7 @@ class PbDGUI(Plugin):
             back_btn.clicked.connect(self.display_editing_area)
             header_layout.addItem(QtGui.QSpacerItem(20, 10))
             header_layout.addWidget(back_btn)
+            header_layout.addItem(QtGui.QSpacerItem(0, 100))
             num_layout = QtGui.QHBoxLayout()
             num_label = QtGui.QLabel("There are %s conditions" % str(len(step.conditions)), self._widget)
             num_layout.addWidget(num_label)
@@ -572,8 +574,8 @@ class PbDGUI(Plugin):
             for ind, condition in enumerate(step.conditions):
                 if isinstance(condition, SpecificObjectCondition):
                     object_threshold_layout = QtGui.QHBoxLayout()
+                    object_threshold_layout.addItem(QtGui.QSpacerItem(0, 100))
                     threshold_label = QtGui.QLabel("Object similarity threshold (default is 0.075): ", self._widget)
-                    object_threshold_layout.addItem(QtGui.QSpacerItem(30, 10))
                     object_threshold_layout.addWidget(threshold_label)
                     threshold_edit = QtGui.QLineEdit(self._widget)
                     threshold_edit.setText(str(condition.similarity_threshold))
@@ -584,12 +586,14 @@ class PbDGUI(Plugin):
                     object_threshold_layout.addWidget(threshold_edit_btn)
                     self.editingBox.addLayout(object_threshold_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
+            is_ignore_layout.addItem(QtGui.QSpacerItem(0, 100))
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
             if step.ignore_conditions:
                 is_ignore_checkbox.setChecked(True)
             is_ignore_checkbox.clicked.connect(self.set_ignore_conditions)
             is_ignore_layout.addWidget(is_ignore_checkbox)
             self.editingBox.addLayout(is_ignore_layout)
+            self.editingBox.addStretch(1)
 
     def edit_arm_steps(self):
         self.is_edit_arm_steps = True
