@@ -196,8 +196,7 @@ class ManipulationStep(Step):
                 action_objects = condition.get_objects()
                 unique_action_objects = condition.get_unique_objects()
                 map_of_objects_old_to_new = World.get_map_of_most_similar_obj(unique_action_objects, world_objects,
-                                                                              threshold=self.conditions[
-                                                                                  0].similarity_threshold)
+                                                                              threshold=condition.similarity_threshold)
                 if map_of_objects_old_to_new is None and len(unique_action_objects) > 0:
                     world_objects = self.get_unique_objects()
                     rospy.loginfo('fake objects')
