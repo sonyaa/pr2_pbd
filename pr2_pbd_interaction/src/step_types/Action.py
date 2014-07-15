@@ -81,8 +81,7 @@ class Action(Step):
             i = 0
             while i < len(self.steps):
                 step = self.steps[i]
-                if cur_status is not None:
-                    step.set_previous_step_status(cur_status)
+                step.set_previous_step_status(cur_status)
                 if robot.preempt:
                     # robot.preempt = False
                     robot.status = ExecutionStatus.PREEMPTED
