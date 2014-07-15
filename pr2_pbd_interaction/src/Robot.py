@@ -404,9 +404,8 @@ class Robot:
                 return False
         rospy.loginfo('Done with base navigation.')
 
-        if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
-            rospy.loginfo('Moving back a bit to untuck arms safely')
-            self.base_action(-0.3, 0, 0, 0, 0, 0, 1)
+        rospy.loginfo('Moving back a bit to untuck arms safely')
+        self.base_action(-0.3, 0, 0, 0, 0, 0, 1)
 
         # Untuck arms and move to where they were.
         rospy.loginfo("Untucking arms and moving them back after navigation.")
@@ -421,9 +420,8 @@ class Robot:
         Robot.arms[1].move_to_joints(armTarget.lArm.joint_pose, 1)
         time.sleep(2)
 
-        if self.nav_action_client.get_state() == GoalStatus.SUCCEEDED:
-            rospy.loginfo('Moving forward to the goal')
-            self.base_action(0.3, 0, 0, 0, 0, 0, 1)
+        rospy.loginfo('Moving forward to the goal')
+        self.base_action(0.3, 0, 0, 0, 0, 0, 1)
 
         # Verify that base succeeded
         if (self.nav_action_client.get_state() != GoalStatus.SUCCEEDED):
