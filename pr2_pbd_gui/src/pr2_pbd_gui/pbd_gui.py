@@ -132,6 +132,8 @@ class PbDGUI(Plugin):
         self.is_edit_arm_steps = False
 
         self.editingBox = QtGui.QVBoxLayout()
+        self.line_edit_ids = {GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD: 'object_similarity_threshold',
+                              GuiCommand.SET_CONDITION_ORDER: 'condition_order'}
         allWidgetsBox = QtGui.QVBoxLayout()
         actionBox = QGroupBox('Actions', self._widget)
         self.actionGrid = QtGui.QGridLayout()
@@ -551,17 +553,17 @@ class PbDGUI(Plugin):
                 good_selector = if_true_selector
                 bad_selector = if_false_selector
                 if isinstance(condition, SpecificObjectCondition):
-                    condition_label.setText("%s: If specific object is found" % str(ind+1))
+                    condition_label.setText("%s: If specific object is found" % str(ind + 1))
                 elif isinstance(condition, GripperCondition):
-                    condition_label.setText("%s: If gripper is in the same position: " % str(ind+1))
+                    condition_label.setText("%s: If gripper is in the same position: " % str(ind + 1))
                 elif isinstance(condition, IKCondition):
-                    condition_label.setText("%s: If IK solutions are found: " % str(ind+1))
+                    condition_label.setText("%s: If IK solutions are found: " % str(ind + 1))
                 elif isinstance(condition, PreviousStepNotFailedCondition):
-                    condition_label.setText("%s: If previous step has failed: " % str(ind+1))
+                    condition_label.setText("%s: If previous step has failed: " % str(ind + 1))
                     good_selector = if_false_selector
                     bad_selector = if_true_selector
                 elif isinstance(condition, PreviousStepNotSkippedCondition):
-                    condition_label.setText("%s: If previous step was skipped: " % str(ind+1))
+                    condition_label.setText("%s: If previous step was skipped: " % str(ind + 1))
                     good_selector = if_false_selector
                     bad_selector = if_true_selector
                 good_selector.addItem("Continue")
@@ -578,6 +580,7 @@ class PbDGUI(Plugin):
                     threshold_label = QtGui.QLabel("Object similarity threshold (default is 0.075): ", self._widget)
                     object_threshold_layout.addWidget(threshold_label)
                     threshold_edit = QtGui.QLineEdit(self._widget)
+                    threshold_edit.setProperty("id", self.line_edit_ids[GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD])
                     threshold_edit.setText(str(condition.similarity_threshold))
                     threshold_edit.setInputMask("9.90000")
                     object_threshold_layout.addWidget(threshold_edit)
@@ -585,6 +588,18 @@ class PbDGUI(Plugin):
                     threshold_edit_btn.clicked.connect(self.set_object_condition_threshold)
                     object_threshold_layout.addWidget(threshold_edit_btn)
                     self.editingBox.addLayout(object_threshold_layout)
+            cond_order_layout = QtGui.QHBoxLayout()
+            cond_order_layout.addItem(QtGui.QSpacerItem(0, 100))
+            for ind in xrange(len(step.conditions)):
+                if ind > 0:
+                    cond_order_layout.addItem(QtGui.QLabel(", ", self._widget))
+                line_edit = QtGui.QLineEdit(step.condition_order[ind] + 1, self._widget)
+                line_edit.setProperty("id", self.line_edit_ids[GuiCommand.SET_CONDITION_ORDER])
+                cond_order_layout.addItem(line_edit)
+            order_edit_btn = QtGui.QPushButton("Set", self._widget)
+            order_edit_btn.clicked.connect(self.set_condition_order)
+            cond_order_layout.addWidget(order_edit_btn)
+            self.editingBox.addLayout(self.cond_order_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_layout.addItem(QtGui.QSpacerItem(0, 100))
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
@@ -595,10 +610,38 @@ class PbDGUI(Plugin):
             self.editingBox.addLayout(is_ignore_layout)
             self.editingBox.addStretch(1)
 
+    def set_condition_order(self, cond_count):
+        cond_order = []
+        for ind_l in xrange(self.editingBox.count()):
+            layout = self.editingBox.itemAt(ind_l).layout()
+            for ind_w in xrange(layout.count()):
+                widget = layout.itemAt(ind_w).widget()
+                if widget is not None and isinstance(widget, QtGui.QLineEdit):
+                    id = widget.property("id")
+                    if id.isValid() and id == self.line_edit_ids[GuiCommand.SET_CONDITION_ORDER]:
+                        index = -1
+                        is_valid_index = False
+                        try:
+                            index = int(widget.text())-1
+                            if 0 <= index < cond_count and index not in cond_order:
+                                is_valid_index = True
+                        except ValueError:
+                            rospy.loginfo("Invalid value for condition order: " + widget.text())
+                        if is_valid_index:
+                            cond_order.append(index)
+                            widget.setStyleSheet('{ background: white }')
+                        else:
+                            widget.setStyleSheet('{ background: red }')
+                            return
+        gui_cmd = GuiCommand(command=GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD,
+                             param=self.currentStep, param_list=cond_order)
+        self.gui_cmd_publisher.publish(gui_cmd)
+
+
     def edit_arm_steps(self):
         self.is_edit_arm_steps = True
         self.clear_editing_area()
-        if self.action is not None and 0 <= self.currentStep < len(self.action.steps)\
+        if self.action is not None and 0 <= self.currentStep < len(self.action.steps) \
                 and isinstance(self.action.steps[self.currentStep], ManipulationStep):
             step = self.action.steps[self.currentStep]
             header_layout = QtGui.QHBoxLayout()
@@ -641,15 +684,17 @@ class PbDGUI(Plugin):
             for ind_w in xrange(layout.count()):
                 widget = layout.itemAt(ind_w).widget()
                 if widget is not None and isinstance(widget, QtGui.QLineEdit):
-                    try:
-                        threshold = float(widget.text())
-                        gui_cmd = GuiCommand(command=GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD,
-                                             param=self.currentStep, param_float=threshold)
-                        self.gui_cmd_publisher.publish(gui_cmd)
-                        return
-                    except ValueError:
-                        rospy.logerr("Invalid value for object similarity threshold: " + widget.text())
-                        return
+                    id = widget.property("id")
+                    if id.isValid() and id == self.line_edit_ids[GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD]:
+                        try:
+                            threshold = float(widget.text())
+                            gui_cmd = GuiCommand(command=GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD,
+                                                 param=self.currentStep, param_float=threshold)
+                            self.gui_cmd_publisher.publish(gui_cmd)
+                            return
+                        except ValueError:
+                            rospy.logerr("Invalid value for object similarity threshold: " + widget.text())
+                            return
 
     def set_loop(self, is_checked):
         if is_checked:

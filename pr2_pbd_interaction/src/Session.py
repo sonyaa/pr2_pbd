@@ -331,6 +331,13 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
+    def set_condition_order(self, step_id, cond_order):
+        if (self.n_actions() > 0):
+            self.actions[self.current_action_index].set_step_condition_order(step_id, cond_order)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def delete_action_step(self, step_id):
         """ Removes the specified step of the action.
         """

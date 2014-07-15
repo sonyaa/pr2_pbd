@@ -155,6 +155,12 @@ class Action(Step):
                 rospy.logwarn("Couldn't set object similarity threshold because the step has no SpecificObjectCondition.")
         self.get_lock().release()
 
+    def set_step_condition_order(self, index, cond_order):
+        self.get_lock().acquire()
+        if len(self.steps) > 0 and index < len(self.steps):
+            self.steps[index].set_condition_order(cond_order)
+        self.get_lock().release()
+
     def select_step(self, step_id):
         # self.get_lock().acquire()
         rospy.loginfo(self.selected_step_id)

@@ -12,6 +12,7 @@ string SET_NO_IGNORE_CONDITIONS = set-no-ignore-conditions
 string SET_IGNORE_ARM_STEP_CONDITIONS = set-ignore-arm-step-conditions
 string SET_NO_IGNORE_ARM_STEP_CONDITIONS = set-no-ignore-arm-step-conditions
 string SET_OBJECT_SIMILARITY_THRESHOLD = set-object-similarity-threshold
+string SET_CONDITION_ORDER = set-condition-order
 string command
 uint8 param
 uint8[] param_list
