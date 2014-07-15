@@ -590,16 +590,16 @@ class PbDGUI(Plugin):
                     self.editingBox.addLayout(object_threshold_layout)
             cond_order_layout = QtGui.QHBoxLayout()
             cond_order_layout.addItem(QtGui.QSpacerItem(0, 100))
-            for ind in xrange(len(step.conditions)):
+            for ind in xrange(len(step.condition_order)):
                 if ind > 0:
-                    cond_order_layout.addItem(QtGui.QLabel(", ", self._widget))
-                line_edit = QtGui.QLineEdit(step.condition_order[ind] + 1, self._widget)
+                    cond_order_layout.addWidget(QtGui.QLabel(", ", self._widget))
+                line_edit = QtGui.QLineEdit(str(step.condition_order[ind] + 1), self._widget)
                 line_edit.setProperty("id", self.line_edit_ids[GuiCommand.SET_CONDITION_ORDER])
-                cond_order_layout.addItem(line_edit)
+                cond_order_layout.addWidget(line_edit)
             order_edit_btn = QtGui.QPushButton("Set", self._widget)
-            order_edit_btn.clicked.connect(self.set_condition_order)
+            order_edit_btn.clicked.connect(functools.partial(self.set_condition_order, len(step.condition_order)))
             cond_order_layout.addWidget(order_edit_btn)
-            self.editingBox.addLayout(self.cond_order_layout)
+            self.editingBox.addLayout(cond_order_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
             is_ignore_layout.addItem(QtGui.QSpacerItem(0, 100))
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
