@@ -19,7 +19,7 @@ class ArmStep(Step):
     def __init__(self, *args, **kwargs):
         Step.__init__(self, *args, **kwargs)
         self.conditions = [GripperCondition()]
-        self.condition_order = xrange(len(self.conditions))
+        self.condition_order = range(len(self.conditions))
         self.type = ArmStep.ARM_TARGET
         self.armTarget = None
         self.armTrajectory = None

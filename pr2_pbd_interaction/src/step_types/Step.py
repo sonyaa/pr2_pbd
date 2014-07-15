@@ -21,7 +21,7 @@ class Step:
         self.is_while = False
         self.ignore_conditions = False
         self.conditions = [PreviousStepNotFailedCondition(), PreviousStepNotSkippedCondition()]
-        self.condition_order = xrange(len(self.conditions))
+        self.condition_order = range(len(self.conditions))
         self.prev_step_status = None
         self.execution_status = None
         if Step.interactive_marker_server is None:
