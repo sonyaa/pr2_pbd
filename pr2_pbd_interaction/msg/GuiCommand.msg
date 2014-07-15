@@ -15,5 +15,5 @@ string SET_OBJECT_SIMILARITY_THRESHOLD = set-object-similarity-threshold
 string SET_CONDITION_ORDER = set-condition-order
 string command
 uint8 param
-uint8[] param_list
+int32[] param_list
 float32 param_float

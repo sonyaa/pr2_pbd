@@ -590,6 +590,7 @@ class PbDGUI(Plugin):
                     self.editingBox.addLayout(object_threshold_layout)
             cond_order_layout = QtGui.QHBoxLayout()
             cond_order_layout.addItem(QtGui.QSpacerItem(0, 100))
+            cond_order_layout.addWidget(QtGui.QLabel("Order in which conditions are checked:", self._widget))
             for ind in xrange(len(step.condition_order)):
                 if ind > 0:
                     cond_order_layout.addWidget(QtGui.QLabel(", ", self._widget))
@@ -614,11 +615,13 @@ class PbDGUI(Plugin):
         cond_order = []
         for ind_l in xrange(self.editingBox.count()):
             layout = self.editingBox.itemAt(ind_l).layout()
+            if layout is None:
+                continue
             for ind_w in xrange(layout.count()):
                 widget = layout.itemAt(ind_w).widget()
                 if widget is not None and isinstance(widget, QtGui.QLineEdit):
                     id = widget.property("id")
-                    if id.isValid() and id == self.line_edit_ids[GuiCommand.SET_CONDITION_ORDER]:
+                    if id == self.line_edit_ids[GuiCommand.SET_CONDITION_ORDER]:
                         index = -1
                         is_valid_index = False
                         try:
@@ -629,14 +632,13 @@ class PbDGUI(Plugin):
                             rospy.loginfo("Invalid value for condition order: " + widget.text())
                         if is_valid_index:
                             cond_order.append(index)
-                            widget.setStyleSheet('{ background: white }')
+                            widget.setStyleSheet('QLineEdit { background: white }')
                         else:
-                            widget.setStyleSheet('{ background: red }')
+                            widget.setStyleSheet('QLineEdit { background: red }')
                             return
-        gui_cmd = GuiCommand(command=GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD,
+        gui_cmd = GuiCommand(command=GuiCommand.SET_CONDITION_ORDER,
                              param=self.currentStep, param_list=cond_order)
         self.gui_cmd_publisher.publish(gui_cmd)
-
 
     def edit_arm_steps(self):
         self.is_edit_arm_steps = True
@@ -681,11 +683,13 @@ class PbDGUI(Plugin):
     def set_object_condition_threshold(self):
         for ind_l in xrange(self.editingBox.count()):
             layout = self.editingBox.itemAt(ind_l).layout()
+            if layout is None:
+                continue
             for ind_w in xrange(layout.count()):
                 widget = layout.itemAt(ind_w).widget()
                 if widget is not None and isinstance(widget, QtGui.QLineEdit):
                     id = widget.property("id")
-                    if id.isValid() and id == self.line_edit_ids[GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD]:
+                    if id == self.line_edit_ids[GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD]:
                         try:
                             threshold = float(widget.text())
                             gui_cmd = GuiCommand(command=GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD,
