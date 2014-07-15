@@ -152,7 +152,8 @@ class Action(Step):
                     condition.set_similarity_threshold(threshold)
                     done = True
             if not done:
-                rospy.logwarn("Couldn't set object similarity threshold because the step has no SpecificObjectCondition.")
+                rospy.logwarn(
+                    "Couldn't set object similarity threshold because the step has no SpecificObjectCondition.")
         self.get_lock().release()
 
     def set_step_condition_order(self, index, cond_order):
@@ -171,7 +172,7 @@ class Action(Step):
             self.initialize_viz()
         else:
             self.update_viz()
-        # self.get_lock().release()
+            # self.get_lock().release()
 
     def get_selected_step_id(self):
         return self.selected_step_id
@@ -270,10 +271,10 @@ class Action(Step):
     @staticmethod
     def get_saved_actions():
         actions = map(Action.load,
-                   filter(lambda f: f.endswith(Action.FILE_EXTENSION),
-                          filter(isfile,
-                                 map(partial(join, Action.ACTION_DIRECTORY),
-                                     listdir(Action.ACTION_DIRECTORY)))))
+                      filter(lambda f: f.endswith(Action.FILE_EXTENSION),
+                             filter(isfile,
+                                    map(partial(join, Action.ACTION_DIRECTORY),
+                                        listdir(Action.ACTION_DIRECTORY)))))
         actions.sort(key=lambda action: action.id)
         return actions
 
@@ -317,11 +318,13 @@ def action_step_constructor(loader, node):
     step.is_while = fields['is_while']
     step.ignore_conditions = fields['ignore_conditions']
     step.conditions = fields['conditions']
+    step.condition_order = fields['condition_order']
     step.steps = fields['steps']
     step.selected_step_id = fields['selected_step_id']
     step.name = fields.get('name')
     step.id = fields.get('id')
     return step
+
 
 yaml.add_constructor(u'!ActionStep', action_step_constructor)
 
@@ -330,9 +333,11 @@ def action_step_representer(dumper, data):
     return dumper.represent_mapping(u'!ActionStep', {'is_while': data.is_while,
                                                      'ignore_conditions': data.ignore_conditions,
                                                      'conditions': data.conditions,
+                                                     'condition_order': data.condition_order,
                                                      'steps': data.steps,
                                                      'selected_step_id': data.selected_step_id,
                                                      'name': data.name,
                                                      'id': data.id})
+
 
 yaml.add_representer(Action, action_step_representer)

@@ -15,6 +15,7 @@ def base_step_constructor(loader, node):
     b_step.is_while = fields['is_while']
     b_step.ignore_conditions = fields['ignore_conditions']
     b_step.conditions = fields['conditions']
+    b_step.condition_order = fields['condition_order']
     return b_step
 
 
@@ -127,6 +128,7 @@ def base_step_representer(dumper, data):
     return dumper.represent_mapping(u'!BaseStep', {'is_while': data.is_while,
                                                    'ignore_conditions': data.ignore_conditions,
                                                    'conditions': data.conditions,
+                                                   'condition_order': data.condition_order,
                                                    'end_pose': data.end_pose})
 
 

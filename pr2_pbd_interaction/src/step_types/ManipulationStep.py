@@ -21,6 +21,7 @@ def manipulation_step_constructor(loader, node):
     m_step.is_while = fields['is_while']
     m_step.ignore_conditions = fields['ignore_conditions']
     m_step.conditions = fields['conditions']
+    m_step.condition_order = fields['condition_order']
     m_step.arm_steps = fields['arm_steps']
     m_step.objects = fields.get('objects', [])
     # if the robot hasn't been initialized yet, that means we're on client side, so we don't need anything
@@ -353,6 +354,7 @@ def manipulation_step_representer(dumper, data):
     return dumper.represent_mapping(u'!ManipulationStep', {'is_while': data.is_while,
                                                            'ignore_conditions': data.ignore_conditions,
                                                            'conditions': data.conditions,
+                                                           'condition_order': data.condition_order,
                                                            'arm_steps': data.arm_steps,
                                                            'objects': data.objects})
 
