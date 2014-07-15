@@ -113,10 +113,10 @@ class ManipulationStep(Step):
                         rospy.logerr('Execution of manipulation step failed, execution preempted by user.')
                         raise StoppedByUserError()
                     try:
-                        step.execute()
+                        step.execute(action_data)
                         rospy.loginfo('Step ' + str(i) + ' of manipulation step is complete.')
-                    except:
-                        rospy.logerr("Execution of a manipulation step failed")
+                    except Exception as e:
+                        rospy.logerr("Execution of a manipulation step failed: " + str(e))
                         self.execution_status = StepExecutionStatus.FAILED
                         return
 
