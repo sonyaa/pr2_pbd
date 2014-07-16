@@ -77,7 +77,7 @@ class Interaction:
             Command.RECORD_OBJECT_POSE: Response(
                 self.record_object_pose, None),
             Command.LOOK_DOWN: Response(self.look_down, None),
-            Command.LOOK_FORWARD: Response(self.look_down, None),
+            Command.LOOK_FORWARD: Response(self.look_forward, None),
             Command.SAVE_HEAD_POSE: Response(self.save_head_step, None),
             Command.START_RECORDING_MOTION: Response(
                 self.start_recording, None),
@@ -437,7 +437,7 @@ class Interaction:
         else:
             return [RobotSpeech.ERROR_NO_SKILLS, GazeGoal.SHAKE]
 
-    def look_down(self):
+    def look_down(self, dummy=None):
         '''Makes the head look down and saves head pose'''
         Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
         speech_response = RobotSpeech.LOOKING_DOWN
@@ -447,7 +447,7 @@ class Interaction:
                                RobotSpeech.HEAD_STEP_RECORDED)
         return [speech_response, None]
 
-    def look_forward(self):
+    def look_forward(self, dummy=None):
         '''Makes the head look forward and saves head pose'''
         Response.perform_gaze_action(GazeGoal.LOOK_FORWARD)
         speech_response = RobotSpeech.LOOKING_FORWARD
