@@ -98,9 +98,10 @@ class Action(Step):
                         else:
                             i += 1
 
-                except:
-                    rospy.logerr("Execution of an action failed")
+                except Exception as e:
+                    rospy.logerr("Execution of an action failed: " + str(e))
                     self.execution_status = StepExecutionStatus.FAILED
+                    return
 
             self.execution_status = StepExecutionStatus.SUCCEEDED
 
