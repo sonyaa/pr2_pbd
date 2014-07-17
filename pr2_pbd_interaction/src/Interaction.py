@@ -442,6 +442,7 @@ class Interaction:
         Response.perform_gaze_action(GazeGoal.LOOK_DOWN)
         speech_response = RobotSpeech.LOOKING_DOWN
         if (Interaction._is_programming and self.session.n_actions() > 0):
+            time.sleep(2)
             self.save_head_step()
             speech_response = (speech_response + ' ' +
                                RobotSpeech.HEAD_STEP_RECORDED)
@@ -452,6 +453,7 @@ class Interaction:
         Response.perform_gaze_action(GazeGoal.LOOK_FORWARD)
         speech_response = RobotSpeech.LOOKING_FORWARD
         if (Interaction._is_programming and self.session.n_actions() > 0):
+            time.sleep(2)
             self.save_head_step()
             speech_response = (speech_response + ' ' +
                                RobotSpeech.HEAD_STEP_RECORDED)

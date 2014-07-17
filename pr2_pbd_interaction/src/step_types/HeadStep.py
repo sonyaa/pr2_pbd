@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 from geometry_msgs.msg import Point
 import rospy
+from numpy import array
+from numpy.linalg import norm
+import time
 from Exceptions import ConditionError, StoppedByUserError
 from pr2_pbd_interaction.msg import ExecutionStatus, Strategy
 from pr2_pbd_interaction.msg._StepExecutionStatus import StepExecutionStatus
@@ -55,8 +58,25 @@ class HeadStep(Step):
                 raise StoppedByUserError()
             # send a request to Robot to move to head_position
             robot.move_head_to_point(self.head_position)
-
-            self.execution_status = StepExecutionStatus.SUCCEEDED
-
+            time.sleep(2)
+            if self.distance_from_real() < 0.2:
+                self.execution_status = StepExecutionStatus.SUCCEEDED
+            else:
+                self.execution_status = StepExecutionStatus.FAILED
+                return
             if not self.is_while:
                 return
+
+    def distance_from_real(self):
+        from Robot import Robot
+        robot = Robot.get_robot()
+        real_position = robot.get_head_position()
+        needed_position = self.head_position
+        arr1 = array([real_position.x,
+                      real_position.y, real_position.z])
+        arr2 = array([needed_position.x,
+                      needed_position.y, needed_position.z])
+        dist = norm(arr1 - arr2)
+        if dist < 0.0001:
+            dist = 0
+        return dist
