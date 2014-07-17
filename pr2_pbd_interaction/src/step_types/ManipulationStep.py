@@ -70,7 +70,7 @@ class ManipulationStep(Step):
             if not self.ignore_conditions:
                 for condition in [self.conditions[i] for i in self.condition_order]:
                     if isinstance(condition, IKCondition):
-                        condition.set_step(self.copy())
+                        condition.set_steps(self.arm_steps)
                     if not condition.check():
                         rospy.logwarn("Condition failed when executing manipulation step.")
                         if self.is_while:

@@ -11,19 +11,19 @@ class IKCondition(Condition):
 
     def __init__(self, *args, **kwargs):
         Condition.__init__(self, *args, **kwargs)
-        self.step = None
+        self.steps = None
         if len(args) > 0:
-            self.step = args[0]
+            self.steps = args[0]
         self.available_strategies = [Strategy.FAIL_FAST, Strategy.SKIP_STEP]
         self.current_strategy_index = 0
 
-    def set_step(self, step):
-        self.step = step
+    def set_steps(self, steps):
+        self.steps = steps
 
     def check(self):
         from Robot import Robot
         robot = Robot.get_robot()
-        if not robot.solve_ik_for_manipulation_step(self.step):
+        if not robot.has_ik_solutions_for_arm_steps(self.steps):
             rospy.logwarn('Condition failure: Problems in finding IK solutions')
             return False
         return True

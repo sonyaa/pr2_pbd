@@ -176,6 +176,41 @@ class Robot:
                         return False
         return True
 
+
+
+    def has_ik_solutions_for_arm_steps(self, arm_steps):
+        '''Computes joint positions for all end-effector poses
+        in an sequence of arm_steps - without changing them'''
+
+        # Go over steps
+        for i in range(len(arm_steps)):
+            # For each step check step type
+            # If arm target action
+            if (arm_steps[i].type == ArmStep.ARM_TARGET):
+                r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
+                                                               arm_steps[i].armTarget.rArm,
+                                                               self.z_offset)
+                l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
+                                                               arm_steps[i].armTarget.lArm,
+                                                               self.z_offset)
+                if (not has_solution_r) or (not has_solution_l):
+                    return False
+
+            if (arm_steps[i].type == ArmStep.ARM_TRAJECTORY):
+                n_frames = len(arm_steps[i].armTrajectory.timing)
+                for j in range(n_frames):
+                    r_arm, has_solution_r = Robot.solve_ik_for_arm(0,
+                                                                   arm_steps[
+                                                                       i].armTrajectory.r_arm[j],
+                                                                   self.z_offset)
+                    l_arm, has_solution_l = Robot.solve_ik_for_arm(1,
+                                                                   arm_steps[
+                                                                       i].armTrajectory.l_arm[j],
+                                                                   self.z_offset)
+                    if (not has_solution_r) or (not has_solution_l):
+                        return False
+        return True
+
     @staticmethod
     def solve_ik_for_arm(arm_index, arm_state, z_offset=0):
         '''Finds an  IK solution for a particular arm pose'''
