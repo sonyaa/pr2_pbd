@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-from actionlib.simple_action_client import SimpleActionClient
-from actionlib_msgs.msg import GoalStatus
-from control_msgs.msg import PointHeadAction, PointHeadGoal
 import roslib
-import tf
 
 roslib.load_manifest('pr2_pbd_interaction')
 import rospy
+from actionlib.simple_action_client import SimpleActionClient
+from actionlib_msgs.msg import GoalStatus
+import tf
 
 import time
 import threading
@@ -16,7 +15,7 @@ from pr2_pbd_interaction.msg import ArmState, GripperState
 from pr2_pbd_interaction.msg import Side
 from pr2_pbd_interaction.msg import ExecutionStatus
 from pr2_social_gaze.msg import GazeGoal
-from geometry_msgs.msg import Pose, Point, PoseStamped, Quaternion, Twist, Vector3
+from geometry_msgs.msg import Pose, Point, PoseStamped, Quaternion, Twist, Vector3, PointStamped
 from Response import Response
 from World import World
 from Arm import Arm, ArmMode
@@ -33,16 +32,20 @@ class Robot:
     '''
     arms = []
     robot = None
-    r_tucked_with_object_pose = [-0.0175476818422744, 1.1720448201611564, -1.3268105758514066, -1.288722079574422, -31.28968470078213, -2.0089650532319836, -5.841424529413016]
+    r_tucked_with_object_pose = [-0.0175476818422744, 1.1720448201611564, -1.3268105758514066, -1.288722079574422,
+                                 -31.28968470078213, -2.0089650532319836, -5.841424529413016]
 
     #NAVIGATE_R_POS = [-0.3594077470836499, 0.971353000916152, -1.9647276598906076, -1.431900313132731, -1.1839177367219755, -0.09817772642188527, -1.622044624784374]
-    l_tucked_with_object_pose = [0.058297695494463064, 1.1720448201611564, 1.3268105758514066, -1.288722079574422, 15.589646214067146, -1.0399744971119742, -33.45882012016671]
+    l_tucked_with_object_pose = [0.058297695494463064, 1.1720448201611564, 1.3268105758514066, -1.288722079574422,
+                                 15.589646214067146, -1.0399744971119742, -33.45882012016671]
 
     #l_tucked_with_object_pose = [0.04014114629328325, 1.0329086176696876, 1.5482390098896939, -1.538017244576857, -6.7181573150253024, -0.09421239912308044, 87.79342441711326]
     #r_tucked_with_object_pose = [0.054793713231851005, 1.293828847790333, -1.5800364314292505, -1.5937539684595152, 0.0480516740641113, -0.09404437901242257, 15.646428218144145]
 
-    r_tucked_with_two_objects = [-0.2827191260284381, 0.8905648493513978, -1.9251200177772456, -2.1230356892776925, 8.328630782689046, -1.7644549538909033, 6.006939952238806]
-    l_tucked_with_two_objects = [-0.014577221162327403, 1.0475435393667585, 1.9520124626890674, -1.2932099716273115, -14.586055305344937, -1.6310018431908655, 12.279584063171104]
+    r_tucked_with_two_objects = [-0.2827191260284381, 0.8905648493513978, -1.9251200177772456, -2.1230356892776925,
+                                 8.328630782689046, -1.7644549538909033, 6.006939952238806]
+    l_tucked_with_two_objects = [-0.014577221162327403, 1.0475435393667585, 1.9520124626890674, -1.2932099716273115,
+                                 -14.586055305344937, -1.6310018431908655, 12.279584063171104]
 
 
     def __init__(self):
@@ -175,7 +178,6 @@ class Robot:
                     if (not has_solution_r) or (not has_solution_l):
                         return False
         return True
-
 
 
     def has_ik_solutions_for_arm_steps(self, arm_steps):
@@ -313,15 +315,17 @@ class Robot:
     def get_head_position():
         try:
             ref_frame = "/head_tilt_link"
-            time = World.tf_listener.getLatestCommonTime(ref_frame,
-                                                         "/base_link")
-            (position, orientation) = World.tf_listener.lookupTransform(
-                ref_frame, "/base_link", time)
-            head_position = Point(position[0], position[1], position[2])
+            timestamp = World.tf_listener.getLatestCommonTime(ref_frame,
+                                                              "/base_link")
+            point_stamped = PointStamped()
+            point_stamped.header.frame_id = ref_frame
+            point_stamped.header.stamp = timestamp
+            point_stamped.point = Point(1, 0, 0)
+            head_position = World.tf_listener.transformPoint("/base_link", point_stamped).point
             return head_position
         except (tf.LookupException, tf.ConnectivityException,
-                tf.ExtrapolationException):
-            rospy.logwarn('Something wrong with transform request for head state.')
+                tf.ExtrapolationException) as e:
+            rospy.logwarn('Something wrong with transform request for head state.' + str(e))
             return None
 
     def _get_absolute_arm_states(self):
