@@ -314,6 +314,19 @@ class Session:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()
 
+    def set_arm_step_condition_strategy(self, step_id, condition_index, strategy_index):
+        """ Sets the failure strategy for the specified condition of the specified arm step.
+        """
+        if (self.n_actions() > 0):
+            current_step = self.get_current_step()
+            if isinstance(current_step, ManipulationStep):
+                current_step.set_arm_step_condition_strategy(step_id, condition_index, strategy_index)
+            else:
+                rospy.logwarn('Current step is not ManipulationStep, cannot set condition strategy for arm step.')
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
     def set_current_step_condition_strategy(self, condition_index, strategy_index):
         """ Sets the failure strategy for the specified condition of the current step.
         """
@@ -334,6 +347,17 @@ class Session:
     def set_condition_order(self, step_id, cond_order):
         if (self.n_actions() > 0):
             self.actions[self.current_action_index].set_step_condition_order(step_id, cond_order)
+        else:
+            rospy.logwarn('No skills created yet.')
+        self._update_experiment_state()
+
+    def set_arm_step_condition_order(self, step_id, cond_order):
+        if (self.n_actions() > 0):
+            current_step = self.get_current_step()
+            if isinstance(current_step, ManipulationStep):
+                current_step.set_arm_step_condition_order(step_id, cond_order)
+            else:
+                rospy.logwarn('Current step is not ManipulationStep, cannot set condition order for arm step.')
         else:
             rospy.logwarn('No skills created yet.')
         self._update_experiment_state()

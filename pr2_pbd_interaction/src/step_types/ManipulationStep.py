@@ -116,6 +116,10 @@ class ManipulationStep(Step):
                     try:
                         step.execute(action_data)
                         rospy.loginfo('Step ' + str(i) + ' of manipulation step is complete.')
+                        if step.execution_status != StepExecutionStatus.SUCCEEDED:
+                            rospy.logerr("Execution of a manipulation step failed because arm step failed")
+                            self.execution_status = StepExecutionStatus.FAILED
+                            return
                     except Exception as e:
                         rospy.logerr("Execution of a manipulation step failed: " + str(e))
                         self.execution_status = StepExecutionStatus.FAILED
@@ -324,6 +328,18 @@ class ManipulationStep(Step):
     def set_ignore_arm_step_conditions(self, index, ignore_conditions):
         if len(self.arm_steps) > 0 and index < len(self.arm_steps):
             self.arm_steps[index].ignore_conditions = ignore_conditions
+
+    def set_arm_step_condition_order(self, index, cond_order):
+        self.lock.acquire()
+        if len(self.arm_steps) > 0 and index < len(self.arm_steps):
+            self.arm_steps[index].set_condition_order(cond_order)
+        self.lock.release()
+
+    def set_arm_step_condition_strategy(self, index, condition_index, strategy_index):
+        self.lock.acquire()
+        if len(self.arm_steps) > 0 and index < len(self.arm_steps):
+            self.arm_steps[index].set_condition_strategy(condition_index, strategy_index)
+        self.lock.release()
 
     def reference_change_cb(self, uid, new_ref, new_ref_obj):
         if new_ref == ArmState.OBJECT:

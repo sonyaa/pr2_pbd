@@ -17,7 +17,7 @@ class GripperCondition(Condition):
             self.r_gripper_position = args[0]
             self.l_gripper_position = args[1]
         self.threshold = 0.015
-        self.available_strategies = [Strategy.FAIL_FAST, Strategy.CONTINUE]
+        self.available_strategies = [Strategy.FAIL_FAST, Strategy.CONTINUE, Strategy.SKIP_STEP]
         self.current_strategy_index = 0
 
     def set_gripper_positions(self, r_gripper, l_gripper):

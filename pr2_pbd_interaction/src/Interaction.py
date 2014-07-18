@@ -661,6 +661,12 @@ class Interaction:
                     strategy_index = command.param_list[0]
                     self.session.set_current_step_condition_strategy(condition_index, strategy_index)
                     rospy.loginfo('Changed condition failure strategy for the current step')
+                elif (command.command == GuiCommand.SET_ARM_STEP_STRATEGY):
+                    arm_step_no = command.param
+                    condition_index = int(command.param_float)
+                    strategy_index = command.param_list[0]
+                    self.session.set_arm_step_condition_strategy(arm_step_no, condition_index, strategy_index)
+                    rospy.loginfo('Changed condition failure strategy for arm step ' + str(arm_step_no))
                 elif (command.command == GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD):
                     step_no = command.param
                     threshold = command.param_float
@@ -671,6 +677,11 @@ class Interaction:
                     cond_order = command.param_list
                     self.session.set_condition_order(step_no, cond_order)
                     rospy.loginfo('Changed condition order for step ' + str(step_no))
+                elif (command.command == GuiCommand.SET_ARM_STEP_CONDITION_ORDER):
+                    arm_step_no = command.param
+                    cond_order = command.param_list
+                    self.session.set_arm_step_condition_order(arm_step_no, cond_order)
+                    rospy.loginfo('Changed condition order for arm step ' + str(arm_step_no))
                 else:
                     rospy.logwarn('\033[32m This command (' + command.command
                                   + ') is unknown. \033[0m')

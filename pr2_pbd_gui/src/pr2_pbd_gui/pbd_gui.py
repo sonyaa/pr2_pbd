@@ -450,6 +450,7 @@ class PbDGUI(Plugin):
                 arm_steps_grid.setColumnMinimumWidth(6, 10)
                 arm_steps_grid.setColumnMinimumWidth(7, 10)
                 arm_steps_grid.setColumnMinimumWidth(8, 10)
+                arm_steps_grid.setColumnMinimumWidth(9, 10)
                 for ind, arm_step in enumerate(step.arm_steps):
                     abs_string_r = 'Relative' if arm_step.is_relative(0) else 'Absolute'
                     abs_string_l = 'Relative' if arm_step.is_relative(1) else 'Absolute'
@@ -466,9 +467,9 @@ class PbDGUI(Plugin):
                     arm_steps_grid.addWidget(QtGui.QLabel(abs_string_l, self._widget), ind + 1, 5)
                     arm_steps_grid.addWidget(view_l_button, ind + 1, 6)
                     arm_steps_grid.addWidget(del_pose_button, ind + 1, 8)
-                edit_arm_steps_btn = QtGui.QPushButton('Edit arm steps', self._widget)
-                edit_arm_steps_btn.clicked.connect(self.edit_arm_steps)
-                arm_steps_grid.addWidget(edit_arm_steps_btn, arm_steps_grid.rowCount() + 1, 0, 1, 3)
+                    edit_conditions_button = QtGui.QPushButton('Delete', self._widget)
+                    edit_conditions_button.clicked.connect(functools.partial(self.edit_conditions, ind))
+                    arm_steps_grid.addWidget(edit_conditions_button, ind + 1, 9)
             elif isinstance(step, BaseStep):
                 typeLabel.setText(header_text % "Navigation")
             elif isinstance(step, HeadStep):
@@ -522,11 +523,13 @@ class PbDGUI(Plugin):
                 self.editingBox.removeItem(item)
                 del item
 
-    def edit_conditions(self):
+    def edit_conditions(self, arm_step_index=None):
         self.is_edit_conditions = True
         self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
+            if arm_step_index is not None:
+                step = self.action.steps[self.currentStep][arm_step_index]
             header_layout = QtGui.QHBoxLayout()
             self.editingBox.addLayout(header_layout)
             header_label = QtGui.QLabel("Editing conditions", self._widget)
@@ -572,7 +575,11 @@ class PbDGUI(Plugin):
                 for strategy in condition.available_strategies:
                     bad_selector.addItem(self.strategies[strategy])
                 bad_selector.setCurrentIndex(condition.current_strategy_index)
-                bad_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind))
+                if arm_step_index is not None:
+                    bad_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind,
+                                                                               arm_step_index=arm_step_index))
+                else:
+                    bad_selector.currentIndexChanged.connect(functools.partial(self.change_strategy, ind))
             for ind, condition in enumerate(step.conditions):
                 if isinstance(condition, SpecificObjectCondition):
                     object_threshold_layout = QtGui.QHBoxLayout()
@@ -598,7 +605,11 @@ class PbDGUI(Plugin):
                 line_edit.setProperty("id", self.line_edit_ids[GuiCommand.SET_CONDITION_ORDER])
                 cond_order_layout.addWidget(line_edit)
             order_edit_btn = QtGui.QPushButton("Set", self._widget)
-            order_edit_btn.clicked.connect(functools.partial(self.set_condition_order, len(step.condition_order)))
+            if arm_step_index is not None:
+                order_edit_btn.clicked.connect(functools.partial(self.set_condition_order, len(step.condition_order),
+                                                                 arm_step_index=arm_step_index))
+            else:
+                order_edit_btn.clicked.connect(functools.partial(self.set_condition_order, len(step.condition_order)))
             cond_order_layout.addWidget(order_edit_btn)
             self.editingBox.addLayout(cond_order_layout)
             is_ignore_layout = QtGui.QHBoxLayout()
@@ -606,12 +617,16 @@ class PbDGUI(Plugin):
             is_ignore_checkbox = QtGui.QCheckBox("Ignore conditions", self._widget)
             if step.ignore_conditions:
                 is_ignore_checkbox.setChecked(True)
-            is_ignore_checkbox.clicked.connect(self.set_ignore_conditions)
+            if arm_step_index is not None:
+                is_ignore_checkbox.clicked.connect(functools.partial(self.set_ignore_conditions,
+                                                                     arm_step_index=arm_step_index))
+            else:
+                is_ignore_checkbox.clicked.connect(self.set_ignore_conditions)
             is_ignore_layout.addWidget(is_ignore_checkbox)
             self.editingBox.addLayout(is_ignore_layout)
             self.editingBox.addStretch(1)
 
-    def set_condition_order(self, cond_count):
+    def set_condition_order(self, cond_count, arm_step_index=None):
         cond_order = []
         for ind_l in xrange(self.editingBox.count()):
             layout = self.editingBox.itemAt(ind_l).layout()
@@ -625,7 +640,7 @@ class PbDGUI(Plugin):
                         index = -1
                         is_valid_index = False
                         try:
-                            index = int(widget.text())-1
+                            index = int(widget.text()) - 1
                             if 0 <= index < cond_count and index not in cond_order:
                                 is_valid_index = True
                         except ValueError:
@@ -636,49 +651,13 @@ class PbDGUI(Plugin):
                         else:
                             widget.setStyleSheet('QLineEdit { background: red }')
                             return
-        gui_cmd = GuiCommand(command=GuiCommand.SET_CONDITION_ORDER,
-                             param=self.currentStep, param_list=cond_order)
+        if arm_step_index is not None:
+            gui_cmd = GuiCommand(command=GuiCommand.SET_ARM_STEP_CONDITION_ORDER,
+                                 param=arm_step_index, param_list=cond_order)
+        else:
+            gui_cmd = GuiCommand(command=GuiCommand.SET_CONDITION_ORDER,
+                                 param=self.currentStep, param_list=cond_order)
         self.gui_cmd_publisher.publish(gui_cmd)
-
-    def edit_arm_steps(self):
-        self.is_edit_arm_steps = True
-        self.clear_editing_area()
-        if self.action is not None and 0 <= self.currentStep < len(self.action.steps) \
-                and isinstance(self.action.steps[self.currentStep], ManipulationStep):
-            step = self.action.steps[self.currentStep]
-            header_layout = QtGui.QHBoxLayout()
-            self.editingBox.addLayout(header_layout)
-            header_label = QtGui.QLabel("Editing arm steps", self._widget)
-            header_layout.addWidget(header_label)
-            back_btn = QtGui.QPushButton("Back", self._widget)
-            back_btn.clicked.connect(self.display_editing_area)
-            header_layout.addItem(QtGui.QSpacerItem(20, 10))
-            header_layout.addWidget(back_btn)
-            arm_steps_grid = QtGui.QGridLayout()
-            self.editingBox.addLayout(arm_steps_grid)
-            arm_steps_grid.addWidget(QtGui.QLabel('Right arm', self._widget), 0, 0)
-            arm_steps_grid.setColumnMinimumWidth(1, 10)
-            arm_steps_grid.addWidget(QtGui.QLabel('Left arm', self._widget), 0, 2)
-            arm_steps_grid.setColumnMinimumWidth(3, 10)
-            arm_steps_grid.setColumnMinimumWidth(4, 10)
-            arm_steps_grid.setColumnMinimumWidth(5, 10)
-            for ind, arm_step in enumerate(step.arm_steps):
-                del_pose_button = QtGui.QPushButton('Delete', self._widget)
-                del_pose_button.clicked.connect(functools.partial(self.delete_arm_step, ind))
-                view_r_button = QtGui.QPushButton('Select', self._widget)
-                view_r_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(0, ind)))
-                view_l_button = QtGui.QPushButton('Select', self._widget)
-                view_l_button.clicked.connect(functools.partial(self.arm_step_pressed, self.get_uid(1, ind)))
-                arm_steps_grid.addWidget(QtGui.QLabel('Step ' + str(ind), self._widget), ind + 1, 0)
-                arm_steps_grid.addWidget(view_r_button, ind + 1, 1)
-                arm_steps_grid.addWidget(QtGui.QLabel('Step ' + str(ind), self._widget), ind + 1, 2)
-                arm_steps_grid.addWidget(view_l_button, ind + 1, 3)
-                arm_steps_grid.addWidget(del_pose_button, ind + 1, 4)
-                ignore_cond_checkbox = QtGui.QCheckBox('Ignore conditions', self._widget)
-                ignore_cond_checkbox.clicked.connect(functools.partial(self.set_ignore_arm_step_conditions, ind))
-                if arm_step.ignore_conditions:
-                    ignore_cond_checkbox.setChecked(True)
-                arm_steps_grid.addWidget(ignore_cond_checkbox, ind + 1, 5)
 
     def set_object_condition_threshold(self):
         for ind_l in xrange(self.editingBox.count()):
@@ -708,24 +687,28 @@ class PbDGUI(Plugin):
             gui_cmd = GuiCommand(command=GuiCommand.SET_NO_LOOP_STEP, param=self.currentStep)
             self.gui_cmd_publisher.publish(gui_cmd)
 
-    def set_ignore_conditions(self, is_checked):
-        if is_checked:
-            gui_cmd = GuiCommand(command=GuiCommand.SET_IGNORE_CONDITIONS, param=self.currentStep)
-            self.gui_cmd_publisher.publish(gui_cmd)
+    def set_ignore_conditions(self, is_checked, arm_step_index=None):
+        if arm_step_index is not None:
+            if is_checked:
+                gui_cmd = GuiCommand(command=GuiCommand.SET_IGNORE_ARM_STEP_CONDITIONS, param=arm_step_index)
+                self.gui_cmd_publisher.publish(gui_cmd)
+            else:
+                gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_ARM_STEP_CONDITIONS, param=arm_step_index)
+                self.gui_cmd_publisher.publish(gui_cmd)
         else:
-            gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_CONDITIONS, param=self.currentStep)
-            self.gui_cmd_publisher.publish(gui_cmd)
+            if is_checked:
+                gui_cmd = GuiCommand(command=GuiCommand.SET_IGNORE_CONDITIONS, param=self.currentStep)
+                self.gui_cmd_publisher.publish(gui_cmd)
+            else:
+                gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_CONDITIONS, param=self.currentStep)
+                self.gui_cmd_publisher.publish(gui_cmd)
 
-    def set_ignore_arm_step_conditions(self, ind, is_checked):
-        if is_checked:
-            gui_cmd = GuiCommand(command=GuiCommand.SET_IGNORE_ARM_STEP_CONDITIONS, param=ind)
-            self.gui_cmd_publisher.publish(gui_cmd)
+    def change_strategy(self, condition_index, strategy_index, arm_step_index=None):
+        if arm_step_index is not None:
+            gui_cmd = GuiCommand(command=GuiCommand.SET_ARM_STEP_STRATEGY, param=arm_step_index,
+                                 param_float=condition_index, param_list=[strategy_index])
         else:
-            gui_cmd = GuiCommand(command=GuiCommand.SET_NO_IGNORE_ARM_STEP_CONDITIONS, param=ind)
-            self.gui_cmd_publisher.publish(gui_cmd)
-
-    def change_strategy(self, condition_index, strategy_index):
-        gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=condition_index, param_list=[strategy_index])
+            gui_cmd = GuiCommand(command=GuiCommand.SET_STRATEGY, param=condition_index, param_list=[strategy_index])
         self.gui_cmd_publisher.publish(gui_cmd)
 
     def edit_button_pressed(self, step_index):
