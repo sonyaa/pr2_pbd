@@ -467,7 +467,7 @@ class PbDGUI(Plugin):
                     arm_steps_grid.addWidget(QtGui.QLabel(abs_string_l, self._widget), ind + 1, 5)
                     arm_steps_grid.addWidget(view_l_button, ind + 1, 6)
                     arm_steps_grid.addWidget(del_pose_button, ind + 1, 8)
-                    edit_conditions_button = QtGui.QPushButton('Delete', self._widget)
+                    edit_conditions_button = QtGui.QPushButton('Edit conditions', self._widget)
                     edit_conditions_button.clicked.connect(functools.partial(self.edit_conditions, ind))
                     arm_steps_grid.addWidget(edit_conditions_button, ind + 1, 9)
             elif isinstance(step, BaseStep):
@@ -529,7 +529,7 @@ class PbDGUI(Plugin):
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
             if arm_step_index is not None:
-                step = self.action.steps[self.currentStep][arm_step_index]
+                step = self.action.steps[self.currentStep].arm_steps[arm_step_index]
             header_layout = QtGui.QHBoxLayout()
             self.editingBox.addLayout(header_layout)
             header_label = QtGui.QLabel("Editing conditions", self._widget)
