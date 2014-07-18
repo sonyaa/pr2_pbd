@@ -129,7 +129,8 @@ class PbDGUI(Plugin):
         self.action = None
         self.is_edit = False
         self.is_edit_conditions = False
-        self.is_edit_arm_steps = False
+        self.currentArmStep = -1
+        self.is_edit_arm_step_conditions = False
 
         self.editingBox = QtGui.QVBoxLayout()
         self.line_edit_ids = {GuiCommand.SET_OBJECT_SIMILARITY_THRESHOLD: 'object_similarity_threshold',
@@ -347,8 +348,8 @@ class PbDGUI(Plugin):
         if self.is_edit:
             if self.is_edit_conditions:
                 self.edit_conditions()
-            elif self.is_edit_arm_steps:
-                self.edit_arm_steps()
+            elif self.is_edit_arm_step_conditions:
+                self.edit_conditions(self.currentArmStep)
             else:
                 self.display_editing_area()
         else:
@@ -374,7 +375,7 @@ class PbDGUI(Plugin):
         if self.currentAction != state.selected_action or self.currentStep != state.selected_step:
             self.is_edit = False
             self.is_edit_conditions = False
-            self.is_edit_arm_steps = False
+            self.is_edit_arm_step_conditions = False
         self.currentAction = state.selected_action
         self.currentStep = state.selected_step
         self.selectedArmStepUid = state.selected_arm_step
@@ -429,7 +430,7 @@ class PbDGUI(Plugin):
 
     def display_editing_area(self):
         self.is_edit_conditions = False
-        self.is_edit_arm_steps = False
+        self.is_edit_arm_step_conditions = False
         self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
@@ -524,7 +525,11 @@ class PbDGUI(Plugin):
                 del item
 
     def edit_conditions(self, arm_step_index=None):
-        self.is_edit_conditions = True
+        if arm_step_index is not None:
+            self.is_edit_arm_step_conditions = True
+            self.currentArmStep = arm_step_index
+        else:
+            self.is_edit_conditions = True
         self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
@@ -717,7 +722,7 @@ class PbDGUI(Plugin):
             if self.is_edit:
                 self.is_edit = False
                 self.is_edit_conditions = False
-                self.is_edit_arm_steps = False
+                self.is_edit_arm_step_conditions = False
                 self.clear_editing_area()
             else:
                 self.is_edit = True
@@ -731,7 +736,7 @@ class PbDGUI(Plugin):
         if self.currentStep != step_index:
             self.is_edit = False
             self.is_edit_conditions = False
-            self.is_edit_arm_steps = False
+            self.is_edit_arm_step_conditions = False
             self.clear_editing_area()
             self.currentStep = step_index
             gui_cmd = GuiCommand(command=GuiCommand.SELECT_ACTION_STEP, param=step_index)
