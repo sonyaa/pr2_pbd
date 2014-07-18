@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import roslib
+from pr2_pbd_interaction.msg._StepExecutionStatus import StepExecutionStatus
 
 roslib.load_manifest('pr2_pbd_interaction')
 import rospy
@@ -130,7 +131,11 @@ class Robot:
             if self.status == ExecutionStatus.EXECUTING:
                 self.status = ExecutionStatus.OTHER_ERROR
         else:
-            self.status = ExecutionStatus.SUCCEEDED
+            action_status = self.action.execution_status
+            if action_status == StepExecutionStatus.FAILED:
+                self.status = ExecutionStatus.OTHER_ERROR
+            else:
+                self.status = ExecutionStatus.SUCCEEDED
 
     def continue_execution(self):
         self.is_continue_execution = True
