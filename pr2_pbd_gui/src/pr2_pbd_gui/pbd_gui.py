@@ -349,7 +349,7 @@ class PbDGUI(Plugin):
             if self.is_edit_conditions:
                 self.edit_conditions()
             elif self.is_edit_arm_step_conditions:
-                self.edit_conditions(self.currentArmStep)
+                self.edit_conditions(arm_step_index=self.currentArmStep)
             else:
                 self.display_editing_area()
         else:
@@ -469,7 +469,7 @@ class PbDGUI(Plugin):
                     arm_steps_grid.addWidget(view_l_button, ind + 1, 6)
                     arm_steps_grid.addWidget(del_pose_button, ind + 1, 8)
                     edit_conditions_button = QtGui.QPushButton('Edit conditions', self._widget)
-                    edit_conditions_button.clicked.connect(functools.partial(self.edit_conditions, ind))
+                    edit_conditions_button.clicked.connect(functools.partial(self.edit_conditions, arm_step_index=ind))
                     arm_steps_grid.addWidget(edit_conditions_button, ind + 1, 9)
             elif isinstance(step, BaseStep):
                 typeLabel.setText(header_text % "Navigation")
@@ -524,12 +524,14 @@ class PbDGUI(Plugin):
                 self.editingBox.removeItem(item)
                 del item
 
-    def edit_conditions(self, arm_step_index=None):
+    def edit_conditions(self, checked=False, arm_step_index=None):
         if arm_step_index is not None:
             self.is_edit_arm_step_conditions = True
+            self.is_edit_conditions = False
             self.currentArmStep = arm_step_index
         else:
             self.is_edit_conditions = True
+            self.is_edit_arm_step_conditions = False
         self.clear_editing_area()
         if self.action is not None and 0 <= self.currentStep < len(self.action.steps):
             step = self.action.steps[self.currentStep]
@@ -726,6 +728,8 @@ class PbDGUI(Plugin):
                 self.clear_editing_area()
             else:
                 self.is_edit = True
+                self.is_edit_conditions = False
+                self.is_edit_arm_step_conditions = False
                 self.display_editing_area()
             self.update_action_steps_buttons()
         else:
