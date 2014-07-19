@@ -32,14 +32,14 @@ class ArmStep(Step):
                 condition.set_gripper_positions(r_gripper, l_gripper)
                 break
 
-    def set_gripper_condition(self, condition):
+    def set_gripper_condition(self, new_condition):
         to_remove = None
         for condition in self.conditions:
             if isinstance(condition, GripperCondition):
                 to_remove = condition
         if to_remove is not None:
             self.conditions.remove(to_remove)
-        self.conditions.append(condition)
+        self.conditions.append(new_condition)
 
     def execute(self, action_data):
         from Robot import Robot
