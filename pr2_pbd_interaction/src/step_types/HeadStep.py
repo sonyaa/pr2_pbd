@@ -28,7 +28,7 @@ class HeadStep(Step):
             if not self.ignore_conditions:
                 for condition in [self.conditions[i] for i in self.condition_order]:
                     if not condition.check():
-                        rospy.logwarn("Condition failed when executing base step.")
+                        rospy.logwarn("Condition failed when executing head step.")
                         if self.is_while:
                             #TODO
                             return
