@@ -62,6 +62,8 @@ class HeadStep(Step):
             if self.distance_from_real() < 0.2:
                 self.execution_status = StepExecutionStatus.SUCCEEDED
             else:
+                rospy.loginfo('Head step failed: distance of current head position from desired one is '
+                              + str(self.distance_from_real()))
                 self.execution_status = StepExecutionStatus.FAILED
                 return
             if not self.is_while:

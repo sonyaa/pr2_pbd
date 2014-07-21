@@ -14,7 +14,7 @@ class IKCondition(Condition):
         self.steps = None
         if len(args) > 0:
             self.steps = args[0]
-        self.available_strategies = [Strategy.FAIL_FAST, Strategy.SKIP_STEP]
+        self.available_strategies = [Strategy.FAIL_FAST, Strategy.SKIP_STEP, Strategy.GO_TO_PREVIOUS_STEP]
         self.current_strategy_index = 0
 
     def set_steps(self, steps):
