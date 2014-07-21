@@ -5,6 +5,7 @@ from visualization_msgs.msg import MarkerArray
 from condition_types.PreviousStepCondition import PreviousStepCondition
 from condition_types.PreviousStepNotFailedCondition import PreviousStepNotFailedCondition
 from condition_types.PreviousStepNotSkippedCondition import PreviousStepNotSkippedCondition
+from condition_types.PreviousStepNotSucceededCondition import PreviousStepNotSucceededCondition
 from pr2_pbd_interaction.msg import Strategy
 
 
@@ -20,7 +21,8 @@ class Step:
         # If self.is_while, execute step in a loop until a condition fails. Else execute step once.
         self.is_while = False
         self.ignore_conditions = False
-        self.conditions = [PreviousStepNotFailedCondition(), PreviousStepNotSkippedCondition()]
+        self.conditions = [PreviousStepNotFailedCondition(), PreviousStepNotSkippedCondition(),
+                           PreviousStepNotSucceededCondition()]
         self.condition_order = range(len(self.conditions))
         self.prev_step_status = None
         self.execution_status = None
