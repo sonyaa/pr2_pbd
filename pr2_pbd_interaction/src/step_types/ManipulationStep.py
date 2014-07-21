@@ -83,6 +83,7 @@ class ManipulationStep(Step):
                             raise ConditionError()
                         elif strategy == Strategy.SKIP_STEP:
                             rospy.loginfo("Strategy is to skip step, skipping.")
+                            self.execution_status = StepExecutionStatus.SKIPPED
                             return
                         elif strategy == Strategy.CONTINUE:
                             rospy.loginfo("Strategy is to continue, ignoring condition failure.")
