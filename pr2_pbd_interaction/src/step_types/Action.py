@@ -93,10 +93,15 @@ class Action(Step):
                         cur_status = step.get_execution_status()
                         rospy.loginfo('Step ' + str(i) + ' of action step is complete. Status is ' + str(cur_status))
                         if self.action_data.go_back:
+                            if i < 0:
+                                rospy.logerr('Action failed: cannot go back to step ' + str(i))
+                                self.execution_status = StepExecutionStatus.FAILED
+                                return
                             i -= 1
                             rospy.loginfo('Going back to previous step: step number ' + str(i))
                         else:
                             i += 1
+                        self.action_data.go_back = False
 
                 except Exception as e:
                     rospy.logerr("Execution of an action failed: " + str(e))
