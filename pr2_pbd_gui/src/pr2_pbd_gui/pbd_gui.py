@@ -28,6 +28,7 @@ from condition_types.SpecificObjectCondition import SpecificObjectCondition
 from condition_types.IKCondition import IKCondition
 from condition_types.PreviousStepNotFailedCondition import PreviousStepNotFailedCondition
 from condition_types.PreviousStepNotSkippedCondition import PreviousStepNotSkippedCondition
+from condition_types.PreviousStepNotSucceededCondition import PreviousStepNotSucceededCondition
 
 
 class ClickableLabel(QtGui.QLabel):
@@ -574,6 +575,10 @@ class PbDGUI(Plugin):
                     bad_selector = if_true_selector
                 elif isinstance(condition, PreviousStepNotSkippedCondition):
                     condition_label.setText("%s: If previous step was skipped: " % str(ind + 1))
+                    good_selector = if_false_selector
+                    bad_selector = if_true_selector
+                elif isinstance(condition, PreviousStepNotSucceededCondition):
+                    condition_label.setText("%s: If previous step has succeeded: " % str(ind + 1))
                     good_selector = if_false_selector
                     bad_selector = if_true_selector
                 good_selector.addItem("Continue")
