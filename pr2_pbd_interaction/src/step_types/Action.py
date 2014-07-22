@@ -108,10 +108,7 @@ class Action(Step):
                     self.execution_status = StepExecutionStatus.FAILED
                     return
 
-            if cur_status == StepExecutionStatus.FAILED:
-                self.execution_status = StepExecutionStatus.FAILED
-            else:
-                self.execution_status = StepExecutionStatus.SUCCEEDED
+            self.execution_status = cur_status
 
             if not self.is_while:
                 return

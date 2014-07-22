@@ -275,7 +275,7 @@ class Session:
         act = next((act for act in self.actions
                 if act.name == act_name), None)
         if (act != None):
-            self.actions[self.current_action_index].add_step(act)
+            self.actions[self.current_action_index].add_step(act.copy())
             self.selected_step = self.actions[self.current_action_index].get_selected_step_id()
             self._update_experiment_state()
             return True
